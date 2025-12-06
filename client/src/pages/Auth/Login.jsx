@@ -106,9 +106,9 @@ const Login = () => {
 
         <div className="demo-credentials">
           <p><strong>Demo Accounts:</strong></p>
-          <p>Student: student@educonnect.com / Student@123</p>
-          <p>Tutor: tutor@educonnect.com / Tutor@123</p>
-          <p>Admin: admin@educonnect.com / Admin@123</p>
+          <p>Student: student@edubridge.com / Student@123</p>
+          <p>Tutor: tutor@edubridge.com / Tutor@123</p>
+          <p>Admin: admin@edubridge.com / Admin@123</p>
         </div>
       </div>
     </div>

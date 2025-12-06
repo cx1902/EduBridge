@@ -37,7 +37,7 @@ const MainLayout = () => {
           <div className="navbar-content">
             <Link to="/" className="logo">
               <span className="logo-icon">📚</span>
-              <span className="logo-text">EduConnect</span>
+              <span className="logo-text">EduBridge</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -115,7 +115,7 @@ const MainLayout = () => {
         <div className="container">
           <div className="footer-content">
             <div className="footer-section">
-              <h4>EduConnect</h4>
+              <h4>EduBridge</h4>
               <p>Empowering learners worldwide with quality education.</p>
             </div>
             <div className="footer-section">
@@ -131,7 +131,7 @@ const MainLayout = () => {
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2024 EduConnect. All rights reserved.</p>
+            <p>&copy; 2025 Edu Bridge. All rights reserved.</p>
           </div>
         </div>
       </footer>

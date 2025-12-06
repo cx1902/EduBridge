@@ -32,7 +32,7 @@ async function main() {
   const adminPassword = await bcrypt.hash('Admin@123', 10);
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@educonnect.com',
+      email: 'admin@edubridge.com',
       passwordHash: adminPassword,
       role: 'ADMIN',
       firstName: 'Admin',
@@ -47,7 +47,7 @@ async function main() {
   const tutorPassword = await bcrypt.hash('Tutor@123', 10);
   const tutor = await prisma.user.create({
     data: {
-      email: 'tutor@educonnect.com',
+      email: 'tutor@edubridge.com',
       passwordHash: tutorPassword,
       role: 'TUTOR',
       firstName: 'John',
@@ -62,7 +62,7 @@ async function main() {
   const studentPassword = await bcrypt.hash('Student@123', 10);
   const student = await prisma.user.create({
     data: {
-      email: 'student@educonnect.com',
+      email: 'student@edubridge.com',
       passwordHash: studentPassword,
       role: 'STUDENT',
       firstName: 'Jane',
@@ -268,9 +268,9 @@ async function main() {
 
   console.log('🎉 Database seeding completed!');
   console.log('\n📝 Login Credentials:');
-  console.log('Admin: admin@educonnect.com / Admin@123');
-  console.log('Tutor: tutor@educonnect.com / Tutor@123');
-  console.log('Student: student@educonnect.com / Student@123');
+  console.log('Admin: admin@edubridge.com / Admin@123');
+  console.log('Tutor: tutor@edubridge.com / Tutor@123');
+  console.log('Student: student@edubridge.com / Student@123');
 }
 
 main()

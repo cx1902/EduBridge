@@ -1,10 +1,11 @@
-# EduConnect - Modern Learning Platform
+# EduBridge - Modern Learning Platform
 
-EduConnect is a comprehensive learning platform that combines self-paced courses, live tutoring, interactive assessments, and gamification to create an engaging educational experience.
+EduBridge is a comprehensive learning platform that combines self-paced courses, live tutoring, interactive assessments, and gamification to create an engaging educational experience.
 
 ## Features
 
 ### For Students
+
 - 📚 Browse and enroll in courses across multiple subjects and education levels
 - 🎥 Watch video lessons with progress tracking
 - 📝 Take interactive quizzes with instant feedback
@@ -14,6 +15,7 @@ EduConnect is a comprehensive learning platform that combines self-paced courses
 - 🌙 Dark mode and accessibility features
 
 ### For Tutors
+
 - 📖 Create and manage courses with rich content
 - ✏️ Build lessons with videos, notes, and quizzes
 - 📅 Schedule and conduct live tutoring sessions
@@ -21,6 +23,7 @@ EduConnect is a comprehensive learning platform that combines self-paced courses
 - 💰 Track earnings and revenue
 
 ### For Administrators
+
 - 👥 Manage users and roles
 - ✅ Review and approve course submissions
 - 📊 Access platform-wide analytics
@@ -29,6 +32,7 @@ EduConnect is a comprehensive learning platform that combines self-paced courses
 ## Tech Stack
 
 ### Backend
+
 - Node.js with Express.js
 - PostgreSQL database
 - Prisma ORM
@@ -36,6 +40,7 @@ EduConnect is a comprehensive learning platform that combines self-paced courses
 - bcrypt for password hashing
 
 ### Frontend
+
 - React with Vite
 - React Router for navigation
 - Axios for API calls
@@ -45,6 +50,7 @@ EduConnect is a comprehensive learning platform that combines self-paced courses
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js (v16 or higher)
 - PostgreSQL (v12 or higher)
 - npm or yarn
@@ -52,24 +58,28 @@ EduConnect is a comprehensive learning platform that combines self-paced courses
 ### Installation
 
 1. Clone the repository
+
 ```bash
 git clone <repository-url>
 cd EB
 ```
 
 2. Install server dependencies
+
 ```bash
 cd server
 npm install
 ```
 
 3. Install client dependencies
+
 ```bash
 cd ../client
 npm install
 ```
 
 4. Setup database
+
 ```bash
 cd ../server
 # Copy .env.example to .env and update DATABASE_URL
@@ -85,18 +95,21 @@ npm run prisma:seed
 5. Start the development servers
 
 Terminal 1 (Backend):
+
 ```bash
 cd server
 npm run dev
 ```
 
 Terminal 2 (Frontend):
+
 ```bash
 cd client
 npm run dev
 ```
 
 The application will be available at:
+
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3000
 - API Health Check: http://localhost:3000/health
@@ -106,15 +119,18 @@ The application will be available at:
 After seeding the database, you can login with:
 
 **Admin Account:**
-- Email: admin@educonnect.com
+
+- Email: admin@edubridge.com
 - Password: Admin@123
 
 **Tutor Account:**
-- Email: tutor@educonnect.com
+
+- Email: tutor@edubridge.com
 - Password: Tutor@123
 
 **Student Account:**
-- Email: student@educonnect.com
+
+- Email: student@edubridge.com
 - Password: Student@123
 
 ## Project Structure
@@ -148,6 +164,7 @@ EB/
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - User registration
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
@@ -158,6 +175,7 @@ EB/
 - `GET /api/auth/me` - Get current user
 
 ### Courses
+
 - `GET /api/courses` - Get all courses
 - `GET /api/courses/:id` - Get course by ID
 - `POST /api/courses` - Create course (Tutor/Admin)
@@ -166,11 +184,13 @@ EB/
 - `POST /api/courses/:id/enroll` - Enroll in course
 
 ### User Management
+
 - `GET /api/users/profile` - Get user profile
 - `PUT /api/users/profile` - Update user profile
 - `PUT /api/users/preferences` - Update user preferences
 
 ### Admin
+
 - `GET /api/admin/users` - Get all users
 - `GET /api/admin/courses/pending` - Get pending courses
 - `POST /api/admin/courses/:id/approve` - Approve course
@@ -180,6 +200,7 @@ EB/
 ## Database Schema
 
 The application uses PostgreSQL with Prisma ORM. Key entities include:
+
 - Users (students, tutors, admins)
 - Courses and Lessons
 - Quizzes and Questions
@@ -193,18 +214,21 @@ See `server/prisma/schema.prisma` for the complete schema definition.
 ## Development
 
 ### Running Prisma Studio
+
 ```bash
 cd server
 npm run prisma:studio
 ```
 
 ### Creating Database Migrations
+
 ```bash
 cd server
 npm run prisma:migrate
 ```
 
 ### Generating Prisma Client
+
 ```bash
 cd server
 npm run prisma:generate

@@ -31,6 +31,13 @@
   margin-bottom: var(--spacing-lg);
 }
 
+.auth-form label {
+  color: var(--color-text) !important;
+  font-weight: 500;
+  display: block;
+  margin-bottom: var(--spacing-xs);
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

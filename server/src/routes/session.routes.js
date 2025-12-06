@@ -4,9 +4,13 @@ const { authenticate, authorize } = require('../middleware/auth.middleware');
 const sessionController = require('../controllers/session.controller');
 
 // Public/General routes
-router.get('/', authenticate, (req, res) => {
-  res.json({ success: true, message: 'Get available sessions' });
-});
+router.get('/', authenticate, sessionController.getAvailableSessions);
+router.get('/today', authenticate, authorize('TUTOR'), sessionController.getTodaySessions);
+
+// Student booking routes
+router.post('/:id/book', authenticate, sessionController.bookSession);
+router.get('/my-bookings', authenticate, sessionController.getMyBookings);
+router.post('/bookings/:id/cancel', authenticate, sessionController.cancelBooking);
 
 // Tutor routes - Session management
 router.post('/', authenticate, authorize('TUTOR'), sessionController.createSession);
@@ -20,11 +24,6 @@ router.post('/:sessionId/confirm', authenticate, authorize('STUDENT'), sessionCo
 router.post('/:sessionId/decline', authenticate, authorize('STUDENT'), sessionController.declineInvitation);
 router.post('/:sessionId/reschedule', authenticate, authorize('STUDENT'), sessionController.requestReschedule);
 router.get('/invitations', authenticate, authorize('STUDENT'), sessionController.getPendingInvitations);
-
-// Legacy booking route
-router.post('/:id/book', authenticate, (req, res) => {
-  res.json({ success: true, message: 'Book session' });
-});
 
 // Email webhook endpoints (for email service provider callbacks)
 router.post('/webhooks/email/delivered', (req, res) => {

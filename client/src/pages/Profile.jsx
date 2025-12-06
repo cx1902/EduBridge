@@ -1,16 +1,31 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
 const Profile = () => {
   const { user, updateUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [imagePreview, setImagePreview] = useState(user?.profilePictureUrl || '');
+  const [imagePreview, setImagePreview] = useState('');
   const fileInputRef = useRef(null);
+
+  // Initialize image preview with full URL
+  useEffect(() => {
+    if (user?.profilePictureUrl) {
+      // If it's already a full URL (starts with http), use it as is
+      // Otherwise, prepend the base URL
+      const imageUrl = user.profilePictureUrl.startsWith('http') 
+        ? user.profilePictureUrl 
+        : `${BASE_URL}${user.profilePictureUrl}`;
+      setImagePreview(imageUrl);
+    } else {
+      setImagePreview('');
+    }
+  }, [user?.profilePictureUrl]);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -86,8 +101,12 @@ const Profile = () => {
         },
       });
 
-      // Update user in store
-      updateUser(response.data.data.user);
+      // Update user in store with full image URL
+      const updatedUser = response.data.data.user;
+      if (updatedUser.profilePictureUrl && !updatedUser.profilePictureUrl.startsWith('http')) {
+        updatedUser.profilePictureUrl = `${BASE_URL}${updatedUser.profilePictureUrl}`;
+      }
+      updateUser(updatedUser);
       
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditing(false);
@@ -108,7 +127,15 @@ const Profile = () => {
       dateOfBirth: user?.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
       bio: user?.bio || '',
     });
-    setImagePreview(user?.profilePictureUrl || '');
+    // Reset image preview to user's current profile picture
+    if (user?.profilePictureUrl) {
+      const imageUrl = user.profilePictureUrl.startsWith('http') 
+        ? user.profilePictureUrl 
+        : `${BASE_URL}${user.profilePictureUrl}`;
+      setImagePreview(imageUrl);
+    } else {
+      setImagePreview('');
+    }
     setIsEditing(false);
     setMessage({ type: '', text: '' });
     if (fileInputRef.current) {

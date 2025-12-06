@@ -1,13 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth.middleware');
+const gamificationController = require('../controllers/gamification.controller');
 
-router.get('/badges', authenticate, (req, res) => {
-  res.json({ success: true, message: 'Get user badges' });
-});
+// Get user's earned badges
+router.get('/badges', authenticate, gamificationController.getUserBadges);
 
-router.get('/leaderboard', authenticate, (req, res) => {
-  res.json({ success: true, message: 'Get leaderboard' });
-});
+// Get all badges with unlock status
+router.get('/badges/available', authenticate, gamificationController.getAllBadges);
+
+// Get points transaction history
+router.get('/points', authenticate, gamificationController.getPointsHistory);
+
+// Get leaderboard
+router.get('/leaderboard', authenticate, gamificationController.getLeaderboard);
+
+// Get streak information
+router.get('/streaks', authenticate, gamificationController.getStreakInfo);
+
+// Use streak freeze
+router.post('/streaks/freeze', authenticate, gamificationController.useStreakFreeze);
 
 module.exports = router;

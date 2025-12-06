@@ -3,6 +3,18 @@ import { persist } from 'zustand/middleware';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+
+// Helper function to ensure profile picture URL is complete
+const normalizeProfilePictureUrl = (user) => {
+  if (user && user.profilePictureUrl && !user.profilePictureUrl.startsWith('http')) {
+    return {
+      ...user,
+      profilePictureUrl: `${BASE_URL}${user.profilePictureUrl}`
+    };
+  }
+  return user;
+};
 
 export const useAuthStore = create(
   persist(
@@ -28,8 +40,11 @@ export const useAuthStore = create(
           // Set authorization header for future requests
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+          // Normalize profile picture URL
+          const normalizedUser = normalizeProfilePictureUrl(user);
+
           set({
-            user,
+            user: normalizedUser,
             token,
             isAuthenticated: true,
             isLoading: false,
@@ -55,8 +70,11 @@ export const useAuthStore = create(
           // Set authorization header
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
+          // Normalize profile picture URL
+          const normalizedUser = normalizeProfilePictureUrl(user);
+
           set({
-            user,
+            user: normalizedUser,
             token,
             isAuthenticated: true,
             isLoading: false,
@@ -101,8 +119,11 @@ export const useAuthStore = create(
           
           const response = await axios.get(`${API_URL}/auth/me`);
           
+          // Normalize profile picture URL
+          const normalizedUser = normalizeProfilePictureUrl(response.data.data.user);
+          
           set({
-            user: response.data.data.user,
+            user: normalizedUser,
             isAuthenticated: true,
           });
         } catch (error) {
@@ -120,7 +141,7 @@ export const useAuthStore = create(
       // Update user data
       updateUser: (userData) => {
         set((state) => ({
-          user: { ...state.user, ...userData },
+          user: { ...state.user, ...normalizeProfilePictureUrl(userData) },
         }));
       },
 

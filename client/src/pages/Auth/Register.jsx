@@ -64,7 +64,7 @@ const Register = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h1>Create Account</h1>
-        <p className="auth-subtitle">Join EduConnect and start learning today</p>
+        <p className="auth-subtitle">Join EduBridge and start learning today</p>
 
         {(error || validationError) && (
           <div className="alert alert-error">

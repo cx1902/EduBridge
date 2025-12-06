@@ -28,7 +28,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'EduConnect API is running' });
+  res.status(200).json({ status: 'ok', message: 'EduBridge API is running' });
 });
 
 // API Routes
@@ -43,6 +43,7 @@ app.use('/api/sessions', require('./routes/session.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/notifications', require('./routes/notification.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
+app.use('/api/tutor', require('./routes/tutor.routes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -65,7 +66,7 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 EduConnect server running on port ${PORT}`);
+  console.log(`🚀 EduBridge server running on port ${PORT}`);
   console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 

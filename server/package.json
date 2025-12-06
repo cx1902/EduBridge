@@ -1,7 +1,7 @@
 {
-  "name": "educonnect-server",
+  "name": "edubridge-server",
   "version": "1.0.0",
-  "description": "EduConnect Learning Platform - Backend API",
+  "description": "EduBridge Learning Platform - Backend API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",

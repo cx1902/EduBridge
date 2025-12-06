@@ -7,7 +7,7 @@ const LandingPage = () => {
       <section className="hero">
         <div className="container">
           <div className="hero-content">
-            <h1>Transform Your Learning Journey with EduConnect</h1>
+            <h1>Transform Your Learning Journey with EduBridge</h1>
             <p>
               Access world-class courses, connect with expert tutors, and achieve your educational goals
               with our comprehensive learning platform.
@@ -26,7 +26,7 @@ const LandingPage = () => {
 
       <section className="features">
         <div className="container">
-          <h2 className="text-center mb-xl">Why Choose EduConnect?</h2>
+          <h2 className="text-center mb-xl">Why Choose EduBridge?</h2>
           <div className="grid grid-cols-3">
             <div className="feature-card card">
               <div className="feature-icon">📚</div>

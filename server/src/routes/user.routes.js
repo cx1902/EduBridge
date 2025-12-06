@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const bcrypt = require('bcrypt');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const prisma = require('../utils/prisma');
 
@@ -208,6 +209,149 @@ router.put('/preferences', authenticate, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update preferences'
+    });
+  }
+});
+
+// Get user preferences
+router.get('/preferences', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        preferredLanguage: true,
+        themePreference: true,
+        fontSize: true,
+        timezone: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      data: { preferences: user }
+    });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch preferences'
+    });
+  }
+});
+
+// Change password
+router.put('/profile/password', authenticate, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Old password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    // Get current user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true }
+    });
+
+    // Verify old password
+    const isValidPassword = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash }
+    });
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password'
+    });
+  }
+});
+
+// Upload profile picture
+router.post('/profile/picture', authenticate, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    // Delete old profile picture if exists
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePictureUrl: true }
+    });
+
+    if (currentUser.profilePictureUrl) {
+      const oldImagePath = path.join(__dirname, '../../uploads/profiles', path.basename(currentUser.profilePictureUrl));
+      try {
+        await fs.unlink(oldImagePath);
+      } catch (err) {
+        console.error('Error deleting old image:', err);
+      }
+    }
+
+    // Set new profile picture URL
+    const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+
+    // Update user
+    await prisma.user.update({
+      where: { id: userId },
+      data: { profilePictureUrl }
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      data: { profilePictureUrl }
+    });
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    
+    // Delete uploaded file if update failed
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (err) {
+        console.error('Error deleting uploaded file:', err);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile picture'
     });
   }
 });

@@ -93,6 +93,7 @@ model Course {
   // Relations
   tutor       User           @relation("TutorCourses", fields: [tutorId], references: [id], onDelete: Cascade)
   lessons     Lesson[]
+  quizzes     Quiz[]
   enrollments Enrollment[]
   reviews     CourseReview[]
 
@@ -109,10 +110,14 @@ model Lesson {
   courseId           String  @map("course_id")
   title              String
   learningObjectives String  @map("learning_objectives") @db.Text
+  content            String? @db.Text
   videoUrl           String? @map("video_url")
+  videoFileUrl       String? @map("video_file_url")
   notesContent       String? @map("notes_content") @db.Text
+  attachments        Json?   @default("[]")
   sequenceOrder      Int     @map("sequence_order")
   estimatedDuration  Int     @map("estimated_duration_minutes")
+  published          Boolean @default(true)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -129,7 +134,8 @@ model Lesson {
 // Quiz Model
 model Quiz {
   id                String  @id @default(uuid())
-  lessonId          String  @map("lesson_id")
+  lessonId          String? @map("lesson_id")
+  courseId          String? @map("course_id")
   title             String
   instructions      String? @db.Text
   timeLimitMinutes  Int?    @map("time_limit_minutes")
@@ -138,16 +144,19 @@ model Quiz {
   shuffleQuestions  Boolean @default(false) @map("shuffle_questions")
   shuffleAnswers    Boolean @default(false) @map("shuffle_answers")
   immediateFeedback Boolean @default(true) @map("immediate_feedback")
+  showCorrectAnswers Boolean @default(true) @map("show_correct_answers")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson       Lesson?       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  course       Course?       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   questions    Question[]
   quizAttempts QuizAttempt[]
 
   @@index([lessonId])
+  @@index([courseId])
   @@map("quizzes")
 }
 
@@ -320,11 +329,16 @@ model TutoringSession {
   educationLevel  EducationLevel @map("education_level")
   scheduledStart  DateTime       @map("scheduled_start")
   scheduledEnd    DateTime       @map("scheduled_end")
+  actualStart     DateTime?      @map("actual_start")
+  actualEnd       DateTime?      @map("actual_end")
   maxParticipants Int            @map("max_participants")
   pricePerStudent Decimal        @map("price_per_student") @db.Decimal(10, 2)
   sessionType     SessionType    @map("session_type")
   videoRoomId     String?        @map("video_room_id")
   recordingUrl    String?        @map("recording_url")
+  sessionNotes    String?        @map("session_notes") @db.Text
+  chatLog         Json?          @default("[]") @map("chat_log")
+  sharedFiles     Json?          @default("[]") @map("shared_files")
   status          SessionStatus  @default(SCHEDULED)
 
   createdAt DateTime @default(now()) @map("created_at")

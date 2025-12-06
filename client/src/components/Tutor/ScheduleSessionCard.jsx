@@ -26,7 +26,7 @@ const ScheduleSessionCard = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('/api/courses/my-courses', {
+        const response = await fetch('/api/tutor/courses', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
           },

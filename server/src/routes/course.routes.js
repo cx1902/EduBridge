@@ -1,32 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize, optionalAuth } = require('../middleware/auth.middleware');
+const courseController = require('../controllers/course.controller');
 
 // Public course routes
-router.get('/', optionalAuth, (req, res) => {
-  res.json({ success: true, message: 'Get all courses' });
-});
-
-router.get('/:id', optionalAuth, (req, res) => {
-  res.json({ success: true, message: 'Get course by ID' });
-});
+router.get('/', optionalAuth, courseController.getAllCourses);
+router.get('/:id', optionalAuth, courseController.getCourseById);
+router.get('/:id/enrollments', authenticate, authorize('TUTOR', 'ADMIN'), courseController.getCourseEnrollments);
 
 // Protected tutor routes
-router.post('/', authenticate, authorize('TUTOR', 'ADMIN'), (req, res) => {
-  res.json({ success: true, message: 'Create course' });
-});
-
-router.put('/:id', authenticate, authorize('TUTOR', 'ADMIN'), (req, res) => {
-  res.json({ success: true, message: 'Update course' });
-});
-
-router.delete('/:id', authenticate, authorize('TUTOR', 'ADMIN'), (req, res) => {
-  res.json({ success: true, message: 'Delete course' });
-});
+router.post('/', authenticate, authorize('TUTOR', 'ADMIN'), courseController.createCourse);
+router.put('/:id', authenticate, authorize('TUTOR', 'ADMIN'), courseController.updateCourse);
+router.delete('/:id', authenticate, authorize('TUTOR', 'ADMIN'), courseController.deleteCourse);
 
 // Enrollment routes
-router.post('/:id/enroll', authenticate, (req, res) => {
-  res.json({ success: true, message: 'Enroll in course' });
-});
+router.post('/:id/enroll', authenticate, courseController.enrollInCourse);
 
 module.exports = router;

@@ -71,7 +71,7 @@ const EMAIL_TEMPLATES = {
               <p><em>A calendar invite has been attached to help you remember this session.</em></p>
             </div>
             <div class="footer">
-              <p>EduConnect Learning Platform</p>
+              <p>EduBridge Learning Platform</p>
               <p><a href="${data.rescheduleLink}">Request Reschedule</a> | <a href="${data.unsubscribeLink}">Notification Preferences</a></p>
             </div>
           </div>

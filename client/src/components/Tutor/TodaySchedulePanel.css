@@ -1,14 +1,14 @@
 .today-schedule-panel {
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 .today-schedule-panel h3 {
   margin: 0 0 8px 0;
   font-size: 1.25rem;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .sessions-list {
@@ -19,10 +19,11 @@
 }
 
 .session-card {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.2s;
+  background: var(--color-surface);
 }
 
 .session-card:hover {
@@ -30,22 +31,20 @@
 }
 
 .session-card.scheduled {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid var(--color-primary);
 }
 
 .session-card.in_progress {
-  border-left: 4px solid #10b981;
-  background-color: #f0fdf4;
+  border-left: 4px solid var(--color-success);
 }
 
 .session-card.completed {
-  border-left: 4px solid #6b7280;
+  border-left: 4px solid var(--color-text-muted);
   opacity: 0.7;
 }
 
 .session-card.cancelled {
-  border-left: 4px solid #ef4444;
-  background-color: #fef2f2;
+  border-left: 4px solid var(--color-danger);
 }
 
 .session-header {
@@ -58,7 +57,7 @@
 }
 
 .session-header:hover {
-  background-color: #f9fafb;
+  background-color: var(--color-background);
 }
 
 .session-time {
@@ -71,12 +70,12 @@
 .time-badge {
   font-size: 1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .duration {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-top: 4px;
 }
 
@@ -87,7 +86,7 @@
 .session-info h4 {
   margin: 0 0 8px 0;
   font-size: 1rem;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .session-meta {
@@ -97,12 +96,12 @@
 }
 
 .session-type {
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-transform: capitalize;
 }
 
 .participant-count {
-  color: #4f46e5;
+  color: var(--color-primary);
   font-weight: 500;
 }
 
@@ -121,23 +120,23 @@
 }
 
 .status-badge.scheduled {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: rgba(59, 130, 246, 0.15);
+  color: var(--color-primary);
 }
 
 .status-badge.in_progress {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--color-success);
 }
 
 .status-badge.completed {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: rgba(107, 114, 128, 0.15);
+  color: var(--color-text-secondary);
 }
 
 .status-badge.cancelled {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
 }
 
 .expand-btn {
@@ -145,19 +144,19 @@
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   padding: 4px 8px;
   transition: color 0.2s;
 }
 
 .expand-btn:hover {
-  color: #111827;
+  color: var(--color-text);
 }
 
 .session-details {
   padding: 16px;
-  border-top: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-background);
 }
 
 .session-actions {
@@ -182,26 +181,26 @@
 }
 
 .btn-primary {
-  background-color: #4f46e5;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: #4338ca;
+  background-color: var(--color-primary-dark);
 }
 
 .btn-primary:disabled {
-  background-color: #9ca3af;
+  background-color: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background-color: #6b7280;
+  background-color: var(--color-text-secondary);
   color: white;
 }
 
 .btn-secondary:hover {
-  background-color: #4b5563;
+  background-color: var(--color-text-muted);
 }
 
 .participants-section {
@@ -212,7 +211,7 @@
   margin: 0 0 12px 0;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .participants-list {
@@ -226,8 +225,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
 }
 
@@ -237,13 +236,13 @@
 
 .participant-name {
   font-weight: 500;
-  color: #111827;
+  color: var(--color-text);
   font-size: 0.875rem;
 }
 
 .participant-email {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   margin-top: 2px;
 }
 
@@ -275,7 +274,7 @@
 }
 
 .btn-icon:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-border);
 }
 
 .email-stats {
@@ -283,7 +282,7 @@
   gap: 16px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .stat-item {
@@ -294,7 +293,7 @@
 
 .stat-label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   font-weight: 500;
 }
@@ -302,14 +301,14 @@
 .stat-value {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .loading-state,
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }
 
 .empty-state p {
