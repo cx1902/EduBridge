@@ -183,11 +183,18 @@ const CourseBuilder = () => {
     <div className="course-builder">
       <div className="builder-header">
         <h1>Course Management</h1>
-        {!showForm && (
-          <button className="btn-primary" onClick={() => setShowForm(true)}>
-            <i className="fas fa-plus"></i> Create New Course
-          </button>
-        )}
+        <div className="header-actions">
+          {!showForm && (
+            <>
+              <button className="btn-primary" onClick={() => navigate('/tutor/course-editor/new')}>
+                <i className="fas fa-plus"></i> Create New Course (Enhanced)
+              </button>
+              <button className="btn-secondary" onClick={() => setShowForm(true)}>
+                <i className="fas fa-plus"></i> Create (Simple)
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {showForm ? (
@@ -395,12 +402,19 @@ const CourseBuilder = () => {
                 <div className="course-actions">
                   <button
                     className="btn-action"
+                    onClick={() => navigate(`/tutor/course-editor/${course.id}`)}
+                    title="Edit (Enhanced)"
+                  >
+                    <i className="fas fa-cog"></i>
+                  </button>
+                  <button
+                    className="btn-action"
                     onClick={() => navigate(`/tutor/courses/${course.id}/lessons`)}
                     title="Manage Lessons"
                   >
                     <i className="fas fa-list"></i>
                   </button>
-                  <button className="btn-action" onClick={() => handleEdit(course)} title="Edit">
+                  <button className="btn-action" onClick={() => handleEdit(course)} title="Edit (Simple)">
                     <i className="fas fa-edit"></i>
                   </button>
                   <button

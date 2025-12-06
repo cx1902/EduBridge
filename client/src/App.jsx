@@ -27,6 +27,7 @@ import LiveSessions from './pages/Student/LiveSessions';
 // Tutor Pages
 import TutorDashboard from './pages/Tutor/Dashboard';
 import CourseBuilder from './pages/Tutor/CourseBuilder';
+import CourseEditor from './pages/Tutor/CourseEditor';
 import LessonBuilder from './pages/Tutor/LessonBuilder';
 import TutorAnalytics from './pages/Tutor/Analytics';
 import SessionManagement from './pages/Tutor/SessionManagement';
@@ -114,6 +115,9 @@ function App() {
         }
       >
         <Route index element={<TutorDashboard />} />
+        <Route path="courses" element={<CourseBuilder />} />
+        <Route path="course-editor/new" element={<CourseEditor />} />
+        <Route path="course-editor/:courseId" element={<CourseEditor />} />
         <Route path="courses/new" element={<CourseBuilder />} />
         <Route path="courses/:id/edit" element={<CourseBuilder />} />
         <Route path="courses/:courseId/lessons/new" element={<LessonBuilder />} />

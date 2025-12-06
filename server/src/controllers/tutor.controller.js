@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const { generateUniqueCourseSlug, isValidSlug, isSlugAvailable } = require('../utils/slugGenerator');
 const path = require('path');
 
 // Get tutor dashboard statistics
@@ -183,6 +184,7 @@ const createCourse = async (req, res) => {
     const tutorId = req.user.id;
     const {
       title,
+      subtitle,
       description,
       subjectCategory,
       educationLevel,
@@ -193,11 +195,22 @@ const createCourse = async (req, res) => {
       estimatedHours,
       language,
       thumbnailUrl,
+      thumbnailAltText,
+      introVideoUrl,
+      learningOutcomes,
+      targetAudience,
+      tags,
+      slug,
+      metaDescription,
     } = req.body;
 
     // Validation
     if (!title || title.length < 5 || title.length > 200) {
       return res.status(400).json({ error: 'Title must be between 5-200 characters' });
+    }
+
+    if (subtitle && subtitle.length > 120) {
+      return res.status(400).json({ error: 'Subtitle must not exceed 120 characters' });
     }
 
     if (!description || description.length < 50) {
@@ -210,6 +223,25 @@ const createCourse = async (req, res) => {
 
     if (!subjectCategory || !educationLevel) {
       return res.status(400).json({ error: 'Subject category and education level are required' });
+    }
+
+    // Validate learning outcomes
+    if (learningOutcomes && Array.isArray(learningOutcomes)) {
+      if (learningOutcomes.length < 3 || learningOutcomes.length > 5) {
+        return res.status(400).json({ error: 'Learning outcomes must be between 3-5 items' });
+      }
+    }
+
+    // Validate meta description
+    if (metaDescription && metaDescription.length > 160) {
+      return res.status(400).json({ error: 'Meta description must not exceed 160 characters' });
+    }
+
+    // Validate tags
+    if (tags && Array.isArray(tags)) {
+      if (tags.length < 3 || tags.length > 10) {
+        return res.status(400).json({ error: 'Tags must be between 3-10 items' });
+      }
     }
 
     // Check for duplicate title by same tutor
@@ -226,10 +258,35 @@ const createCourse = async (req, res) => {
       });
     }
 
+    // Generate or validate slug
+    let finalSlug;
+    if (slug) {
+      // Custom slug provided - validate it
+      if (!isValidSlug(slug)) {
+        return res.status(400).json({
+          error: 'Invalid slug format. Use lowercase letters, numbers, and hyphens only.',
+        });
+      }
+      
+      // Check if slug is available
+      const slugAvailable = await isSlugAvailable(slug);
+      if (!slugAvailable) {
+        return res.status(400).json({
+          error: 'This slug is already taken. Please choose a different one.',
+        });
+      }
+      
+      finalSlug = slug;
+    } else {
+      // Auto-generate unique slug from title
+      finalSlug = await generateUniqueCourseSlug(title, tutorId);
+    }
+
     const course = await prisma.course.create({
       data: {
         tutorId,
         title,
+        subtitle: subtitle || null,
         description,
         subjectCategory,
         educationLevel,
@@ -240,6 +297,18 @@ const createCourse = async (req, res) => {
         estimatedHours: estimatedHours || 0,
         language: language || 'en',
         thumbnailUrl: thumbnailUrl || '/uploads/default-course.png',
+        thumbnailAltText: thumbnailAltText || null,
+        introVideoUrl: introVideoUrl || null,
+        slug: finalSlug,
+        metaDescription: metaDescription || null,
+        learningOutcomes: learningOutcomes ? JSON.stringify(learningOutcomes) : JSON.stringify([]),
+        targetAudience: targetAudience || null,
+        tags: tags ? JSON.stringify(tags) : JSON.stringify([]),
+        changeLog: JSON.stringify([{
+          action: 'CREATED',
+          timestamp: new Date().toISOString(),
+          description: 'Course created',
+        }]),
         status: 'DRAFT',
       },
       include: {

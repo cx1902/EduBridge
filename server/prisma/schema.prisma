@@ -61,27 +61,40 @@ model User {
   emailPreferences   EmailNotificationPreferences?
   featureRequests    FeatureRequest[]
   generatedReports   PlatformReport[]
+  createdTemplates   LessonTemplate[]              @relation("CreatedTemplates")
+  createdSnippets    ContentSnippet[]              @relation("CreatedSnippets")
 
   @@map("users")
 }
 
 // Course Model
 model Course {
-  id              String         @id @default(uuid())
-  tutorId         String         @map("tutor_id")
-  title           String
-  description     String         @db.Text
-  subjectCategory String         @map("subject_category")
-  educationLevel  EducationLevel @map("education_level")
-  difficulty      Difficulty
-  prerequisites   String?        @db.Text
-  thumbnailUrl    String         @map("thumbnail_url")
-  price           Decimal        @default(0) @db.Decimal(10, 2)
-  pricingModel    PricingModel   @default(FREE) @map("pricing_model")
-  estimatedHours  Int            @map("estimated_hours")
-  language        String         @default("en")
-  status          CourseStatus   @default(DRAFT)
-  rejectionReason String?        @map("rejection_reason") @db.Text
+  id               String         @id @default(uuid())
+  tutorId          String         @map("tutor_id")
+  title            String
+  subtitle         String?        @db.VarChar(120)
+  description      String         @db.Text
+  subjectCategory  String         @map("subject_category")
+  educationLevel   EducationLevel @map("education_level")
+  difficulty       Difficulty
+  prerequisites    String?        @db.Text
+  thumbnailUrl     String         @map("thumbnail_url")
+  thumbnailAltText String?        @map("thumbnail_alt_text")
+  introVideoUrl    String?        @map("intro_video_url")
+  price            Decimal        @default(0) @db.Decimal(10, 2)
+  pricingModel     PricingModel   @default(FREE) @map("pricing_model")
+  estimatedHours   Int            @map("estimated_hours")
+  language         String         @default("en")
+  status           CourseStatus   @default(DRAFT)
+  rejectionReason  String?        @map("rejection_reason") @db.Text
+
+  // Enhanced metadata fields
+  slug             String? @unique @default(uuid())
+  metaDescription  String? @map("meta_description") @db.VarChar(160)
+  learningOutcomes Json?   @default("[]") @map("learning_outcomes")
+  targetAudience   String? @map("target_audience") @db.Text
+  tags             Json?   @default("[]") @map("tags")
+  changeLog        Json?   @default("[]") @map("change_log")
 
   enrollmentCount Int      @default(0) @map("enrollment_count")
   averageRating   Decimal? @map("average_rating") @db.Decimal(3, 2)
@@ -91,33 +104,46 @@ model Course {
   publishedAt DateTime? @map("published_at")
 
   // Relations
-  tutor       User           @relation("TutorCourses", fields: [tutorId], references: [id], onDelete: Cascade)
+  tutor       User            @relation("TutorCourses", fields: [tutorId], references: [id], onDelete: Cascade)
   lessons     Lesson[]
   quizzes     Quiz[]
   enrollments Enrollment[]
   reviews     CourseReview[]
+  versions    CourseVersion[]
 
   @@index([tutorId])
   @@index([status])
   @@index([subjectCategory])
   @@index([educationLevel])
+  @@index([slug])
   @@map("courses")
 }
 
 // Lesson Model
 model Lesson {
-  id                 String  @id @default(uuid())
-  courseId           String  @map("course_id")
+  id                 String       @id @default(uuid())
+  courseId           String       @map("course_id")
   title              String
-  learningObjectives String  @map("learning_objectives") @db.Text
-  content            String? @db.Text
-  videoUrl           String? @map("video_url")
-  videoFileUrl       String? @map("video_file_url")
-  notesContent       String? @map("notes_content") @db.Text
-  attachments        Json?   @default("[]")
-  sequenceOrder      Int     @map("sequence_order")
-  estimatedDuration  Int     @map("estimated_duration_minutes")
-  published          Boolean @default(true)
+  learningObjectives String       @map("learning_objectives") @db.Text
+  content            String?      @db.Text
+  contentType        ContentType? @default(MIXED) @map("content_type")
+  videoUrl           String?      @map("video_url")
+  videoFileUrl       String?      @map("video_file_url")
+  notesContent       String?      @map("notes_content") @db.Text
+  attachments        Json?        @default("[]")
+  sequenceOrder      Int          @map("sequence_order")
+  estimatedDuration  Int          @map("estimated_duration_minutes")
+  published          Boolean      @default(true)
+
+  // Enhanced metadata fields
+  transcriptUrl         String? @map("transcript_url")
+  captionsEnabled       Boolean @default(false) @map("captions_enabled")
+  keyTerms              Json?   @default("[]") @map("key_terms")
+  exampleProblem        String? @map("example_problem") @db.Text
+  practiceTask          String? @map("practice_task") @db.Text
+  altTextProvided       Boolean @default(false) @map("alt_text_provided")
+  autoCompleteThreshold Int     @default(90) @map("auto_complete_threshold")
+  wordCount             Int?    @map("word_count")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -133,18 +159,22 @@ model Lesson {
 
 // Quiz Model
 model Quiz {
-  id                String  @id @default(uuid())
-  lessonId          String? @map("lesson_id")
-  courseId          String? @map("course_id")
-  title             String
-  instructions      String? @db.Text
-  timeLimitMinutes  Int?    @map("time_limit_minutes")
-  passingPercentage Int     @default(70) @map("passing_percentage")
-  maxAttempts       Int?    @map("max_attempts")
-  shuffleQuestions  Boolean @default(false) @map("shuffle_questions")
-  shuffleAnswers    Boolean @default(false) @map("shuffle_answers")
-  immediateFeedback Boolean @default(true) @map("immediate_feedback")
+  id                 String  @id @default(uuid())
+  lessonId           String? @map("lesson_id")
+  courseId           String? @map("course_id")
+  title              String
+  instructions       String? @db.Text
+  timeLimitMinutes   Int?    @map("time_limit_minutes")
+  passingPercentage  Int     @default(70) @map("passing_percentage")
+  maxAttempts        Int?    @map("max_attempts")
+  shuffleQuestions   Boolean @default(false) @map("shuffle_questions")
+  shuffleAnswers     Boolean @default(false) @map("shuffle_answers")
+  immediateFeedback  Boolean @default(true) @map("immediate_feedback")
   showCorrectAnswers Boolean @default(true) @map("show_correct_answers")
+
+  // Gamification fields
+  pointsOnPass  Int     @default(50) @map("points_on_pass")
+  badgeEligible Boolean @default(false) @map("badge_eligible")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -171,6 +201,15 @@ model Question {
   explanation      String?      @db.Text
   sequenceOrder    Int          @map("sequence_order")
 
+  // Enhanced question bank fields
+  cognitiveLevel         CognitiveLevel? @default(RECALL) @map("cognitive_level")
+  tags                   Json?           @default("[]") @map("tags")
+  usageCount             Int             @default(0) @map("usage_count")
+  caseSensitive          Boolean         @default(false) @map("case_sensitive")
+  acceptableRange        Float?          @map("acceptable_range")
+  acceptableAlternatives Json?           @default("[]") @map("acceptable_alternatives")
+  isInQuestionBank       Boolean         @default(false) @map("is_in_question_bank")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -179,6 +218,7 @@ model Question {
   answerOptions AnswerOption[]
 
   @@index([quizId])
+  @@index([isInQuestionBank])
   @@map("questions")
 }
 
@@ -491,6 +531,7 @@ enum QuestionType {
   TRUE_FALSE
   FILL_BLANK
   SHORT_ANSWER
+  NUMERIC
 }
 
 enum EnrollmentStatus {
@@ -594,6 +635,27 @@ enum FeatureRequestPriority {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+enum ContentType {
+  VIDEO
+  TEXT
+  MIXED
+}
+
+enum CognitiveLevel {
+  RECALL
+  APPLICATION
+  ANALYSIS
+}
+
+enum SnippetType {
+  DEFINITION
+  FORMULA
+  TIP
+  WARNING
+  EXAMPLE
+  SUMMARY
 }
 
 // Session Email Tracking Model
@@ -718,4 +780,62 @@ model PlatformReport {
   @@index([reportType])
   @@index([createdAt])
   @@map("platform_reports")
+}
+
+// Course Version Model
+model CourseVersion {
+  id             String   @id @default(uuid())
+  courseId       String   @map("course_id")
+  versionNumber  Int      @map("version_number")
+  changesSummary String   @map("changes_summary") @db.Text
+  snapshotData   Json     @map("snapshot_data")
+  publishedAt    DateTime @default(now()) @map("published_at")
+
+  // Relations
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([publishedAt])
+  @@map("course_versions")
+}
+
+// Lesson Template Model
+model LessonTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @db.Text
+  structure   Json     @map("structure")
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdBy   String   @map("created_by")
+  usageCount  Int      @default(0) @map("usage_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator User @relation("CreatedTemplates", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([isPublic])
+  @@map("lesson_templates")
+}
+
+// Content Snippet Model
+model ContentSnippet {
+  id         String      @id @default(uuid())
+  name       String
+  type       SnippetType
+  template   String      @db.Text
+  isPublic   Boolean     @default(false) @map("is_public")
+  createdBy  String      @map("created_by")
+  usageCount Int         @default(0) @map("usage_count")
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  creator User @relation("CreatedSnippets", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([type])
+  @@index([isPublic])
+  @@map("content_snippets")
 }
