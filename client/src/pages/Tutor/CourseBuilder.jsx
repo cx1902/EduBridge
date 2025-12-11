@@ -186,11 +186,14 @@ const CourseBuilder = () => {
         <div className="header-actions">
           {!showForm && (
             <>
-              <button className="btn-primary" onClick={() => navigate('/tutor/course-editor/new')}>
-                <i className="fas fa-plus"></i> Create New Course (Enhanced)
+              <button className="btn-primary" onClick={() => navigate('/tutor/courses/wizard')}>
+                <i className="fas fa-magic"></i> Create with Wizard (Recommended)
+              </button>
+              <button className="btn-secondary" onClick={() => navigate('/tutor/course-editor/new')}>
+                <i className="fas fa-cog"></i> Advanced Editor
               </button>
               <button className="btn-secondary" onClick={() => setShowForm(true)}>
-                <i className="fas fa-plus"></i> Create (Simple)
+                <i className="fas fa-plus"></i> Quick Create
               </button>
             </>
           )}

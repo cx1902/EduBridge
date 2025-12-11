@@ -213,6 +213,45 @@ router.put('/preferences', authenticate, async (req, res) => {
   }
 });
 
+// Update language preference specifically
+router.patch('/preferences/language', authenticate, async (req, res) => {
+  try {
+    const { language } = req.body;
+    const userId = req.user.id;
+
+    // Validate language
+    if (!language || !['en', 'zh-CN', 'zh-TW'].includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid language. Must be one of: en, zh-CN, zh-TW'
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { preferredLanguage: language },
+      select: {
+        id: true,
+        preferredLanguage: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Language preference updated successfully',
+      user: {
+        preferredLanguage: updatedUser.preferredLanguage
+      }
+    });
+  } catch (error) {
+    console.error('Update language preference error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update language preference'
+    });
+  }
+});
+
 // Get user preferences
 router.get('/preferences', authenticate, async (req, res) => {
   try {
@@ -353,6 +392,113 @@ router.post('/profile/picture', authenticate, upload.single('profilePicture'), a
       success: false,
       message: 'Failed to upload profile picture'
     });
+  }
+});
+
+// ==================== TUTOR VERIFICATION ====================
+
+// Submit tutor verification application
+router.post('/tutor-application', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { documents, subjects, sampleLessonUrl, qualifications, teachingExperience } = req.body;
+
+    // Check if user already has a pending or approved application
+    const existing = await prisma.tutorVerificationApplication.findFirst({
+      where: {
+        userId,
+        status: { in: ['PENDING', 'UNDER_REVIEW', 'APPROVED'] },
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have a pending or approved application',
+      });
+    }
+
+    const application = await prisma.tutorVerificationApplication.create({
+      data: {
+        userId,
+        documents: documents || [],
+        subjects: subjects || [],
+        sampleLessonUrl,
+        qualifications,
+        teachingExperience,
+        status: 'PENDING',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Tutor application submitted successfully',
+      application,
+    });
+  } catch (error) {
+    console.error('Error submitting tutor application:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit application' });
+  }
+});
+
+// Get user's tutor application status
+router.get('/tutor-application', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const application = await prisma.tutorVerificationApplication.findFirst({
+      where: { userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    res.json({ success: true, application });
+  } catch (error) {
+    console.error('Error fetching tutor application:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch application' });
+  }
+});
+
+// ==================== CONTENT REPORTS ====================
+
+// Submit content report
+router.post('/report', authenticate, async (req, res) => {
+  try {
+    const reporterId = req.user.id;
+    const { reportedItemType, reportedItemId, category, description, evidenceUrls } = req.body;
+
+    if (!['LESSON', 'QUIZ', 'QUESTION', 'MESSAGE', 'COURSE', 'USER'].includes(reportedItemType)) {
+      return res.status(400).json({ success: false, message: 'Invalid reported item type' });
+    }
+
+    // Auto-assign priority based on category
+    let priority = 'NORMAL';
+    if (['HARASSMENT', 'OFFENSIVE'].includes(category)) {
+      priority = 'HIGH';
+    } else if (category === 'SPAM') {
+      priority = 'LOW';
+    }
+
+    const report = await prisma.contentReport.create({
+      data: {
+        reporterId,
+        reportedItemType,
+        reportedItemId,
+        category,
+        description,
+        priority,
+        evidenceUrls: evidenceUrls || [],
+        status: 'NEW',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Report submitted successfully. Our team will review it shortly.',
+      report,
+    });
+  } catch (error) {
+    console.error('Error submitting report:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit report' });
   }
 });
 

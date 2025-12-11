@@ -1,0 +1,45 @@
+{
+  "dashboard": {
+    "title": "导师仪表板",
+    "myCourses": "我的课程",
+    "sessions": "会话"
+  },
+  "scheduleSession": {
+    "title": "安排课程",
+    "subtitle": "为已注册的学生安排一对一或小组课程",
+    "selectCourse": "选择课程",
+    "chooseCourse": "选择一个课程...",
+    "students": "名学生",
+    "sessionTopic": "课程主题",
+    "topicPlaceholder": "例如：代数入门",
+    "sessionType": "课程类型",
+    "oneOnOne": "一对一",
+    "smallGroup": "小组",
+    "officeHours": "答疑时间",
+    "startDateTime": "开始日期和时间",
+    "duration": "时长（分钟）",
+    "minutes": "分钟",
+    "hour": "小时",
+    "hours": "小时",
+    "learningObjectives": "学习目标",
+    "objectivesPlaceholder": "学生将在本次课程中学到什么？",
+    "selectStudents": "选择学生",
+    "deselectAll": "取消全选",
+    "selectAll": "全选",
+    "noEnrolledStudents": "该课程没有已注册的学生",
+    "progress": "进度",
+    "sendEmailImmediately": "立即发送电子邮件邀请",
+    "emailNote": "学生将收到包含日历附件的电子邮件邀请",
+    "creatingSession": "正在创建课程...",
+    "scheduleAndSend": "安排课程并发送邀请",
+    "selectAtLeastOne": "请至少选择一名学生",
+    "sessionCreated": "课程已创建，邀请已发送给 {{count}} 名学生！",
+    "sessionCreatedInviteFailed": "课程已创建，但发送邀请失败",
+    "sessionFailed": "创建课程失败",
+    "errorOccurred": "创建课程时发生错误"
+  },
+  "todaySchedule": {
+    "title": "今日日程",
+    "noSessions": "今天没有安排的课程"
+  }
+}

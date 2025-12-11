@@ -3,6 +3,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../LanguageSwitcher';
 import './MainLayout.css';
 
 const MainLayout = () => {
@@ -10,6 +12,7 @@ const MainLayout = () => {
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useTranslation('common');
 
   const handleLogout = async () => {
     await logout();
@@ -42,14 +45,16 @@ const MainLayout = () => {
 
             {/* Desktop Navigation */}
             <nav className="nav-links desktop-nav">
-              <Link to="/courses">Courses</Link>
+              <Link to="/courses">{t('nav.courses')}</Link>
               {isAuthenticated && (
-                <Link to={getDashboardLink()}>Dashboard</Link>
+                <Link to={getDashboardLink()}>{t('nav.dashboard')}</Link>
               )}
             </nav>
 
             {/* Actions */}
             <div className="navbar-actions">
+              <LanguageSwitcher />
+              
               <button
                 onClick={toggleTheme}
                 className="icon-btn"
@@ -66,16 +71,16 @@ const MainLayout = () => {
                   </Link>
                   <button onClick={handleLogout} className="btn btn-ghost">
                     <FiLogOut />
-                    <span>Logout</span>
+                    <span>{t('nav.logout')}</span>
                   </button>
                 </div>
               ) : (
                 <div className="auth-buttons">
                   <Link to="/login" className="btn btn-ghost">
-                    Login
+                    {t('nav.login')}
                   </Link>
                   <Link to="/register" className="btn btn-primary">
-                    Sign Up
+                    {t('nav.signUp')}
                   </Link>
                 </div>
               )}
@@ -95,11 +100,11 @@ const MainLayout = () => {
           {mobileMenuOpen && (
             <div className="mobile-menu">
               <Link to="/courses" onClick={() => setMobileMenuOpen(false)}>
-                Courses
+                {t('nav.courses')}
               </Link>
               {isAuthenticated && (
                 <Link to={getDashboardLink()} onClick={() => setMobileMenuOpen(false)}>
-                  Dashboard
+                  {t('nav.dashboard')}
                 </Link>
               )}
             </div>
@@ -116,22 +121,22 @@ const MainLayout = () => {
           <div className="footer-content">
             <div className="footer-section">
               <h4>EduBridge</h4>
-              <p>Empowering learners worldwide with quality education.</p>
+              <p>{t('footer.tagline')}</p>
             </div>
             <div className="footer-section">
-              <h4>Quick Links</h4>
-              <Link to="/courses">Browse Courses</Link>
-              <Link to="/about">About Us</Link>
-              <Link to="/contact">Contact</Link>
+              <h4>{t('footer.quickLinks')}</h4>
+              <Link to="/courses">{t('footer.browseCourses')}</Link>
+              <Link to="/about">{t('footer.aboutUs')}</Link>
+              <Link to="/contact">{t('footer.contact')}</Link>
             </div>
             <div className="footer-section">
-              <h4>Legal</h4>
-              <Link to="/privacy">Privacy Policy</Link>
-              <Link to="/terms">Terms of Service</Link>
+              <h4>{t('footer.legal')}</h4>
+              <Link to="/privacy">{t('footer.privacyPolicy')}</Link>
+              <Link to="/terms">{t('footer.termsOfService')}</Link>
             </div>
           </div>
           <div className="footer-bottom">
-            <p>&copy; 2025 Edu Bridge. All rights reserved.</p>
+            <p>{t('footer.copyright')}</p>
           </div>
         </div>
       </footer>

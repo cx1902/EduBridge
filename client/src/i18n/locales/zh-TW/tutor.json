@@ -1,0 +1,45 @@
+{
+  "dashboard": {
+    "title": "導師儀表板",
+    "myCourses": "我的課程",
+    "sessions": "會話"
+  },
+  "scheduleSession": {
+    "title": "安排課程",
+    "subtitle": "為已註冊的學生安排一對一或小組課程",
+    "selectCourse": "選擇課程",
+    "chooseCourse": "選擇一個課程...",
+    "students": "名學生",
+    "sessionTopic": "課程主題",
+    "topicPlaceholder": "例如：代數入門",
+    "sessionType": "課程類型",
+    "oneOnOne": "一對一",
+    "smallGroup": "小組",
+    "officeHours": "答疑時間",
+    "startDateTime": "開始日期和時間",
+    "duration": "時長（分鐘）",
+    "minutes": "分鐘",
+    "hour": "小時",
+    "hours": "小時",
+    "learningObjectives": "學習目標",
+    "objectivesPlaceholder": "學生將在本次課程中學到什麼？",
+    "selectStudents": "選擇學生",
+    "deselectAll": "取消全選",
+    "selectAll": "全選",
+    "noEnrolledStudents": "該課程沒有已註冊的學生",
+    "progress": "進度",
+    "sendEmailImmediately": "立即發送電子郵件邀請",
+    "emailNote": "學生將收到包含日曆附件的電子郵件邀請",
+    "creatingSession": "正在建立課程...",
+    "scheduleAndSend": "安排課程並發送邀請",
+    "selectAtLeastOne": "請至少選擇一名學生",
+    "sessionCreated": "課程已建立，邀請已發送給 {{count}} 名學生！",
+    "sessionCreatedInviteFailed": "課程已建立，但發送邀請失敗",
+    "sessionFailed": "建立課程失敗",
+    "errorOccurred": "建立課程時發生錯誤"
+  },
+  "todaySchedule": {
+    "title": "今日日程",
+    "noSessions": "今天沒有安排的課程"
+  }
+}

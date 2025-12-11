@@ -2,10 +2,13 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useThemeStore } from '../../store/themeStore';
 import { FiSun, FiMoon } from 'react-icons/fi';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../LanguageSwitcher';
 import './AuthLayout.css';
 
 const AuthLayout = () => {
   const { theme, toggleTheme } = useThemeStore();
+  const { t } = useTranslation('common');
 
   return (
     <div className="auth-layout">
@@ -14,13 +17,16 @@ const AuthLayout = () => {
           <span className="logo-icon">📚</span>
           <span className="logo-text">EduBridge</span>
         </Link>
-        <button
-          onClick={toggleTheme}
-          className="icon-btn"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? <FiSun /> : <FiMoon />}
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <LanguageSwitcher />
+          <button
+            onClick={toggleTheme}
+            className="icon-btn"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <FiSun /> : <FiMoon />}
+          </button>
+        </div>
       </div>
 
       <div className="auth-content">
@@ -28,7 +34,7 @@ const AuthLayout = () => {
       </div>
 
       <div className="auth-footer">
-        <p>&copy; 2025 Edu Bridge. All rights reserved.</p>
+        <p>{t('footer.copyright')}</p>
       </div>
     </div>
   );

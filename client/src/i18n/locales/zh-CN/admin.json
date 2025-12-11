@@ -1,0 +1,66 @@
+{
+  "userManagement": {
+    "title": "用户管理",
+    "searchPlaceholder": "电子邮件、姓名或ID...",
+    "filters": {
+      "role": "角色",
+      "status": "状态",
+      "allRoles": "所有角色",
+      "allStatuses": "所有状态",
+      "emailVerified": "邮箱已验证",
+      "language": "语言",
+      "hasWarnings": "有警告",
+      "activityDays": "活动天数",
+      "pointsRange": "积分范围"
+    },
+    "table": {
+      "user": "用户",
+      "role": "角色",
+      "status": "状态",
+      "points": "积分",
+      "joined": "加入时间",
+      "actions": "操作",
+      "lastLogin": "最后登录",
+      "warnings": "警告",
+      "streak": "连续天数"
+    },
+    "actions": {
+      "viewDetails": "查看详情",
+      "changeRole": "更改角色",
+      "changeStatus": "更改状态",
+      "resetPassword": "重置密码",
+      "delete": "删除"
+    },
+    "modal": {
+      "userDetails": "用户详情",
+      "tabs": {
+        "overview": "概览",
+        "activity": "活动",
+        "courses": "课程",
+        "sessions": "会话",
+        "warnings": "警告",
+        "audit": "审计历史"
+      }
+    },
+    "statistics": {
+      "totalUsers": "总用户数",
+      "byRole": "按角色",
+      "byStatus": "按状态",
+      "byLanguage": "按语言",
+      "emailVerified": "邮箱已验证",
+      "withWarnings": "有警告"
+    }
+  },
+  "courseApproval": {
+    "title": "课程审批",
+    "pending": "待审批",
+    "approve": "批准",
+    "reject": "拒绝"
+  },
+  "analytics": {
+    "title": "分析",
+    "overview": "概览",
+    "userGrowth": "用户增长",
+    "courseMetrics": "课程指标"
+  }
+}

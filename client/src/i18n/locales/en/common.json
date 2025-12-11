@@ -1,0 +1,186 @@
+{
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "confirm": "Confirm",
+    "clear": "Clear",
+    "apply": "Apply",
+    "reset": "Reset",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "send": "Send",
+    "refresh": "Refresh"
+  },
+  "role": {
+    "student": "Student",
+    "tutor": "Tutor",
+    "admin": "Admin",
+    "management": "Management"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "banned": "Banned",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "courses": "Courses",
+    "sessions": "Sessions",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "signUp": "Sign Up",
+    "home": "Home",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "label": {
+    "email": "Email",
+    "password": "Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "fullName": "Full Name",
+    "phoneNumber": "Phone Number",
+    "dateOfBirth": "Date of Birth",
+    "bio": "Bio",
+    "language": "Language",
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "timezone": "Timezone",
+    "role": "Role",
+    "status": "Status",
+    "points": "Points",
+    "streak": "Streak",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
+    "lastLogin": "Last Login",
+    "basicInfo": "Basic Information",
+    "accountStatus": "Account Status",
+    "preferences": "Preferences",
+    "gamification": "Gamification",
+    "emailVerified": "Email Verified",
+    "currentStreak": "Current Streak",
+    "longestStreak": "Longest Streak",
+    "streakFreezes": "Streak Freezes",
+    "pointsHistory": "Points History",
+    "date": "Date",
+    "activity": "Activity",
+    "description": "Description",
+    "enrolledCourses": "Enrolled Courses",
+    "createdCourses": "Created Courses"
+  },
+  "placeholder": {
+    "search": "Search...",
+    "email": "Enter your email",
+    "password": "Enter your password",
+    "firstName": "Enter first name",
+    "lastName": "Enter last name",
+    "select": "Select an option"
+  },
+  "message": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "success": "Success!",
+    "error": "An error occurred",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "noData": "No data available",
+    "noResults": "No results found",
+    "tryAgain": "Please try again",
+    "sessionExpired": "Your session has expired. Please log in again."
+  },
+  "language": {
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "highContrast": "High Contrast"
+  },
+  "fontSize": {
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large",
+    "extraLarge": "Extra Large"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "hour": "hour",
+    "hours": "hours",
+    "minute": "minute",
+    "minutes": "minutes",
+    "day": "day",
+    "days": "days",
+    "week": "week",
+    "weeks": "weeks",
+    "month": "month",
+    "months": "months",
+    "year": "year",
+    "years": "years",
+    "ago": "ago"
+  },
+  "landing": {
+    "hero": {
+      "title": "Transform Your Learning Journey with EduBridge",
+      "subtitle": "Access world-class courses, connect with expert tutors, and achieve your educational goals with our comprehensive learning platform.",
+      "getStarted": "Get Started Free",
+      "browseCourses": "Browse Courses"
+    },
+    "features": {
+      "title": "Why Choose EduBridge?",
+      "selfPaced": {
+        "title": "Self-Paced Learning",
+        "description": "Learn at your own pace with high-quality video lessons and interactive content."
+      },
+      "liveTutoring": {
+        "title": "Live Tutoring",
+        "description": "Book one-on-one sessions with expert tutors for personalized guidance."
+      },
+      "gamification": {
+        "title": "Gamification",
+        "description": "Stay motivated with points, badges, and streaks as you progress."
+      }
+    },
+    "cta": {
+      "title": "Ready to Start Learning?",
+      "subtitle": "Join thousands of students already transforming their education.",
+      "button": "Create Free Account"
+    }
+  },
+  "footer": {
+    "tagline": "Empowering learners worldwide with quality education.",
+    "quickLinks": "Quick Links",
+    "browseCourses": "Browse Courses",
+    "aboutUs": "About Us",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "copyright": "© 2025 Edu Bridge. All rights reserved."
+  }
+}

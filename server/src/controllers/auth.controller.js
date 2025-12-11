@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const prisma = require('../utils/prisma');
 const crypto = require('crypto');
+const { sendPasswordResetEmail } = require('../utils/emailService');
 
 /**
  * Generate JWT token
@@ -69,6 +70,7 @@ exports.register = async (req, res) => {
         firstName: true,
         lastName: true,
         role: true,
+        preferredLanguage: true,
         createdAt: true,
       },
     });
@@ -353,10 +355,34 @@ exports.forgotPassword = async (req, res) => {
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour
 
-    // TODO: Store reset token in database and send email
-    console.log(`Reset token for ${email}: ${resetToken}`);
+    // Store hashed token in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: resetTokenExpiry,
+      },
+    });
+
+    // Send password reset email
+    try {
+      const emailResult = await sendPasswordResetEmail(email, resetToken);
+      
+      if (!emailResult.success) {
+        console.error('Failed to send password reset email:', emailResult.error);
+      } else {
+        console.log('✅ Password reset email sent to:', email);
+        if (emailResult.previewUrl) {
+          console.log('📬 Preview at:', emailResult.previewUrl);
+        }
+      }
+    } catch (emailError) {
+      console.error('Error sending password reset email:', emailError);
+      // Don't fail the request if email fails, still return success
+    }
 
     res.json({
       success: true,
@@ -387,8 +413,41 @@ exports.resetPassword = async (req, res) => {
 
     const { token, password } = req.body;
 
-    // TODO: Verify reset token from database
-    // For now, return success
+    // Hash the token to compare with database
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid reset token
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: {
+          gt: new Date(), // Token not expired
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update password and clear reset token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
+
+    console.log('✅ Password successfully reset for:', user.email);
+
     res.json({
       success: true,
       message: 'Password reset successful',
@@ -462,5 +521,35 @@ exports.getCurrentUser = async (req, res) => {
       success: false,
       message: 'Failed to get user data',
     });
+  }
+};
+
+/**
+ * OAuth Callback Handler (Google & Facebook)
+ */
+exports.oauthCallback = async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.redirect(`${process.env.CLIENT_URL}/login?error=authentication_failed`);
+    }
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
+    // Generate tokens
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    // Redirect to frontend with tokens
+    const redirectUrl = `${process.env.CLIENT_URL}/auth/callback?token=${token}&refreshToken=${refreshToken}`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    res.redirect(`${process.env.CLIENT_URL}/login?error=authentication_failed`);
   }
 };

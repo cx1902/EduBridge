@@ -1,0 +1,186 @@
+{
+  "action": {
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "edit": "編輯",
+    "create": "建立",
+    "update": "更新",
+    "submit": "提交",
+    "search": "搜尋",
+    "filter": "篩選",
+    "close": "關閉",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "confirm": "確認",
+    "clear": "清除",
+    "apply": "應用",
+    "reset": "重置",
+    "view": "檢視",
+    "download": "下載",
+    "upload": "上傳",
+    "send": "發送",
+    "refresh": "重新整理"
+  },
+  "role": {
+    "student": "學生",
+    "tutor": "導師",
+    "admin": "管理員",
+    "management": "管理層"
+  },
+  "status": {
+    "active": "活躍",
+    "inactive": "非活躍",
+    "suspended": "暫停",
+    "banned": "禁止",
+    "pending": "待處理",
+    "approved": "已批准",
+    "rejected": "已拒絕",
+    "draft": "草稿",
+    "published": "已發布",
+    "archived": "已歸檔",
+    "completed": "已完成",
+    "cancelled": "已取消"
+  },
+  "nav": {
+    "dashboard": "儀表板",
+    "courses": "課程",
+    "sessions": "會話",
+    "profile": "個人資料",
+    "settings": "設定",
+    "logout": "登出",
+    "login": "登入",
+    "signUp": "註冊",
+    "home": "首頁",
+    "about": "關於",
+    "contact": "聯絡"
+  },
+  "label": {
+    "email": "電子郵件",
+    "password": "密碼",
+    "firstName": "名字",
+    "lastName": "姓氏",
+    "fullName": "全名",
+    "phoneNumber": "電話號碼",
+    "dateOfBirth": "出生日期",
+    "bio": "簡介",
+    "language": "語言",
+    "theme": "主題",
+    "fontSize": "字體大小",
+    "timezone": "時區",
+    "role": "角色",
+    "status": "狀態",
+    "points": "積分",
+    "streak": "連續天數",
+    "createdAt": "建立時間",
+    "updatedAt": "更新時間",
+    "lastLogin": "最後登入",
+    "basicInfo": "基本資訊",
+    "accountStatus": "帳戶狀態",
+    "preferences": "偏好設定",
+    "gamification": "遊戲化",
+    "emailVerified": "郵箱已驗證",
+    "currentStreak": "當前連續",
+    "longestStreak": "最長連續",
+    "streakFreezes": "連續凍結",
+    "pointsHistory": "積分歷史",
+    "date": "日期",
+    "activity": "活動",
+    "description": "描述",
+    "enrolledCourses": "已註冊課程",
+    "createdCourses": "已建立課程"
+  },
+  "placeholder": {
+    "search": "搜尋...",
+    "email": "請輸入您的電子郵件",
+    "password": "請輸入您的密碼",
+    "firstName": "請輸入名字",
+    "lastName": "請輸入姓氏",
+    "select": "請選擇"
+  },
+  "message": {
+    "loading": "載入中...",
+    "saving": "儲存中...",
+    "success": "成功！",
+    "error": "發生錯誤",
+    "confirmDelete": "您確定要刪除嗎？",
+    "noData": "無資料",
+    "noResults": "未找到結果",
+    "tryAgain": "請重試",
+    "sessionExpired": "會話已過期，請重新登入。"
+  },
+  "language": {
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文"
+  },
+  "theme": {
+    "light": "淺色",
+    "dark": "深色",
+    "highContrast": "高對比度"
+  },
+  "fontSize": {
+    "small": "小",
+    "medium": "中",
+    "large": "大",
+    "extraLarge": "超大"
+  },
+  "time": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "tomorrow": "明天",
+    "hour": "小時",
+    "hours": "小時",
+    "minute": "分鐘",
+    "minutes": "分鐘",
+    "day": "天",
+    "days": "天",
+    "week": "週",
+    "weeks": "週",
+    "month": "月",
+    "months": "月",
+    "year": "年",
+    "years": "年",
+    "ago": "前"
+  },
+  "landing": {
+    "hero": {
+      "title": "與 EduBridge 一起開啟學習之旅",
+      "subtitle": "訪問世界一流的課程，與專業導師連接，透過我們全面的學習平台實現您的教育目標。",
+      "getStarted": "免費開始",
+      "browseCourses": "瀏覽課程"
+    },
+    "features": {
+      "title": "為什麼選擇 EduBridge？",
+      "selfPaced": {
+        "title": "自主學習",
+        "description": "透過高品質的影片課程和互動內容，按照自己的節奏學習。"
+      },
+      "liveTutoring": {
+        "title": "線上輔導",
+        "description": "預約與專業導師的一對一課程，獲得個性化指導。"
+      },
+      "gamification": {
+        "title": "遊戲化學習",
+        "description": "透過積分、徽章和連續學習天數保持學習動力。"
+      }
+    },
+    "cta": {
+      "title": "準備好開始學習了嗎？",
+      "subtitle": "加入數千名已經在轉變教育之旅的學生。",
+      "button": "免費建立帳戶"
+    }
+  },
+  "footer": {
+    "tagline": "為全球學習者提供優質教育。",
+    "quickLinks": "快速連結",
+    "browseCourses": "瀏覽課程",
+    "aboutUs": "關於我們",
+    "contact": "聯絡我們",
+    "legal": "法律資訊",
+    "privacyPolicy": "隱私政策",
+    "termsOfService": "服務條款",
+    "copyright": "© 2025 Edu Bridge。保留所有權利。"
+  }
+}

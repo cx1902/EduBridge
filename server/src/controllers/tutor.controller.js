@@ -204,17 +204,17 @@ const createCourse = async (req, res) => {
       metaDescription,
     } = req.body;
 
-    // Validation
-    if (!title || title.length < 5 || title.length > 200) {
-      return res.status(400).json({ error: 'Title must be between 5-200 characters' });
+    // Validation - Title must be 3-80 characters per design spec
+    if (!title || title.length < 3 || title.length > 80) {
+      return res.status(400).json({ error: 'Title must be between 3-80 characters.' });
     }
 
     if (subtitle && subtitle.length > 120) {
-      return res.status(400).json({ error: 'Subtitle must not exceed 120 characters' });
+      return res.status(400).json({ error: 'Subtitle must not exceed 120 characters.' });
     }
 
     if (!description || description.length < 50) {
-      return res.status(400).json({ error: 'Description must be at least 50 characters' });
+      return res.status(400).json({ error: 'Description must be at least 50 characters.' });
     }
 
     if (!['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(difficulty)) {
@@ -225,22 +225,42 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ error: 'Subject category and education level are required' });
     }
 
-    // Validate learning outcomes
-    if (learningOutcomes && Array.isArray(learningOutcomes)) {
-      if (learningOutcomes.length < 3 || learningOutcomes.length > 5) {
-        return res.status(400).json({ error: 'Learning outcomes must be between 3-5 items' });
+    // Validate learning outcomes - Required, 3-5 items per design spec
+    if (!learningOutcomes || !Array.isArray(learningOutcomes)) {
+      return res.status(400).json({ error: 'Please add at least 3 learning outcomes.' });
+    }
+    if (learningOutcomes.length < 3) {
+      return res.status(400).json({ error: 'Please add at least 3 learning outcomes.' });
+    }
+    if (learningOutcomes.length > 5) {
+      return res.status(400).json({ error: 'Learning outcomes cannot exceed 5 items.' });
+    }
+    // Validate each outcome is 10-120 characters
+    for (let outcome of learningOutcomes) {
+      if (!outcome || outcome.length < 10 || outcome.length > 120) {
+        return res.status(400).json({ error: 'Each learning outcome must be between 10-120 characters.' });
       }
     }
 
     // Validate meta description
     if (metaDescription && metaDescription.length > 160) {
-      return res.status(400).json({ error: 'Meta description must not exceed 160 characters' });
+      return res.status(400).json({ error: 'Meta description must not exceed 160 characters.' });
     }
 
-    // Validate tags
-    if (tags && Array.isArray(tags)) {
-      if (tags.length < 3 || tags.length > 10) {
-        return res.status(400).json({ error: 'Tags must be between 3-10 items' });
+    // Validate tags - Optional, max 5 items per design spec
+    if (tags && Array.isArray(tags) && tags.length > 5) {
+      return res.status(400).json({ error: 'Tags cannot exceed 5 items.' });
+    }
+
+    // Validate cover image is required
+    if (!thumbnailUrl) {
+      return res.status(400).json({ error: 'Cover image is required.' });
+    }
+
+    // Validate pricing - if not FREE, price must be > 0
+    if (pricingModel && pricingModel !== 'FREE') {
+      if (!price || parseFloat(price) <= 0) {
+        return res.status(400).json({ error: 'Price must be greater than 0 for paid courses.' });
       }
     }
 
@@ -254,7 +274,7 @@ const createCourse = async (req, res) => {
 
     if (existingCourse) {
       return res.status(400).json({
-        error: 'You already have a course with this title. Please choose a unique title.',
+        error: 'This title is already used. Try a slightly different one.',
       });
     }
 
@@ -322,9 +342,21 @@ const createCourse = async (req, res) => {
       },
     });
 
+    // Create notification for course creation
+    await prisma.notification.create({
+      data: {
+        userId: tutorId,
+        type: 'SYSTEM_ANNOUNCEMENT',
+        title: 'Course Draft Saved',
+        message: `Your course "${course.title}" has been saved as a draft. Add lessons to continue building.`,
+        link: `/tutor/courses/${course.id}/lessons`,
+      },
+    });
+
     res.status(201).json({
+      success: true,
       message: 'Course created successfully. Add lessons to get started.',
-      course,
+      data: course,
     });
   } catch (error) {
     console.error('Error creating course:', error);
@@ -574,33 +606,104 @@ const togglePublishCourse = async (req, res) => {
     const newStatus = course.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
     const publishedAt = newStatus === 'PUBLISHED' ? new Date() : course.publishedAt;
 
-    const updatedCourse = await prisma.course.update({
-      where: { id },
-      data: {
-        status: newStatus,
-        publishedAt,
-      },
-    });
+    // Start transaction for publishing with gamification
+    const result = await prisma.$transaction(async (tx) => {
+      // Update course status
+      const updatedCourse = await tx.course.update({
+        where: { id },
+        data: {
+          status: newStatus,
+          publishedAt,
+        },
+      });
 
-    // Create notification
-    await prisma.notification.create({
-      data: {
-        userId: tutorId,
-        type: newStatus === 'PUBLISHED' ? 'COURSE_APPROVED' : 'SYSTEM_ANNOUNCEMENT',
-        title: newStatus === 'PUBLISHED' ? 'Course Published' : 'Course Unpublished',
-        message:
-          newStatus === 'PUBLISHED'
-            ? `Your course "${course.title}" has been published successfully.`
-            : `Your course "${course.title}" has been unpublished.`,
-      },
+      // If publishing for the first time, handle gamification
+      if (newStatus === 'PUBLISHED' && !course.publishedAt) {
+        // Check if this is the tutor's first published course
+        const publishedCoursesCount = await tx.course.count({
+          where: {
+            tutorId,
+            status: 'PUBLISHED',
+          },
+        });
+
+        const isFirstPublish = publishedCoursesCount === 1;
+
+        // Award points for publishing course
+        await tx.pointsTransaction.create({
+          data: {
+            userId: tutorId,
+            pointsAmount: 20,
+            activityType: 'COURSE_PUBLISHED',
+            referenceId: id,
+            description: `Published course: ${course.title}`,
+          },
+        });
+
+        // Update user's total points
+        await tx.user.update({
+          where: { id: tutorId },
+          data: {
+            totalPoints: {
+              increment: 20,
+            },
+          },
+        });
+
+        // Award "First Course Published" badge if this is first course
+        if (isFirstPublish) {
+          // Find or create the badge
+          let badge = await tx.badge.findFirst({
+            where: { name: 'First Course Published' },
+          });
+
+          if (!badge) {
+            badge = await tx.badge.create({
+              data: {
+                name: 'First Course Published',
+                description: 'Awarded for publishing your first course on the platform',
+                iconUrl: '/uploads/badges/first-course.png',
+                criteriaType: 'COURSE_MILESTONE',
+                criteriaDetails: 'Publish your first course',
+                rarity: 'COMMON',
+              },
+            });
+          }
+
+          // Award badge to tutor
+          await tx.userBadge.create({
+            data: {
+              userId: tutorId,
+              badgeId: badge.id,
+            },
+          });
+        }
+      }
+
+      // Create notification
+      await tx.notification.create({
+        data: {
+          userId: tutorId,
+          type: newStatus === 'PUBLISHED' ? 'COURSE_APPROVED' : 'SYSTEM_ANNOUNCEMENT',
+          title: newStatus === 'PUBLISHED' ? 'Course Published' : 'Course Unpublished',
+          message:
+            newStatus === 'PUBLISHED'
+              ? `Your course "${course.title}" is now live and available to students.`
+              : `Your course "${course.title}" has been unpublished.`,
+          link: `/tutor/courses/${id}`,
+        },
+      });
+
+      return updatedCourse;
     });
 
     res.json({
+      success: true,
       message:
         newStatus === 'PUBLISHED'
           ? 'Course published successfully'
           : 'Course unpublished successfully',
-      course: updatedCourse,
+      data: result,
     });
   } catch (error) {
     console.error('Error toggling publish status:', error);

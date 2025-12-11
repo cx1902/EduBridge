@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const passport = require('./config/passport');
 require('dotenv').config();
 
 const app = express();
@@ -22,6 +23,9 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Serve static files (uploaded images)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -71,3 +75,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+// Trigger restart

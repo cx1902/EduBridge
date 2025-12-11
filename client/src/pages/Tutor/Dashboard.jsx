@@ -1,43 +1,70 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useTranslation } from 'react-i18next';
 import ScheduleSessionCard from '../../components/Tutor/ScheduleSessionCard';
 import TodaySchedulePanel from '../../components/Tutor/TodaySchedulePanel';
 
 const TutorDashboard = () => {
   const { user } = useAuthStore();
+  const { t } = useTranslation('dashboard');
 
   return (
     <div className="container">
-      <div className="dashboard-header">
-        <h1>Tutor Dashboard</h1>
-        <p>Welcome back, {user?.firstName}!</p>
+      <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1>{t('tutor.title')}</h1>
+          <p>{t('tutor.welcome', { name: user?.firstName })}</p>
+        </div>
+        <Link to="/tutor/courses/create" className="btn btn-primary">
+          + {t('tutor.createCourse')}
+        </Link>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-4 mt-lg gap-md">
         <div className="card">
-          <h4>Active Courses</h4>
+          <h4>{t('tutor.activeCourses')}</h4>
           <p className="stat-number">0</p>
-          <p className="text-secondary">Published courses</p>
+          <p className="text-secondary">{t('tutor.publishedCourses')}</p>
         </div>
         <div className="card">
-          <h4>Total Students</h4>
+          <h4>{t('tutor.totalStudents')}</h4>
           <p className="stat-number">0</p>
-          <p className="text-secondary">Across all courses</p>
+          <p className="text-secondary">{t('tutor.acrossAllCourses')}</p>
         </div>
         <div className="card">
-          <h4>Today's Sessions</h4>
+          <h4>{t('tutor.todaysSessions')}</h4>
           <p className="stat-number">0</p>
-          <p className="text-secondary">Scheduled for today</p>
+          <p className="text-secondary">{t('tutor.scheduledForToday')}</p>
         </div>
         <div className="card">
-          <h4>This Month Revenue</h4>
+          <h4>{t('tutor.monthRevenue')}</h4>
           <p className="stat-number">$0</p>
-          <p className="text-secondary">Completed payments</p>
+          <p className="text-secondary">{t('tutor.completedPayments')}</p>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Quick Action Cards - My Courses, Student Engagement, Session Statistics */}
+      <div className="grid grid-cols-3 mt-lg gap-md">
+        <div className="card">
+          <h3>{t('tutor.myCourses')}</h3>
+          <p className="text-secondary">{t('tutor.myCoursesDesc')}</p>
+          <Link to="/tutor/courses" className="btn btn-link mt-md">{t('tutor.viewAllCourses')}</Link>
+        </div>
+        <div className="card">
+          <h3>{t('tutor.studentEngagement')}</h3>
+          <p className="text-secondary">{t('tutor.studentEngagementDesc')}</p>
+          <Link to="/tutor/analytics" className="btn btn-link mt-md">{t('tutor.viewAnalytics')}</Link>
+        </div>
+        <div className="card">
+          <h3>{t('tutor.sessionStatistics')}</h3>
+          <p className="text-secondary">{t('tutor.sessionStatisticsDesc')}</p>
+          <Link to="/tutor/reports" className="btn btn-link mt-md">{t('tutor.viewReports')}</Link>
+        </div>
+      </div>
+
+      {/* Main Content Area - Schedule Session & Today's Schedule */}
       <div className="dashboard-grid mt-lg">
         {/* Left Column - Schedule Session */}
         <div className="dashboard-main">
@@ -47,25 +74,6 @@ const TutorDashboard = () => {
         {/* Right Column - Today's Schedule */}
         <div className="dashboard-sidebar">
           <TodaySchedulePanel />
-        </div>
-      </div>
-
-      {/* Additional Cards */}
-      <div className="grid grid-cols-3 mt-lg gap-md">
-        <div className="card">
-          <h3>My Courses</h3>
-          <p className="text-secondary">Manage and edit your courses</p>
-          <button className="btn btn-link mt-md">View All Courses →</button>
-        </div>
-        <div className="card">
-          <h3>Student Engagement</h3>
-          <p className="text-secondary">Track student progress</p>
-          <button className="btn btn-link mt-md">View Analytics →</button>
-        </div>
-        <div className="card">
-          <h3>Session Statistics</h3>
-          <p className="text-secondary">Session completion & ratings</p>
-          <button className="btn btn-link mt-md">View Reports →</button>
         </div>
       </div>
     </div>

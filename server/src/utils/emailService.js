@@ -1,12 +1,47 @@
 /**
  * Email Service Utility
- * Handles sending email notifications for tutoring sessions
+ * Handles sending email notifications for tutoring sessions and authentication
  */
 
-// Note: In production, integrate with an email service provider like SendGrid, AWS SES, or Mailgun
-// For development, we'll use nodemailer with a mock transport
-
+const nodemailer = require('nodemailer');
 const prisma = require('./prisma');
+
+/**
+ * Create email transporter
+ */
+function createTransporter() {
+  // For development, you can use Gmail or other SMTP services
+  // For production, use services like SendGrid, AWS SES, or Mailgun
+  
+  // Check if real SMTP credentials are configured (not example values)
+  const hasValidSMTP = 
+    process.env.SMTP_HOST && 
+    process.env.SMTP_USER && 
+    process.env.SMTP_PASS &&
+    !process.env.SMTP_HOST.includes('example.com') &&
+    !process.env.SMTP_USER.includes('example.com');
+  
+  if (hasValidSMTP) {
+    // Use configured SMTP service
+    console.log('✉️  Using configured SMTP service:', process.env.SMTP_HOST);
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  } else {
+    // For development without SMTP config, use ethereal email (testing service)
+    console.warn('⚠️  No valid SMTP credentials found. Using Ethereal test email service.');
+    console.warn('⚠️  Emails will not be delivered to real inboxes. Check console for preview URLs.');
+    return null; // Will be created async in sendEmail function
+  }
+}
+
+let transporter = createTransporter();
 
 /**
  * Email templates for different notification types
@@ -201,6 +236,100 @@ const EMAIL_TEMPLATES = {
       </html>
     `,
   },
+
+  PASSWORD_RESET: {
+    subject: () => 'Reset Your EduBridge Password',
+    body: (data) => `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #4f46e5; color: white; padding: 20px; text-align: center; }
+            .content { background: #f9fafb; padding: 30px; }
+            .reset-box { background: #dbeafe; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }
+            .cta-button { display: inline-block; background: #4f46e5; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: bold; }
+            .warning { background: #fef3c7; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Reset Request</h1>
+            </div>
+            <div class="content">
+              <p>Hi,</p>
+              <p>We received a request to reset your password for your EduBridge account (<strong>${data.email}</strong>).</p>
+              
+              <div class="reset-box">
+                <p>Click the button below to reset your password:</p>
+                <a href="${data.resetLink}" class="cta-button">Reset Password</a>
+                <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">This link will expire in <strong>1 hour</strong></p>
+              </div>
+
+              <div class="warning">
+                <p><strong>⚠️ Security Notice:</strong></p>
+                <p>If you didn't request this password reset, please ignore this email. Your password will remain unchanged.</p>
+              </div>
+
+              <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${data.resetLink}" style="color: #4f46e5; word-break: break-all;">${data.resetLink}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>EduBridge Learning Platform</p>
+              <p>If you have any questions, please contact our support team.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  },
+
+  EMAIL_VERIFICATION: {
+    subject: () => 'Verify Your Email Address',
+    body: (data) => `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #10b981; color: white; padding: 20px; text-align: center; }
+            .content { background: #f9fafb; padding: 30px; }
+            .verify-box { background: #d1fae5; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }
+            .cta-button { display: inline-block; background: #10b981; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: bold; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✉️ Verify Your Email</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${data.firstName},</p>
+              <p>Welcome to EduBridge! Please verify your email address to get started.</p>
+              
+              <div class="verify-box">
+                <p>Click the button below to verify your email:</p>
+                <a href="${data.verifyLink}" class="cta-button">Verify Email Address</a>
+              </div>
+
+              <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${data.verifyLink}" style="color: #10b981; word-break: break-all;">${data.verifyLink}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>EduBridge Learning Platform</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  },
 };
 
 /**
@@ -256,45 +385,63 @@ async function sendEmail({ to, type, data, session }) {
     const subject = template.subject(data);
     const htmlBody = template.body(data);
 
-    // In production, integrate with actual email service provider
-    // For now, we'll log the email and simulate sending
-    console.log('📧 Sending email:', {
+    console.log('📧 Preparing to send email:', {
       to,
       subject,
       type,
     });
 
     // Generate calendar attachment if session data provided
-    let calendarAttachment = null;
+    let attachments = [];
     if (session && (type === 'SESSION_INVITATION' || type === 'SESSION_REMINDER')) {
-      calendarAttachment = generateCalendarFile(session);
+      const calendarAttachment = generateCalendarFile(session);
+      attachments.push({
+        filename: 'session.ics',
+        content: calendarAttachment,
+        contentType: 'text/calendar',
+      });
     }
 
-    // TODO: Replace with actual email service integration
-    // Example with SendGrid:
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    // await sgMail.send({
-    //   to,
-    //   from: process.env.EMAIL_FROM,
-    //   subject,
-    //   html: htmlBody,
-    //   attachments: calendarAttachment ? [{
-    //     content: Buffer.from(calendarAttachment).toString('base64'),
-    //     filename: 'session.ics',
-    //     type: 'text/calendar',
-    //     disposition: 'attachment',
-    //   }] : [],
-    // });
+    // Create transporter if not configured (for Ethereal test email)
+    let emailTransporter = transporter;
+    if (!emailTransporter) {
+      const testAccount = await nodemailer.createTestAccount();
+      emailTransporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass,
+        },
+      });
+    }
 
-    // For development, simulate successful email sending
+    // Send email
+    const info = await emailTransporter.sendMail({
+      from: process.env.EMAIL_FROM || '"EduBridge" <noreply@edubridge.com>',
+      to,
+      subject,
+      html: htmlBody,
+      attachments,
+    });
+
+    console.log('✅ Email sent successfully:', info.messageId);
+    
+    // If using Ethereal (test), log preview URL
+    if (!transporter) {
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      console.log('📬 Preview email at:', previewUrl);
+    }
+
     return {
       success: true,
-      messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      messageId: info.messageId,
       sentAt: new Date(),
+      previewUrl: !transporter ? nodemailer.getTestMessageUrl(info) : null,
     };
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('❌ Error sending email:', error);
     return {
       success: false,
       error: error.message,
@@ -480,10 +627,58 @@ async function sendSessionReminder(sessionId, timeframe) {
   }
 }
 
+/**
+ * Send password reset email
+ */
+async function sendPasswordResetEmail(email, resetToken) {
+  try {
+    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    
+    const result = await sendEmail({
+      to: email,
+      type: 'PASSWORD_RESET',
+      data: {
+        email,
+        resetLink,
+      },
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send email verification
+ */
+async function sendVerificationEmail(user, verificationToken) {
+  try {
+    const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
+    
+    const result = await sendEmail({
+      to: user.email,
+      type: 'EMAIL_VERIFICATION',
+      data: {
+        firstName: user.firstName,
+        verifyLink,
+      },
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   sendEmail,
   sendSessionInvitations,
   sendSessionReminder,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
   trackEmailSending,
   generateCalendarFile,
 };

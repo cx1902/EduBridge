@@ -42,6 +42,11 @@ model User {
   emailVerified Boolean       @default(false) @map("email_verified")
   loginAttempts Int           @default(0) @map("login_attempts")
   lastLogin     DateTime?     @map("last_login")
+  
+  // Password Reset
+  resetPasswordToken   String?   @map("reset_password_token")
+  resetPasswordExpires DateTime? @map("reset_password_expires")
+  
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
@@ -63,6 +68,14 @@ model User {
   generatedReports   PlatformReport[]
   createdTemplates   LessonTemplate[]              @relation("CreatedTemplates")
   createdSnippets    ContentSnippet[]              @relation("CreatedSnippets")
+  tutorApplications  TutorVerificationApplication[] @relation("TutorApplications")
+  reviewedApplications TutorVerificationApplication[] @relation("ReviewedApplications")
+  submittedReports   ContentReport[]               @relation("SubmittedReports")
+  resolvedReports    ContentReport[]               @relation("ResolvedReports")
+  auditLogsPerformed AuditLog[]                    @relation("AdminActions")
+  createdBroadcasts  BroadcastMessage[]            @relation("BroadcastCreator")
+  warningsReceived   UserWarning[]                 @relation("WarningRecipient")
+  warningsIssued     UserWarning[]                 @relation("WarningIssuer")
 
   @@map("users")
 }
@@ -838,4 +851,325 @@ model ContentSnippet {
   @@index([type])
   @@index([isPublic])
   @@map("content_snippets")
+}
+
+// ==================== ADMIN FEATURES MODELS ====================
+
+// Tutor Verification Application Model
+model TutorVerificationApplication {
+  id              String                       @id @default(uuid())
+  userId          String                       @map("user_id")
+  documents       Json                         @default("[]")
+  subjects        Json                         @default("[]")
+  sampleLessonUrl String?                      @map("sample_lesson_url")
+  qualifications  String                       @db.Text
+  teachingExperience String?                   @map("teaching_experience") @db.Text
+  status          TutorVerificationStatus      @default(PENDING)
+  reviewerId      String?                      @map("reviewer_id")
+  reviewNotes     String?                      @map("review_notes") @db.Text
+  submittedAt     DateTime                     @default(now()) @map("submitted_at")
+  reviewedAt      DateTime?                    @map("reviewed_at")
+  createdAt       DateTime                     @default(now()) @map("created_at")
+  updatedAt       DateTime                     @updatedAt @map("updated_at")
+
+  // Relations
+  applicant User  @relation("TutorApplications", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("ReviewedApplications", fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+  @@map("tutor_verification_applications")
+}
+
+// Content Report Model
+model ContentReport {
+  id               String              @id @default(uuid())
+  reporterId       String              @map("reporter_id")
+  reportedItemType ReportedItemType    @map("reported_item_type")
+  reportedItemId   String              @map("reported_item_id")
+  category         ReportCategory
+  description      String              @db.Text
+  priority         ReportPriority      @default(NORMAL)
+  status           ReportStatus        @default(NEW)
+  resolverId       String?             @map("resolver_id")
+  resolution       String?             @db.Text
+  evidenceUrls     Json?               @default("[]")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  resolvedAt       DateTime?           @map("resolved_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  reporter User  @relation("SubmittedReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  resolver User? @relation("ResolvedReports", fields: [resolverId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("content_reports")
+}
+
+// System Setting Model
+model SystemSetting {
+  id             String         @id @default(uuid())
+  settingKey     String         @unique @map("setting_key")
+  settingValue   Json           @map("setting_value")
+  valueType      SettingValueType @map("value_type")
+  category       SettingCategory
+  description    String         @db.Text
+  lastModifiedBy String?        @map("last_modified_by")
+  lastModifiedAt DateTime       @default(now()) @map("last_modified_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([settingKey])
+  @@map("system_settings")
+}
+
+// Email Template Model
+model EmailTemplate {
+  id           String               @id @default(uuid())
+  templateKey  String               @unique @map("template_key")
+  templateName String               @map("template_name")
+  subject      String
+  bodyHtml     String               @db.Text @map("body_html")
+  bodyPlain    String               @db.Text @map("body_plain")
+  variables    Json                 @default("[]")
+  category     EmailTemplateCategory
+  isActive     Boolean              @default(true) @map("is_active")
+  version      Int                  @default(1)
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([isActive])
+  @@map("email_templates")
+}
+
+// Broadcast Message Model
+model BroadcastMessage {
+  id             String                @id @default(uuid())
+  createdBy      String                @map("created_by")
+  targetAudience BroadcastAudience     @map("target_audience")
+  targetRole     UserRole?             @map("target_role")
+  subject        String
+  body           String                @db.Text
+  priority       BroadcastPriority     @default(NORMAL)
+  scheduledFor   DateTime?             @map("scheduled_for")
+  expiresAt      DateTime?             @map("expires_at")
+  sentCount      Int                   @default(0) @map("sent_count")
+  status         BroadcastStatus       @default(DRAFT)
+  sentAt         DateTime?             @map("sent_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  creator User @relation("BroadcastCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([createdBy])
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("broadcast_messages")
+}
+
+// Audit Log Model
+model AuditLog {
+  id                 String   @id @default(uuid())
+  adminId            String   @map("admin_id")
+  actionType         String   @map("action_type")
+  targetResourceType String   @map("target_resource_type")
+  targetResourceId   String?  @map("target_resource_id")
+  previousState      Json?    @map("previous_state")
+  newState           Json?    @map("new_state")
+  reason             String?  @db.Text
+  ipAddress          String?  @map("ip_address")
+  additionalContext  Json?    @map("additional_context")
+  timestamp          DateTime @default(now())
+
+  // Relations
+  admin User @relation("AdminActions", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([actionType])
+  @@index([timestamp])
+  @@index([targetResourceType])
+  @@map("audit_logs")
+}
+
+// Question Performance Metrics (for analytics)
+model QuestionPerformance {
+  id                 String   @id @default(uuid())
+  questionId         String   @unique @map("question_id")
+  totalAttempts      Int      @default(0) @map("total_attempts")
+  correctAttempts    Int      @default(0) @map("correct_attempts")
+  correctRate        Decimal  @default(0) @map("correct_rate") @db.Decimal(5, 2)
+  averageTimeSeconds Int      @default(0) @map("average_time_seconds")
+  skipCount          Int      @default(0) @map("skip_count")
+  lastCalculated     DateTime @default(now()) @map("last_calculated")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([questionId])
+  @@index([correctRate])
+  @@map("question_performance")
+}
+
+// User Warning Model (for tracking content violations)
+model UserWarning {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  issuedBy    String        @map("issued_by")
+  reason      String        @db.Text
+  severity    WarningSeverity @default(LOW)
+  relatedItemType String?   @map("related_item_type")
+  relatedItemId   String?   @map("related_item_id")
+  acknowledged Boolean      @default(false)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  user    User @relation("WarningRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  issuer  User @relation("WarningIssuer", fields: [issuedBy], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([issuedBy])
+  @@index([createdAt])
+  @@map("user_warnings")
+}
+
+// Payment Webhook Event (for Stripe reconciliation)
+model PaymentWebhookEvent {
+  id                String              @id @default(uuid())
+  eventType         String              @map("event_type")
+  stripeEventId     String              @unique @map("stripe_event_id")
+  payload           Json
+  processingStatus  WebhookProcessingStatus @default(PENDING) @map("processing_status")
+  retryCount        Int                 @default(0) @map("retry_count")
+  errorMessage      String?             @db.Text @map("error_message")
+  transactionId     String?             @map("transaction_id")
+  receivedAt        DateTime            @default(now()) @map("received_at")
+  processedAt       DateTime?           @map("processed_at")
+
+  @@index([eventType])
+  @@index([processingStatus])
+  @@index([receivedAt])
+  @@map("payment_webhook_events")
+}
+
+// Course Lock (for preventing edits during moderation)
+model CourseLock {
+  id         String    @id @default(uuid())
+  courseId   String    @unique @map("course_id")
+  lockedBy   String    @map("locked_by")
+  lockReason String    @db.Text @map("lock_reason")
+  lockedAt   DateTime  @default(now()) @map("locked_at")
+  expiresAt  DateTime? @map("expires_at")
+
+  @@index([courseId])
+  @@index([lockedBy])
+  @@map("course_locks")
+}
+
+// ==================== ADMIN ENUMS ====================
+
+enum TutorVerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  DECLINED
+  CHANGES_REQUESTED
+}
+
+enum ReportedItemType {
+  LESSON
+  QUIZ
+  QUESTION
+  MESSAGE
+  COURSE
+  USER
+}
+
+enum ReportCategory {
+  INAPPROPRIATE
+  INACCURATE
+  OFFENSIVE
+  COPYRIGHT
+  SPAM
+  HARASSMENT
+  OTHER
+}
+
+enum ReportPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum ReportStatus {
+  NEW
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum SettingValueType {
+  BOOLEAN
+  INTEGER
+  STRING
+  JSON
+  ARRAY
+}
+
+enum SettingCategory {
+  FEATURE_FLAG
+  GAMIFICATION
+  EMAIL
+  PAYMENT
+  GENERAL
+}
+
+enum EmailTemplateCategory {
+  WELCOME
+  APPROVAL
+  REMINDER
+  ANNOUNCEMENT
+  SYSTEM
+  PASSWORD_RESET
+}
+
+enum BroadcastAudience {
+  ALL_STUDENTS
+  ALL_TUTORS
+  ALL_USERS
+  SPECIFIC_ROLE
+  ACTIVE_USERS_ONLY
+}
+
+enum BroadcastPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum BroadcastStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  CANCELLED
+}
+
+enum WarningSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  SEVERE
+}
+
+enum WebhookProcessingStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RETRY
 }

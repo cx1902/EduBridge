@@ -1,0 +1,66 @@
+{
+  "userManagement": {
+    "title": "使用者管理",
+    "searchPlaceholder": "電子郵件、姓名或ID...",
+    "filters": {
+      "role": "角色",
+      "status": "狀態",
+      "allRoles": "所有角色",
+      "allStatuses": "所有狀態",
+      "emailVerified": "信箱已驗證",
+      "language": "語言",
+      "hasWarnings": "有警告",
+      "activityDays": "活動天數",
+      "pointsRange": "積分範圍"
+    },
+    "table": {
+      "user": "使用者",
+      "role": "角色",
+      "status": "狀態",
+      "points": "積分",
+      "joined": "加入時間",
+      "actions": "操作",
+      "lastLogin": "最後登入",
+      "warnings": "警告",
+      "streak": "連續天數"
+    },
+    "actions": {
+      "viewDetails": "檢視詳情",
+      "changeRole": "更改角色",
+      "changeStatus": "更改狀態",
+      "resetPassword": "重設密碼",
+      "delete": "刪除"
+    },
+    "modal": {
+      "userDetails": "使用者詳情",
+      "tabs": {
+        "overview": "概覽",
+        "activity": "活動",
+        "courses": "課程",
+        "sessions": "會話",
+        "warnings": "警告",
+        "audit": "稽核歷史"
+      }
+    },
+    "statistics": {
+      "totalUsers": "總使用者數",
+      "byRole": "按角色",
+      "byStatus": "按狀態",
+      "byLanguage": "按語言",
+      "emailVerified": "信箱已驗證",
+      "withWarnings": "有警告"
+    }
+  },
+  "courseApproval": {
+    "title": "課程審批",
+    "pending": "待審批",
+    "approve": "批准",
+    "reject": "拒絕"
+  },
+  "analytics": {
+    "title": "分析",
+    "overview": "概覽",
+    "userGrowth": "使用者成長",
+    "courseMetrics": "課程指標"
+  }
+}

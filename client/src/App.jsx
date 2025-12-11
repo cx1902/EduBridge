@@ -16,6 +16,7 @@ import CourseDetail from './pages/Public/CourseDetail';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ForgotPassword from './pages/Auth/ForgotPassword';
+import OAuthCallback from './pages/Auth/OAuthCallback';
 
 // Student Pages
 import StudentDashboard from './pages/Student/Dashboard';
@@ -28,6 +29,7 @@ import LiveSessions from './pages/Student/LiveSessions';
 import TutorDashboard from './pages/Tutor/Dashboard';
 import CourseBuilder from './pages/Tutor/CourseBuilder';
 import CourseEditor from './pages/Tutor/CourseEditor';
+import CourseCreationWizard from './pages/Tutor/CourseCreationWizard';
 import LessonBuilder from './pages/Tutor/LessonBuilder';
 import TutorAnalytics from './pages/Tutor/Analytics';
 import SessionManagement from './pages/Tutor/SessionManagement';
@@ -89,6 +91,9 @@ function App() {
         <Route path="forgot-password" element={<ForgotPassword />} />
       </Route>
 
+      {/* OAuth Callback Route */}
+      <Route path="/auth/callback" element={<OAuthCallback />} />
+
       {/* Student Routes */}
       <Route
         path="/student"
@@ -109,17 +114,20 @@ function App() {
       <Route
         path="/tutor"
         element={
-          <ProtectedRoute allowedRoles={['TUTOR']}>
+          <ProtectedRoute allowedRoles={['TUTOR', 'ADMIN']}>
             <MainLayout />
           </ProtectedRoute>
         }
       >
         <Route index element={<TutorDashboard />} />
         <Route path="courses" element={<CourseBuilder />} />
+        <Route path="courses/create" element={<CourseCreationWizard />} />
+        <Route path="courses/wizard" element={<CourseCreationWizard />} />
         <Route path="course-editor/new" element={<CourseEditor />} />
         <Route path="course-editor/:courseId" element={<CourseEditor />} />
         <Route path="courses/new" element={<CourseBuilder />} />
         <Route path="courses/:id/edit" element={<CourseBuilder />} />
+        <Route path="courses/:courseId/lessons" element={<LessonBuilder />} />
         <Route path="courses/:courseId/lessons/new" element={<LessonBuilder />} />
         <Route path="lessons/:id/edit" element={<LessonBuilder />} />
         <Route path="analytics" element={<TutorAnalytics />} />

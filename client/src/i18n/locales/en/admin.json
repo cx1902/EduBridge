@@ -1,0 +1,66 @@
+{
+  "userManagement": {
+    "title": "User Management",
+    "searchPlaceholder": "Email, name, or ID...",
+    "filters": {
+      "role": "Role",
+      "status": "Status",
+      "allRoles": "All Roles",
+      "allStatuses": "All Statuses",
+      "emailVerified": "Email Verified",
+      "language": "Language",
+      "hasWarnings": "Has Warnings",
+      "activityDays": "Activity (Days)",
+      "pointsRange": "Points Range"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "points": "Points",
+      "joined": "Joined",
+      "actions": "Actions",
+      "lastLogin": "Last Login",
+      "warnings": "Warnings",
+      "streak": "Streak"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "changeRole": "Change Role",
+      "changeStatus": "Change Status",
+      "resetPassword": "Reset Password",
+      "delete": "Delete"
+    },
+    "modal": {
+      "userDetails": "User Details",
+      "tabs": {
+        "overview": "Overview",
+        "activity": "Activity",
+        "courses": "Courses",
+        "sessions": "Sessions",
+        "warnings": "Warnings",
+        "audit": "Audit History"
+      }
+    },
+    "statistics": {
+      "totalUsers": "Total Users",
+      "byRole": "By Role",
+      "byStatus": "By Status",
+      "byLanguage": "By Language",
+      "emailVerified": "Email Verified",
+      "withWarnings": "With Warnings"
+    }
+  },
+  "courseApproval": {
+    "title": "Course Approval",
+    "pending": "Pending Approval",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "overview": "Overview",
+    "userGrowth": "User Growth",
+    "courseMetrics": "Course Metrics"
+  }
+}

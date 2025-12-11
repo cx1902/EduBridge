@@ -1,0 +1,186 @@
+{
+  "action": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "update": "更新",
+    "submit": "提交",
+    "search": "搜索",
+    "filter": "筛选",
+    "close": "关闭",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "confirm": "确认",
+    "clear": "清除",
+    "apply": "应用",
+    "reset": "重置",
+    "view": "查看",
+    "download": "下载",
+    "upload": "上传",
+    "send": "发送",
+    "refresh": "刷新"
+  },
+  "role": {
+    "student": "学生",
+    "tutor": "导师",
+    "admin": "管理员",
+    "management": "管理层"
+  },
+  "status": {
+    "active": "活跃",
+    "inactive": "非活跃",
+    "suspended": "暂停",
+    "banned": "禁止",
+    "pending": "待处理",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "draft": "草稿",
+    "published": "已发布",
+    "archived": "已归档",
+    "completed": "已完成",
+    "cancelled": "已取消"
+  },
+  "nav": {
+    "dashboard": "仪表板",
+    "courses": "课程",
+    "sessions": "会话",
+    "profile": "个人资料",
+    "settings": "设置",
+    "logout": "退出登录",
+    "login": "登录",
+    "signUp": "注册",
+    "home": "首页",
+    "about": "关于",
+    "contact": "联系"
+  },
+  "label": {
+    "email": "电子邮件",
+    "password": "密码",
+    "firstName": "名字",
+    "lastName": "姓氏",
+    "fullName": "全名",
+    "phoneNumber": "电话号码",
+    "dateOfBirth": "出生日期",
+    "bio": "简介",
+    "language": "语言",
+    "theme": "主题",
+    "fontSize": "字体大小",
+    "timezone": "时区",
+    "role": "角色",
+    "status": "状态",
+    "points": "积分",
+    "streak": "连续天数",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "lastLogin": "最后登录",
+    "basicInfo": "基本信息",
+    "accountStatus": "账户状态",
+    "preferences": "偏好设置",
+    "gamification": "游戏化",
+    "emailVerified": "邮箱已验证",
+    "currentStreak": "当前连续",
+    "longestStreak": "最长连续",
+    "streakFreezes": "连续冻结",
+    "pointsHistory": "积分历史",
+    "date": "日期",
+    "activity": "活动",
+    "description": "描述",
+    "enrolledCourses": "已注册课程",
+    "createdCourses": "已创建课程"
+  },
+  "placeholder": {
+    "search": "搜索...",
+    "email": "请输入您的电子邮件",
+    "password": "请输入您的密码",
+    "firstName": "请输入名字",
+    "lastName": "请输入姓氏",
+    "select": "请选择"
+  },
+  "message": {
+    "loading": "加载中...",
+    "saving": "保存中...",
+    "success": "成功！",
+    "error": "发生错误",
+    "confirmDelete": "您确定要删除吗？",
+    "noData": "无数据",
+    "noResults": "未找到结果",
+    "tryAgain": "请重试",
+    "sessionExpired": "会话已过期，请重新登录。"
+  },
+  "language": {
+    "en": "English",
+    "zh-CN": "简体中文",
+    "zh-TW": "繁體中文"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "highContrast": "高对比度"
+  },
+  "fontSize": {
+    "small": "小",
+    "medium": "中",
+    "large": "大",
+    "extraLarge": "超大"
+  },
+  "time": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "tomorrow": "明天",
+    "hour": "小时",
+    "hours": "小时",
+    "minute": "分钟",
+    "minutes": "分钟",
+    "day": "天",
+    "days": "天",
+    "week": "周",
+    "weeks": "周",
+    "month": "月",
+    "months": "月",
+    "year": "年",
+    "years": "年",
+    "ago": "前"
+  },
+  "landing": {
+    "hero": {
+      "title": "与 EduBridge 一起开启学习之旅",
+      "subtitle": "访问世界一流的课程，与专业导师连接，通过我们全面的学习平台实现您的教育目标。",
+      "getStarted": "免费开始",
+      "browseCourses": "浏览课程"
+    },
+    "features": {
+      "title": "为什么选择 EduBridge？",
+      "selfPaced": {
+        "title": "自主学习",
+        "description": "通过高质量的视频课程和互动内容，按照自己的节奏学习。"
+      },
+      "liveTutoring": {
+        "title": "在线辅导",
+        "description": "预约与专业导师的一对一课程，获得个性化指导。"
+      },
+      "gamification": {
+        "title": "游戏化学习",
+        "description": "通过积分、徽章和连续学习天数保持学习动力。"
+      }
+    },
+    "cta": {
+      "title": "准备好开始学习了吗？",
+      "subtitle": "加入数千名已经在转变教育之旅的学生。",
+      "button": "免费创建账户"
+    }
+  },
+  "footer": {
+    "tagline": "为全球学习者提供优质教育。",
+    "quickLinks": "快速链接",
+    "browseCourses": "浏览课程",
+    "aboutUs": "关于我们",
+    "contact": "联系我们",
+    "legal": "法律信息",
+    "privacyPolicy": "隐私政策",
+    "termsOfService": "服务条款",
+    "copyright": "© 2025 Edu Bridge。保留所有权利。"
+  }
+}

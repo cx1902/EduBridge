@@ -27,6 +27,11 @@
   font-size: 0.875rem;
 }
 
+.form-group label.checkbox-label {
+  display: inline-flex;
+  margin-bottom: 0;
+}
+
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -163,14 +168,42 @@
   border: 1px solid var(--color-border);
 }
 
-.checkbox-label {
-  display: flex;
+.checkbox-group {
+  margin-bottom: 20px;
+}
+
+.checkbox-group .checkbox-label {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   font-weight: 500;
   color: var(--color-text) !important;
   margin: 0;
+  width: auto;
+  justify-content: flex-start;
+}
+
+.checkbox-group small {
+  display: block;
+  margin-top: 6px;
+  margin-left: 26px;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--color-text) !important;
+  margin: 0;
+  width: auto;
+  justify-content: flex-start;
+}
+
+.checkbox-label span {
+  white-space: nowrap;
 }
 
 .checkbox-label input[type="checkbox"] {

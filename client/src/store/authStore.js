@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import i18n from '../i18n/config';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
@@ -42,6 +43,11 @@ export const useAuthStore = create(
 
           // Normalize profile picture URL
           const normalizedUser = normalizeProfilePictureUrl(user);
+
+          // Set language from user preference
+          if (normalizedUser.preferredLanguage && i18n.language !== normalizedUser.preferredLanguage) {
+            i18n.changeLanguage(normalizedUser.preferredLanguage);
+          }
 
           set({
             user: normalizedUser,
@@ -121,6 +127,11 @@ export const useAuthStore = create(
           
           // Normalize profile picture URL
           const normalizedUser = normalizeProfilePictureUrl(response.data.data.user);
+          
+          // Set language from user preference
+          if (normalizedUser.preferredLanguage && i18n.language !== normalizedUser.preferredLanguage) {
+            i18n.changeLanguage(normalizedUser.preferredLanguage);
+          }
           
           set({
             user: normalizedUser,

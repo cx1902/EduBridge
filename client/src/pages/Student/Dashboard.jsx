@@ -1,33 +1,35 @@
 import React from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { useTranslation } from 'react-i18next';
 
 const StudentDashboard = () => {
   const { user } = useAuthStore();
+  const { t } = useTranslation('dashboard');
 
   return (
     <div className="container">
-      <h1>Welcome back, {user?.firstName}!</h1>
+      <h1>{t('student.welcome', { name: user?.firstName })}</h1>
       <div className="grid grid-cols-3 mt-lg">
         <div className="card">
-          <h3>My Courses</h3>
-          <p className="text-secondary">Continue your learning journey</p>
+          <h3>{t('student.myCourses')}</h3>
+          <p className="text-secondary">{t('student.myCoursesDesc')}</p>
           <div className="mt-md">
-            <p className="text-muted">No courses enrolled yet</p>
+            <p className="text-muted">{t('student.noCoursesEnrolled')}</p>
           </div>
         </div>
         <div className="card">
-          <h3>Progress</h3>
-          <p className="text-secondary">Track your achievements</p>
+          <h3>{t('student.progress')}</h3>
+          <p className="text-secondary">{t('student.progressDesc')}</p>
           <div className="mt-md">
-            <p>Points: {user?.totalPoints || 0}</p>
-            <p>Streak: {user?.currentStreak || 0} days</p>
+            <p>{t('student.points')}: {user?.totalPoints || 0}</p>
+            <p>{t('student.streak')}: {user?.currentStreak || 0} {t('student.days')}</p>
           </div>
         </div>
         <div className="card">
-          <h3>Upcoming Sessions</h3>
-          <p className="text-secondary">Your scheduled tutoring</p>
+          <h3>{t('student.upcomingSessions')}</h3>
+          <p className="text-secondary">{t('student.upcomingSessionsDesc')}</p>
           <div className="mt-md">
-            <p className="text-muted">No upcoming sessions</p>
+            <p className="text-muted">{t('student.noUpcomingSessions')}</p>
           </div>
         </div>
       </div>

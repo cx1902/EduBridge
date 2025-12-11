@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import './Auth.css';
 
 const Register = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
   
@@ -31,7 +33,7 @@ const Register = () => {
     if (password.length < 8) {
       return 'Password must be at least 8 characters';
     }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_#^()\-+=<>{}\[\]|~])/.test(password)) {
       return 'Password must contain uppercase, lowercase, number, and special character';
     }
     return '';
@@ -63,8 +65,8 @@ const Register = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>Create Account</h1>
-        <p className="auth-subtitle">Join EduBridge and start learning today</p>
+        <h1>{t('register.title')}</h1>
+        <p className="auth-subtitle">{t('register.subtitle')}</p>
 
         {(error || validationError) && (
           <div className="alert alert-error">
@@ -75,7 +77,7 @@ const Register = () => {
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="firstName">First Name</label>
+              <label htmlFor="firstName">{t('register.firstName')}</label>
               <input
                 type="text"
                 id="firstName"
@@ -88,7 +90,7 @@ const Register = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="lastName">Last Name</label>
+              <label htmlFor="lastName">{t('register.lastName')}</label>
               <input
                 type="text"
                 id="lastName"
@@ -102,7 +104,7 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email">{t('register.email')}</label>
             <input
               type="email"
               id="email"
@@ -116,7 +118,7 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="role">I want to</label>
+            <label htmlFor="role">{t('register.role')}</label>
             <select
               id="role"
               name="role"
@@ -124,13 +126,13 @@ const Register = () => {
               onChange={handleChange}
               required
             >
-              <option value="STUDENT">Learn (Student)</option>
-              <option value="TUTOR">Teach (Tutor)</option>
+              <option value="STUDENT">{t('register.roleStudent')}</option>
+              <option value="TUTOR">{t('register.roleTutor')}</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('register.password')}</label>
             <input
               type="password"
               id="password"
@@ -138,16 +140,16 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder="Create a strong password"
+              placeholder={t('register.passwordPlaceholder', 'Create a strong password')}
               autoComplete="new-password"
             />
             <small className="form-hint">
-              At least 8 characters with uppercase, lowercase, number, and special character
+              {t('register.passwordHint', 'At least 8 characters with uppercase, lowercase, number, and special character')}
             </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
+            <label htmlFor="confirmPassword">{t('register.confirmPassword')}</label>
             <input
               type="password"
               id="confirmPassword"
@@ -155,7 +157,7 @@ const Register = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              placeholder="Confirm your password"
+              placeholder={t('register.confirmPasswordPlaceholder', 'Confirm your password')}
               autoComplete="new-password"
             />
           </div>
@@ -165,16 +167,16 @@ const Register = () => {
             className="btn btn-primary btn-block"
             disabled={isLoading}
           >
-            {isLoading ? 'Creating account...' : 'Create Account'}
+            {isLoading ? t('register.creating') : t('register.submit')}
           </button>
         </form>
 
         <div className="auth-divider">
-          <span>Already have an account?</span>
+          <span>{t('register.hasAccount')}</span>
         </div>
 
         <Link to="/login" className="btn btn-outline btn-block">
-          Sign In
+          {t('register.login')}
         </Link>
       </div>
     </div>

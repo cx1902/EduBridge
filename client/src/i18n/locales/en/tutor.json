@@ -1,0 +1,45 @@
+{
+  "dashboard": {
+    "title": "Tutor Dashboard",
+    "myCourses": "My Courses",
+    "sessions": "Sessions"
+  },
+  "scheduleSession": {
+    "title": "Schedule Class Session",
+    "subtitle": "Schedule one-on-one or group classes with enrolled students",
+    "selectCourse": "Select Course",
+    "chooseCourse": "Choose a course...",
+    "students": "students",
+    "sessionTopic": "Session Topic",
+    "topicPlaceholder": "e.g., Introduction to Algebra",
+    "sessionType": "Session Type",
+    "oneOnOne": "One-on-One",
+    "smallGroup": "Small Group",
+    "officeHours": "Office Hours",
+    "startDateTime": "Start Date & Time",
+    "duration": "Duration (minutes)",
+    "minutes": "minutes",
+    "hour": "hour",
+    "hours": "hours",
+    "learningObjectives": "Learning Objectives",
+    "objectivesPlaceholder": "What will students learn in this session?",
+    "selectStudents": "Select Students",
+    "deselectAll": "Deselect All",
+    "selectAll": "Select All",
+    "noEnrolledStudents": "No enrolled students in this course",
+    "progress": "Progress",
+    "sendEmailImmediately": "Send email invitations immediately",
+    "emailNote": "Students will receive email invitations with calendar attachments",
+    "creatingSession": "Creating Session...",
+    "scheduleAndSend": "Schedule Session & Send Invitations",
+    "selectAtLeastOne": "Please select at least one student",
+    "sessionCreated": "Session created and invitations sent to {{count}} students!",
+    "sessionCreatedInviteFailed": "Session created but failed to send invitations",
+    "sessionFailed": "Failed to create session",
+    "errorOccurred": "An error occurred while creating the session"
+  },
+  "todaySchedule": {
+    "title": "Today's Schedule",
+    "noSessions": "No sessions scheduled for today"
+  }
+}

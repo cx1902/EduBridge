@@ -113,6 +113,67 @@
   color: var(--color-text);
 }
 
+/* OAuth Buttons */
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.btn-oauth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background-color: white;
+  color: var(--color-text);
+}
+
+[data-theme="dark"] .btn-oauth {
+  background-color: var(--color-surface);
+  border-color: var(--color-border-dark);
+}
+
+.btn-oauth:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-google {
+  border-color: #dadce0;
+}
+
+.btn-google:hover {
+  background-color: #f8f9fa;
+  border-color: #d2d3d4;
+}
+
+[data-theme="dark"] .btn-google:hover {
+  background-color: var(--color-background);
+}
+
+.btn-facebook {
+  background-color: #1877f2;
+  color: white;
+  border-color: #1877f2;
+}
+
+.btn-facebook:hover {
+  background-color: #166fe5;
+  border-color: #166fe5;
+}
+
+[data-theme="dark"] .btn-facebook:hover {
+  background-color: #145dbf;
+}
+
 @media (max-width: 768px) {
   .auth-card {
     padding: var(--spacing-xl);

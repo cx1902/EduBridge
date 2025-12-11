@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import './TodaySchedulePanel.css';
 
 const TodaySchedulePanel = () => {
+  const { t } = useTranslation('tutor');
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSession, setExpandedSession] = useState(null);
@@ -107,7 +109,7 @@ const TodaySchedulePanel = () => {
   if (loading) {
     return (
       <div className="today-schedule-panel card">
-        <h3>📅 Today's Schedule</h3>
+        <h3>📅 {t('todaySchedule.title')}</h3>
         <div className="loading-state">Loading sessions...</div>
       </div>
     );
@@ -116,9 +118,9 @@ const TodaySchedulePanel = () => {
   if (sessions.length === 0) {
     return (
       <div className="today-schedule-panel card">
-        <h3>📅 Today's Schedule</h3>
+        <h3>📅 {t('todaySchedule.title')}</h3>
         <div className="empty-state">
-          <p>No sessions scheduled for today</p>
+          <p>{t('todaySchedule.noSessions')}</p>
         </div>
       </div>
     );
@@ -126,7 +128,7 @@ const TodaySchedulePanel = () => {
 
   return (
     <div className="today-schedule-panel card">
-      <h3>📅 Today's Schedule</h3>
+      <h3>📅 {t('todaySchedule.title')}</h3>
       <p className="text-secondary">{sessions.length} session(s) scheduled</p>
 
       <div className="sessions-list">

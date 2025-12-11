@@ -1,0 +1,12 @@
+{
+  "validation": {
+    "required": "此字段为必填项",
+    "email": "请输入有效的电子邮件",
+    "minLength": "至少需要 {{count}} 个字符",
+    "maxLength": "最多允许 {{count}} 个字符"
+  },
+  "network": {
+    "offline": "您当前处于离线状态",
+    "timeout": "请求超时"
+  }
+}

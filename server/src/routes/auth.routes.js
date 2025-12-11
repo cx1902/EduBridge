@@ -3,6 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const passport = require('../config/passport');
 
 // Validation rules
 const registerValidation = [
@@ -10,7 +11,7 @@ const registerValidation = [
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_#^()\-+=<>{}\[\]|~])[A-Za-z\d@$!%*?&_#^()\-+=<>{}\[\]|~]+$/)
     .withMessage('Password must contain uppercase, lowercase, number, and special character'),
   body('firstName').trim().notEmpty().withMessage('First name is required'),
   body('lastName').trim().notEmpty().withMessage('Last name is required'),
@@ -31,7 +32,7 @@ const newPasswordValidation = [
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_#^()\-+=<>{}\[\]|~])[A-Za-z\d@$!%*?&_#^()\-+=<>{}\[\]|~]+$/)
     .withMessage('Password must contain uppercase, lowercase, number, and special character'),
 ];
 
@@ -44,5 +45,22 @@ router.post('/forgot-password', resetPasswordValidation, authController.forgotPa
 router.post('/reset-password', newPasswordValidation, authController.resetPassword);
 router.get('/verify-email/:token', authController.verifyEmail);
 router.get('/me', authenticate, authController.getCurrentUser);
+
+// OAuth Routes
+// Google OAuth
+router.get('/google', passport.authenticate('google', { session: false }));
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.CLIENT_URL}/login?error=google_auth_failed` }),
+  authController.oauthCallback
+);
+
+// Facebook OAuth
+router.get('/facebook', passport.authenticate('facebook', { session: false, scope: ['email'] }));
+router.get(
+  '/facebook/callback',
+  passport.authenticate('facebook', { session: false, failureRedirect: `${process.env.CLIENT_URL}/login?error=facebook_auth_failed` }),
+  authController.oauthCallback
+);
 
 module.exports = router;
