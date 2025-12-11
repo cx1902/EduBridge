@@ -114,9 +114,6 @@ const CourseCreationWizard = () => {
       if (!formData.difficulty) {
         newErrors.difficulty = 'Difficulty level is required.';
       }
-      if (!formData.thumbnailUrl) {
-        newErrors.thumbnailUrl = 'Cover image is required.';
-      }
       if (formData.estimatedHours && formData.estimatedHours < 0) {
         newErrors.estimatedHours = 'Estimated hours must be a positive number.';
       }
@@ -170,7 +167,7 @@ const CourseCreationWizard = () => {
         learningOutcomes: validOutcomes,
         targetAudience: formData.targetAudience || null,
         estimatedHours: parseInt(formData.estimatedHours) || 0,
-        thumbnailUrl: formData.thumbnailUrl,
+        thumbnailUrl: formData.thumbnailUrl || null,
         thumbnailAltText: formData.thumbnailAltText || null,
         introVideoUrl: formData.introVideoUrl || null,
         pricingModel: formData.pricingModel,
@@ -179,11 +176,11 @@ const CourseCreationWizard = () => {
         metaDescription: formData.metaDescription || null,
         language: formData.language || 'en',
         tags: formData.tags,
-        status: saveType === 'submit' ? 'PENDING_APPROVAL' : 'DRAFT',
+        status: 'DRAFT', // Always save as DRAFT, regardless of saveType
       };
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/tutor/courses`,
+            const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/tutor/courses`,
         submissionData,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -287,28 +284,14 @@ const CourseCreationWizard = () => {
                 >
                   {loading ? <span className="loading-spinner" /> : 'Save Draft'}
                 </button>
-                {user?.role === 'ADMIN' ? (
-                  <button
-                    type="button"
-                    className="btn-success"
-                    onClick={() => {
-                      formData.status = 'PUBLISHED';
-                      handleSubmit('publish');
-                    }}
-                    disabled={loading}
-                  >
-                    {loading ? <span className="loading-spinner" /> : 'Publish Course'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => handleSubmit('submit')}
-                    disabled={loading}
-                  >
-                    {loading ? <span className="loading-spinner" /> : 'Submit for Review'}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => handleSubmit('publish')}
+                  disabled={loading}
+                >
+                  {loading ? <span className="loading-spinner" /> : 'Publish Course'}
+                </button>
               </>
             )}
           </div>

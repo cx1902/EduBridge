@@ -76,6 +76,11 @@ model User {
   createdBroadcasts  BroadcastMessage[]            @relation("BroadcastCreator")
   warningsReceived   UserWarning[]                 @relation("WarningRecipient")
   warningsIssued     UserWarning[]                 @relation("WarningIssuer")
+  courseReviews      CourseReview[]
+  createdComponents  CourseComponent[]             @relation("ComponentCreator")
+  uploadedFiles      ComponentFile[]               @relation("FileUploader")
+  submissions        AssignmentSubmission[]        @relation("StudentSubmissions")
+  gradedSubmissions  AssignmentSubmission[]        @relation("GradedSubmissions")
 
   @@map("users")
 }
@@ -91,7 +96,7 @@ model Course {
   educationLevel   EducationLevel @map("education_level")
   difficulty       Difficulty
   prerequisites    String?        @db.Text
-  thumbnailUrl     String         @map("thumbnail_url")
+  thumbnailUrl     String?        @map("thumbnail_url")
   thumbnailAltText String?        @map("thumbnail_alt_text")
   introVideoUrl    String?        @map("intro_video_url")
   price            Decimal        @default(0) @db.Decimal(10, 2)
@@ -123,6 +128,7 @@ model Course {
   enrollments Enrollment[]
   reviews     CourseReview[]
   versions    CourseVersion[]
+  components  CourseComponent[] @relation("CourseComponents")
 
   @@index([tutorId])
   @@index([status])
@@ -456,14 +462,16 @@ model CourseReview {
   courseId  String   @map("course_id")
   userId    String   @map("user_id")
   rating    Int
-  review    String?  @db.Text
+  comment   String?  @db.Text
   createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, userId])
   @@index([courseId])
+  @@index([userId])
   @@map("course_reviews")
 }
 
@@ -669,6 +677,127 @@ enum SnippetType {
   WARNING
   EXAMPLE
   SUMMARY
+}
+
+enum ComponentType {
+  LEARNING_MATERIALS
+  ASSIGNMENT
+  ANNOUNCEMENT
+  RESOURCE_LINKS
+  DISCUSSION
+  VIDEO_LESSON
+  QUIZ
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  GRADED
+  RETURNED
+}
+
+enum PriorityLevel {
+  NORMAL
+  IMPORTANT
+  URGENT
+}
+
+// Course Component Model
+model CourseComponent {
+  id             String        @id @default(uuid())
+  courseId       String        @map("course_id")
+  componentType  ComponentType @map("component_type")
+  title          String        @db.VarChar(200)
+  description    String?       @db.Text
+  configuration  Json?         @default("{}")
+  sequenceOrder  Int           @map("sequence_order")
+  isPublished    Boolean       @default(false) @map("is_published")
+  createdBy      String        @map("created_by")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  course              Course                 @relation("CourseComponents", fields: [courseId], references: [id], onDelete: Cascade)
+  creator             User                   @relation("ComponentCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  files               ComponentFile[]
+  submissions         AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([componentType])
+  @@index([createdBy])
+  @@index([sequenceOrder])
+  @@map("course_components")
+}
+
+// Component File Model
+model ComponentFile {
+  id             String          @id @default(uuid())
+  componentId    String          @map("component_id")
+  fileName       String          @map("file_name") @db.VarChar(255)
+  filePath       String          @map("file_path") @db.VarChar(500)
+  fileSize       BigInt          @map("file_size")
+  mimeType       String          @map("mime_type") @db.VarChar(100)
+  uploadedBy     String          @map("uploaded_by")
+  description    String?         @db.Text
+  downloadCount  Int             @default(0) @map("download_count")
+  uploadedAt     DateTime        @default(now()) @map("uploaded_at")
+
+  // Relations
+  component   CourseComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  uploader    User            @relation("FileUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([componentId])
+  @@index([uploadedBy])
+  @@map("component_files")
+}
+
+// Assignment Submission Model
+model AssignmentSubmission {
+  id              String           @id @default(uuid())
+  componentId     String           @map("component_id")
+  studentId       String           @map("student_id")
+  attemptNumber   Int              @map("attempt_number")
+  submittedAt     DateTime         @default(now()) @map("submitted_at")
+  isLate          Boolean          @default(false) @map("is_late")
+  status          SubmissionStatus @default(SUBMITTED)
+  grade           Decimal?         @db.Decimal(5, 2)
+  feedback        String?          @db.Text
+  gradedBy        String?          @map("graded_by")
+  gradedAt        DateTime?        @map("graded_at")
+  studentComments String?          @map("student_comments") @db.Text
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  component   CourseComponent    @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  student     User               @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  grader      User?              @relation("GradedSubmissions", fields: [gradedBy], references: [id], onDelete: SetNull)
+  files       SubmissionFile[]
+
+  @@unique([componentId, studentId, attemptNumber])
+  @@index([componentId])
+  @@index([studentId])
+  @@index([status])
+  @@index([submittedAt])
+  @@map("assignment_submissions")
+}
+
+// Submission File Model
+model SubmissionFile {
+  id           String               @id @default(uuid())
+  submissionId String               @map("submission_id")
+  fileName     String               @map("file_name") @db.VarChar(255)
+  filePath     String               @map("file_path") @db.VarChar(500)
+  fileSize     BigInt               @map("file_size")
+  mimeType     String               @map("mime_type") @db.VarChar(100)
+  uploadedAt   DateTime             @default(now()) @map("uploaded_at")
+
+  // Relations
+  submission AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+  @@map("submission_files")
 }
 
 // Session Email Tracking Model

@@ -252,11 +252,6 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ error: 'Tags cannot exceed 5 items.' });
     }
 
-    // Validate cover image is required
-    if (!thumbnailUrl) {
-      return res.status(400).json({ error: 'Cover image is required.' });
-    }
-
     // Validate pricing - if not FREE, price must be > 0
     if (pricingModel && pricingModel !== 'FREE') {
       if (!price || parseFloat(price) <= 0) {

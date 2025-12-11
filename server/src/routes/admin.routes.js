@@ -56,6 +56,11 @@ router.post('/broadcast', adminController.createBroadcast);
 router.post('/broadcast/:id/send', adminController.sendBroadcast);
 router.get('/broadcast', adminController.getBroadcasts);
 
+// ==================== MANUAL ENROLLMENT ====================
+router.post('/courses/:courseId/enroll', adminController.manualEnrollUser);
+router.post('/courses/:courseId/bulk-enroll', adminController.bulkEnrollUsers);
+router.delete('/enrollments/:enrollmentId', adminController.removeEnrollment);
+
 // Legacy routes (keeping for backward compatibility)
 router.get('/courses/pending', (req, res) => {
   res.json({ success: true, message: 'Get pending courses' });

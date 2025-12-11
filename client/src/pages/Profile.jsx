@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -7,6 +8,7 @@ const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://lo
 
 const Profile = () => {
   const { user, updateUser } = useAuthStore();
+  const { t } = useTranslation('common');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -49,13 +51,13 @@ const Profile = () => {
     if (file) {
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'Image size should be less than 5MB' });
+        setMessage({ type: 'error', text: t('profile.errorImageSize') });
         return;
       }
 
       // Check file type
       if (!file.type.startsWith('image/')) {
-        setMessage({ type: 'error', text: 'Please select a valid image file' });
+        setMessage({ type: 'error', text: t('profile.errorImageType') });
         return;
       }
 
@@ -108,10 +110,10 @@ const Profile = () => {
       }
       updateUser(updatedUser);
       
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setMessage({ type: 'success', text: t('profile.success') });
       setIsEditing(false);
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to update profile';
+      const errorMessage = error.response?.data?.message || t('profile.errorUpdate');
       setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsLoading(false);
@@ -146,10 +148,10 @@ const Profile = () => {
   return (
     <div className="container">
       <div className="profile-header">
-        <h1>My Profile</h1>
+        <h1>{t('profile.title')}</h1>
         {!isEditing && (
           <button onClick={() => setIsEditing(true)} className="btn btn-primary">
-            Edit Profile
+            {t('profile.editProfile')}
           </button>
         )}
       </div>
@@ -194,7 +196,7 @@ const Profile = () => {
                   onClick={() => fileInputRef.current?.click()}
                   className="btn btn-outline btn-sm"
                 >
-                  Change Photo
+                  {t('profile.changePhoto')}
                 </button>
                 {imagePreview && (
                   <button
@@ -202,7 +204,7 @@ const Profile = () => {
                     onClick={handleRemoveImage}
                     className="btn btn-ghost btn-sm"
                   >
-                    Remove
+                    {t('profile.removePhoto')}
                   </button>
                 )}
               </div>
@@ -211,11 +213,11 @@ const Profile = () => {
 
           {/* Personal Information */}
           <div className="form-section">
-            <h3>Personal Information</h3>
+            <h3>{t('profile.personalInfo')}</h3>
             
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="firstName">First Name *</label>
+                <label htmlFor="firstName">{t('profile.firstName')} {t('profile.required')}</label>
                 <input
                   type="text"
                   id="firstName"
@@ -228,7 +230,7 @@ const Profile = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="lastName">Last Name *</label>
+                <label htmlFor="lastName">{t('profile.lastName')} {t('profile.required')}</label>
                 <input
                   type="text"
                   id="lastName"
@@ -242,7 +244,7 @@ const Profile = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Email Address</label>
+              <label htmlFor="email">{t('profile.email')}</label>
               <input
                 type="email"
                 id="email"
@@ -251,12 +253,12 @@ const Profile = () => {
                 disabled
                 className="input-disabled"
               />
-              <small className="form-hint">Email cannot be changed</small>
+              <small className="form-hint">{t('profile.emailHint')}</small>
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="phoneNumber">Phone Number</label>
+                <label htmlFor="phoneNumber">{t('profile.phoneNumber')}</label>
                 <input
                   type="tel"
                   id="phoneNumber"
@@ -264,12 +266,12 @@ const Profile = () => {
                   value={formData.phoneNumber}
                   onChange={handleChange}
                   disabled={!isEditing}
-                  placeholder="+60 12-345 6789"
+                  placeholder={t('profile.phonePlaceholder')}
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="dateOfBirth">Date of Birth</label>
+                <label htmlFor="dateOfBirth">{t('profile.dateOfBirth')}</label>
                 <input
                   type="date"
                   id="dateOfBirth"
@@ -282,7 +284,7 @@ const Profile = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="bio">Bio</label>
+              <label htmlFor="bio">{t('profile.bio')}</label>
               <textarea
                 id="bio"
                 name="bio"
@@ -290,18 +292,18 @@ const Profile = () => {
                 onChange={handleChange}
                 disabled={!isEditing}
                 rows="4"
-                placeholder="Tell us about yourself..."
+                placeholder={t('profile.bioPlaceholder')}
               />
             </div>
           </div>
 
           {/* Account Information */}
           <div className="form-section">
-            <h3>Account Information</h3>
+            <h3>{t('profile.accountInfo')}</h3>
             
             <div className="form-row">
               <div className="form-group">
-                <label>Role</label>
+                <label>{t('profile.role')}</label>
                 <input
                   type="text"
                   value={user?.role || ''}
@@ -311,7 +313,7 @@ const Profile = () => {
               </div>
 
               <div className="form-group">
-                <label>Member Since</label>
+                <label>{t('profile.memberSince')}</label>
                 <input
                   type="text"
                   value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''}
@@ -324,7 +326,7 @@ const Profile = () => {
             {user?.role === 'STUDENT' && (
               <div className="form-row">
                 <div className="form-group">
-                  <label>Total Points</label>
+                  <label>{t('profile.totalPoints')}</label>
                   <input
                     type="text"
                     value={user?.totalPoints || 0}
@@ -334,10 +336,10 @@ const Profile = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>Current Streak</label>
+                  <label>{t('profile.currentStreak')}</label>
                   <input
                     type="text"
-                    value={`${user?.currentStreak || 0} days`}
+                    value={t('profile.streakDays', { count: user?.currentStreak || 0 })}
                     disabled
                     className="input-disabled"
                   />
@@ -355,14 +357,14 @@ const Profile = () => {
                 className="btn btn-outline"
                 disabled={isLoading}
               >
-                Cancel
+                {t('action.cancel')}
               </button>
               <button
                 type="submit"
                 className="btn btn-primary"
                 disabled={isLoading}
               >
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {isLoading ? t('profile.saving') : t('profile.saveChanges')}
               </button>
             </div>
           )}

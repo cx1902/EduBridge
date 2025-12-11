@@ -137,9 +137,12 @@ exports.getCourseById = async (req, res) => {
         },
         reviews: {
           include: {
-            course: {
+            user: {
               select: {
-                id: true
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true
               }
             }
           },
@@ -173,7 +176,7 @@ exports.getCourseById = async (req, res) => {
       const enrollment = await prisma.enrollment.findUnique({
         where: {
           userId_courseId: {
-            userId: req.user.userId,
+            userId: req.user.id,
             courseId: id
           }
         }

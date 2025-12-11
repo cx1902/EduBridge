@@ -53,7 +53,7 @@ const StructureStep = ({ formData, onChange, errors }) => {
 
       <div className={`form-group ${errors.thumbnailUrl ? 'has-error' : ''}`}>
         <label htmlFor="thumbnailUrl">
-          Cover Image URL <span className="required">*</span>
+          Cover Image URL
         </label>
         <input
           type="url"

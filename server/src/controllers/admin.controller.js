@@ -2161,3 +2161,342 @@ exports.getBroadcasts = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch broadcasts' });
   }
 };
+
+// ==================== MANUAL ENROLLMENT MANAGEMENT ====================
+
+/**
+ * Manually enroll a user in a course
+ * POST /api/admin/courses/:courseId/enroll
+ */
+exports.manualEnrollUser = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { userId, role } = req.body; // role can be used to enroll tutors as co-instructors
+    const adminId = req.user.id;
+
+    // Validate course exists
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, title: true, tutorId: true }
+    });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Validate user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, firstName: true, lastName: true, email: true, role: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if already enrolled
+    const existingEnrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId
+        }
+      }
+    });
+
+    if (existingEnrollment) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already enrolled in this course'
+      });
+    }
+
+    // Create enrollment
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        userId,
+        courseId,
+        enrolledAt: new Date(),
+        status: 'ACTIVE'
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        },
+        course: {
+          select: {
+            id: true,
+            title: true
+          }
+        }
+      }
+    });
+
+    // Update course enrollment count
+    await prisma.course.update({
+      where: { id: courseId },
+      data: {
+        enrollmentCount: { increment: 1 }
+      }
+    });
+
+    // Create notification for user
+    await prisma.notification.create({
+      data: {
+        userId,
+        type: 'ENROLLMENT',
+        title: 'Enrolled in Course',
+        message: `You have been enrolled in "${course.title}" by an administrator.`,
+        link: `/student/courses/${courseId}`
+      }
+    });
+
+    // Log action
+    await logAction({
+      adminId,
+      actionType: ACTION_TYPES.USER_UPDATE,
+      targetResourceType: RESOURCE_TYPES.ENROLLMENT,
+      targetResourceId: enrollment.id,
+      reason: `Manually enrolled ${user.email} in ${course.title}`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      additionalContext: {
+        userId,
+        courseId,
+        userEmail: user.email,
+        courseTitle: course.title
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: enrollment,
+      message: `Successfully enrolled ${user.firstName} ${user.lastName} in ${course.title}`
+    });
+  } catch (error) {
+    console.error('Manual enrollment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to enroll user in course' 
+    });
+  }
+};
+
+/**
+ * Bulk enroll multiple users in a course
+ * POST /api/admin/courses/:courseId/bulk-enroll
+ */
+exports.bulkEnrollUsers = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { userIds } = req.body; // Array of user IDs
+    const adminId = req.user.id;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'userIds must be a non-empty array'
+      });
+    }
+
+    // Validate course exists
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, title: true }
+    });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Get existing enrollments to avoid duplicates
+    const existingEnrollments = await prisma.enrollment.findMany({
+      where: {
+        courseId,
+        userId: { in: userIds }
+      },
+      select: { userId: true }
+    });
+
+    const existingUserIds = new Set(existingEnrollments.map(e => e.userId));
+    const newUserIds = userIds.filter(id => !existingUserIds.has(id));
+
+    if (newUserIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'All specified users are already enrolled'
+      });
+    }
+
+    // Get user details for notifications
+    const users = await prisma.user.findMany({
+      where: { id: { in: newUserIds } },
+      select: { id: true, firstName: true, lastName: true, email: true }
+    });
+
+    // Create enrollments and notifications in transaction
+    const enrollments = await prisma.$transaction(async (tx) => {
+      // Create enrollments
+      const createdEnrollments = await Promise.all(
+        newUserIds.map(userId =>
+          tx.enrollment.create({
+            data: {
+              userId,
+              courseId,
+              enrolledAt: new Date(),
+              status: 'ACTIVE'
+            }
+          })
+        )
+      );
+
+      // Update course enrollment count
+      await tx.course.update({
+        where: { id: courseId },
+        data: {
+          enrollmentCount: { increment: newUserIds.length }
+        }
+      });
+
+      // Create notifications
+      await Promise.all(
+        newUserIds.map(userId =>
+          tx.notification.create({
+            data: {
+              userId,
+              type: 'ENROLLMENT',
+              title: 'Enrolled in Course',
+              message: `You have been enrolled in "${course.title}" by an administrator.`,
+              link: `/student/courses/${courseId}`
+            }
+          })
+        )
+      );
+
+      return createdEnrollments;
+    });
+
+    // Log action
+    await logAction({
+      adminId,
+      actionType: ACTION_TYPES.USER_UPDATE,
+      targetResourceType: RESOURCE_TYPES.COURSE,
+      targetResourceId: courseId,
+      reason: `Bulk enrolled ${newUserIds.length} users in ${course.title}`,
+      ipAddress: req.ip || req.connection.remoteAddress,
+      additionalContext: {
+        enrolledCount: newUserIds.length,
+        skippedCount: userIds.length - newUserIds.length,
+        courseId,
+        courseTitle: course.title
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        enrolledCount: newUserIds.length,
+        skippedCount: userIds.length - newUserIds.length,
+        enrollments
+      },
+      message: `Successfully enrolled ${newUserIds.length} users. ${userIds.length - newUserIds.length} already enrolled.`
+    });
+  } catch (error) {
+    console.error('Bulk enrollment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to perform bulk enrollment' 
+    });
+  }
+};
+
+/**
+ * Remove enrollment
+ * DELETE /api/admin/enrollments/:enrollmentId
+ */
+exports.removeEnrollment = async (req, res) => {
+  try {
+    const { enrollmentId } = req.params;
+    const adminId = req.user.id;
+
+    // Get enrollment details
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true }
+        },
+        course: {
+          select: { id: true, title: true }
+        }
+      }
+    });
+
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Enrollment not found'
+      });
+    }
+
+    // Delete enrollment
+    await prisma.$transaction(async (tx) => {
+      await tx.enrollment.delete({
+        where: { id: enrollmentId }
+      });
+
+      // Update course enrollment count
+      await tx.course.update({
+        where: { id: enrollment.courseId },
+        data: {
+          enrollmentCount: { decrement: 1 }
+        }
+      });
+
+      // Create notification
+      await tx.notification.create({
+        data: {
+          userId: enrollment.userId,
+          type: 'SYSTEM_ANNOUNCEMENT',
+          title: 'Enrollment Removed',
+          message: `Your enrollment in "${enrollment.course.title}" has been removed by an administrator.`,
+          link: '/student/courses'
+        }
+      });
+    });
+
+    // Log action
+    await logAction({
+      adminId,
+      actionType: ACTION_TYPES.USER_UPDATE,
+      targetResourceType: RESOURCE_TYPES.ENROLLMENT,
+      targetResourceId: enrollmentId,
+      reason: `Removed enrollment for ${enrollment.user.email} from ${enrollment.course.title}`,
+      ipAddress: req.ip || req.connection.remoteAddress
+    });
+
+    res.json({
+      success: true,
+      message: `Enrollment removed successfully`
+    });
+  } catch (error) {
+    console.error('Remove enrollment error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to remove enrollment' 
+    });
+  }
+};
