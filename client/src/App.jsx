@@ -11,6 +11,7 @@ import AuthLayout from './components/Layout/AuthLayout';
 import LandingPage from './pages/Public/LandingPage';
 import CourseCatalog from './pages/Public/CourseCatalog';
 import CourseDetail from './pages/Public/CourseDetail';
+import AboutUs from './pages/Public/AboutUs';
 
 // Auth Pages
 import Login from './pages/Auth/Login';
@@ -82,6 +83,7 @@ function App() {
         <Route index element={<LandingPage />} />
         <Route path="courses" element={<CourseCatalog />} />
         <Route path="courses/:id" element={<CourseDetail />} />
+        <Route path="about" element={<AboutUs />} />
       </Route>
 
       {/* Auth Routes */}

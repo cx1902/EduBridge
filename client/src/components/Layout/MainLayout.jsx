@@ -14,6 +14,38 @@ const MainLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useTranslation('common');
 
+  const handleThemeToggle = (e) => {
+    const button = e.currentTarget;
+    const rect = button.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    // Create ripple element
+    const ripple = document.createElement('div');
+    ripple.className = 'theme-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    ripple.style.width = '100px';
+    ripple.style.height = '100px';
+    ripple.style.marginLeft = '-50px';
+    ripple.style.marginTop = '-50px';
+    
+    document.body.appendChild(ripple);
+    
+    // Trigger animation
+    requestAnimationFrame(() => {
+      ripple.classList.add('active');
+    });
+    
+    // Toggle theme
+    toggleTheme();
+    
+    // Remove ripple after animation
+    setTimeout(() => {
+      ripple.remove();
+    }, 800);
+  };
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -46,6 +78,7 @@ const MainLayout = () => {
             {/* Desktop Navigation */}
             <nav className="nav-links desktop-nav">
               <Link to="/courses">{t('nav.courses')}</Link>
+              <Link to="/about">{t('nav.about')}</Link>
               {isAuthenticated && (
                 <Link to={getDashboardLink()}>{t('nav.dashboard')}</Link>
               )}
@@ -56,8 +89,8 @@ const MainLayout = () => {
               <LanguageSwitcher />
               
               <button
-                onClick={toggleTheme}
-                className="icon-btn"
+                onClick={handleThemeToggle}
+                className="icon-btn theme-toggle-btn"
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? <FiSun /> : <FiMoon />}
@@ -101,6 +134,9 @@ const MainLayout = () => {
             <div className="mobile-menu">
               <Link to="/courses" onClick={() => setMobileMenuOpen(false)}>
                 {t('nav.courses')}
+              </Link>
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)}>
+                {t('nav.about')}
               </Link>
               {isAuthenticated && (
                 <Link to={getDashboardLink()} onClick={() => setMobileMenuOpen(false)}>

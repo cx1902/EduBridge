@@ -17,11 +17,21 @@ export const useThemeStore = create(
       // Set language
       setLanguage: (language) => set({ language }),
 
-      // Toggle between light and dark theme
-      toggleTheme: () =>
+      // Toggle between light and dark theme with animation
+      toggleTheme: () => {
+        // Add transition class
+        document.documentElement.classList.add('theme-transitioning');
+        
+        // Toggle theme
         set((state) => ({
           theme: state.theme === 'light' ? 'dark' : 'light',
-        })),
+        }));
+        
+        // Remove transition class after animation completes
+        setTimeout(() => {
+          document.documentElement.classList.remove('theme-transitioning');
+        }, 400);
+      },
     }),
     {
       name: 'theme-storage',
