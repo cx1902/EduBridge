@@ -18,28 +18,13 @@
 .auth-container::before,
 .auth-container::after {
   content: '';
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.3;
-  animation: float 20s infinite ease-in-out;
+  display: none;
 }
 
 .auth-container::before {
-  width: 500px;
-  height: 500px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  top: -250px;
-  left: -250px;
 }
 
 .auth-container::after {
-  width: 400px;
-  height: 400px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
-  bottom: -200px;
-  right: -200px;
-  animation-delay: -10s;
 }
 
 @keyframes float {
@@ -72,6 +57,19 @@
   animation: slideUp 0.6s ease-out;
 }
 
+.auth-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.6), rgba(139,92,246,0.6));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -88,6 +86,10 @@
   border: 1px solid rgba(59, 130, 246, 0.2);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4),
               0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .auth-card::after {
+  background: linear-gradient(135deg, rgba(59,130,246,0.7), rgba(139,92,246,0.7));
 }
 
 .auth-card h1 {
@@ -236,32 +238,26 @@
 
 /* ==================== Modern Divider ==================== */
 .auth-divider {
-  text-align: center;
-  margin: 1.75rem 0;
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  color: var(--color-text-secondary);
 }
 
-.auth-divider::before {
+.auth-divider::before,
+.auth-divider::after {
   content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
+  flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(59, 130, 246, 0.2) 50%, 
-    transparent 100%
-  );
+  background: var(--color-border);
+  opacity: 0.9;
 }
 
 .auth-divider span {
-  padding: 0 1rem;
-  position: relative;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--color-text-secondary) !important;
-  font-size: 0.875rem;
-  font-weight: 500;
-  background: transparent;
 }
 
 [data-theme="dark"] .auth-divider span {
@@ -300,8 +296,24 @@
   transition: opacity 0.3s ease;
 }
 
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -150%;
+  left: -50%;
+  width: 50%;
+  height: 400%;
+  transform: rotate(25deg);
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0) 100%);
+  transition: transform 0.6s ease;
+}
+
 .btn-primary:hover::before {
   opacity: 1;
+}
+
+.btn-primary:hover::after {
+  transform: translateX(300%) rotate(25deg);
 }
 
 .btn-primary:hover {
@@ -319,6 +331,11 @@
   transform: none;
 }
 
+.btn-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+}
+
 .btn-outline {
   background: transparent;
   border: 2px solid rgba(59, 130, 246, 0.3);
@@ -331,6 +348,18 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+}
+
+/* Improve visibility of Create Account on light theme */
+.auth-card .btn-outline {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-card .btn-outline:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
 }
 
 .btn-outline::before {
@@ -428,6 +457,8 @@
   position: relative;
   overflow: hidden;
 }
+
+.btn-oauth svg { flex-shrink: 0; }
 
 .btn-oauth::before {
   content: '';

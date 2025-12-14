@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import './AboutUs.css';
 
 const AboutUs = () => {
   const { t } = useTranslation('common');
+  const location = useLocation();
   const [stats, setStats] = useState({
     learners: 0,
     sessions: 0,
@@ -47,6 +48,16 @@ const AboutUs = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Scroll to section when hash present
+  useEffect(() => {
+    if (location.hash) {
+      const el = document.querySelector(location.hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [location]);
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -167,7 +178,7 @@ const AboutUs = () => {
       </section>
 
       {/* What We Offer */}
-      <section className="offerings-section">
+      <section id="offerings" className="offerings-section">
         <div className="container">
           <div className="section-header">
             <h2 className="section-title">What We Offer</h2>
@@ -243,7 +254,6 @@ const AboutUs = () => {
                 or as a tutor to teach.
               </p>
             </div>
-            <div className="step-connector"></div>
             <div className="step-card">
               <div className="step-number">2</div>
               <div className="step-icon">🔍</div>
@@ -253,7 +263,6 @@ const AboutUs = () => {
                 level, price, and ratings.
               </p>
             </div>
-            <div className="step-connector"></div>
             <div className="step-card">
               <div className="step-number">3</div>
               <div className="step-icon">📖</div>
@@ -263,7 +272,6 @@ const AboutUs = () => {
                 practice your new skills.
               </p>
             </div>
-            <div className="step-connector"></div>
             <div className="step-card">
               <div className="step-number">4</div>
               <div className="step-icon">📊</div>

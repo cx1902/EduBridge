@@ -129,12 +129,12 @@ const LandingPage = () => {
               </div>
               <h3 className="feature-title">{t('landing.features.selfPaced.title')}</h3>
               <p className="feature-description">{t('landing.features.selfPaced.description')}</p>
-              <div className="feature-link">
+              <Link to="/about#offerings" className="feature-link">
                 <span>Learn more</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
+              </Link>
             </div>
             <div className="feature-card-modern">
               <div className="feature-icon-wrapper">
@@ -142,12 +142,12 @@ const LandingPage = () => {
               </div>
               <h3 className="feature-title">{t('landing.features.liveTutoring.title')}</h3>
               <p className="feature-description">{t('landing.features.liveTutoring.description')}</p>
-              <div className="feature-link">
+              <Link to="/about#offerings" className="feature-link">
                 <span>Learn more</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
+              </Link>
             </div>
             <div className="feature-card-modern">
               <div className="feature-icon-wrapper">
@@ -155,12 +155,12 @@ const LandingPage = () => {
               </div>
               <h3 className="feature-title">{t('landing.features.gamification.title')}</h3>
               <p className="feature-description">{t('landing.features.gamification.description')}</p>
-              <div className="feature-link">
+              <Link to="/about#offerings" className="feature-link">
                 <span>Learn more</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
