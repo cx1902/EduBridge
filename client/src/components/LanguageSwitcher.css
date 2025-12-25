@@ -89,6 +89,20 @@
   transition: background 0.2s ease;
 }
 
+.language-option .language-flag {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.language-option:hover .language-flag {
+  color: var(--color-text);
+}
+
+.language-option.active .language-flag {
+  color: var(--success-color, #22c55e);
+}
+
 .language-option:last-child {
   border-bottom: none;
 }

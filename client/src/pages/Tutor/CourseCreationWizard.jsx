@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import './CourseCreationWizard.css';
+import { useTranslation } from 'react-i18next';
 
 // Step components (will be implemented separately)
 import BasicsStep from './steps/BasicsStep';
@@ -18,6 +19,7 @@ const CourseCreationWizard = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdCourse, setCreatedCourse] = useState(null);
   const [errors, setErrors] = useState({});
+  const { t } = useTranslation('common');
 
   const [formData, setFormData] = useState({
     // Step 1: Basics
@@ -28,7 +30,7 @@ const CourseCreationWizard = () => {
     tags: [],
     
     // Step 2: Outcomes & Audience
-    learningOutcomes: ['', '', ''],
+    learningOutcomes: [''],
     prerequisites: '',
     targetAudience: '',
     description: '',
@@ -52,11 +54,13 @@ const CourseCreationWizard = () => {
   });
 
   const steps = [
-    { number: 1, label: 'Basics', component: BasicsStep },
-    { number: 2, label: 'Outcomes', component: OutcomesStep },
-    { number: 3, label: 'Structure', component: StructureStep },
-    { number: 4, label: 'Pricing', component: PricingStep },
+    { number: 1, label: t('createCourse.steps.basics', 'Basics'), component: BasicsStep },
+    { number: 2, label: t('createCourse.steps.outcomes', 'Outcomes'), component: OutcomesStep },
+    { number: 3, label: t('createCourse.steps.structure', 'Structure'), component: StructureStep },
+    { number: 4, label: t('createCourse.steps.pricing', 'Pricing'), component: PricingStep },
   ];
+
+  const progressPercent = ((currentStep - 1) / (steps.length - 1)) * 100;
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -92,19 +96,12 @@ const CourseCreationWizard = () => {
       }
     } else if (step === 2) {
       // Validate Outcomes & Audience
-      const validOutcomes = formData.learningOutcomes.filter((o) => o.trim().length > 0);
-      if (validOutcomes.length < 3) {
-        newErrors.learningOutcomes = 'Please add at least 3 learning outcomes.';
+      const validOutcomes = formData.learningOutcomes.map((o) => o.trim()).filter((o) => o.length > 0);
+      if (validOutcomes.length < 1) {
+        newErrors.learningOutcomes = 'Please add at least 1 learning outcome.';
       }
       if (validOutcomes.length > 5) {
         newErrors.learningOutcomes = 'Learning outcomes cannot exceed 5 items.';
-      }
-      // Validate each outcome length
-      for (let outcome of validOutcomes) {
-        if (outcome.length < 10 || outcome.length > 120) {
-          newErrors.learningOutcomes = 'Each learning outcome must be between 10-120 characters.';
-          break;
-        }
       }
       if (!formData.description || formData.description.length < 50) {
         newErrors.description = 'Description must be at least 50 characters.';
@@ -219,12 +216,15 @@ const CourseCreationWizard = () => {
   return (
     <div className="course-wizard">
       <div className="wizard-header">
-        <h1>Create New Course</h1>
-        <p>Follow these steps to create a comprehensive course for your students</p>
+        <h1>{t('createCourse.header.title', 'Create New Course')}</h1>
+        <p>{t('createCourse.header.subtitle', 'Follow these steps to create a comprehensive course for your students')}</p>
       </div>
 
       {/* Step Indicator */}
       <div className="step-indicator">
+        <div className="progress-line">
+          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+        </div>
         {steps.map((step, index) => (
           <div
             key={step.number}
@@ -260,11 +260,11 @@ const CourseCreationWizard = () => {
         <div className="wizard-actions">
           <div className="left-actions">
             <button type="button" className="btn-secondary" onClick={handleCancel}>
-              Cancel
+              {t('createCourse.actions.cancel', 'Cancel')}
             </button>
             {currentStep > 1 && (
               <button type="button" className="btn-secondary" onClick={handlePrevious}>
-                ← Previous
+                {t('createCourse.actions.previous', '← Previous')}
               </button>
             )}
           </div>
@@ -272,7 +272,7 @@ const CourseCreationWizard = () => {
           <div className="right-actions">
             {currentStep < steps.length ? (
               <button type="button" className="btn-primary" onClick={handleNext}>
-                Next →
+                {t('createCourse.actions.next', 'Next →')}
               </button>
             ) : (
               <>
@@ -282,7 +282,7 @@ const CourseCreationWizard = () => {
                   onClick={() => handleSubmit('draft')}
                   disabled={loading}
                 >
-                  {loading ? <span className="loading-spinner" /> : 'Save Draft'}
+                  {loading ? <span className="loading-spinner" /> : t('createCourse.actions.saveDraft', 'Save Draft')}
                 </button>
                 <button
                   type="button"
@@ -290,7 +290,7 @@ const CourseCreationWizard = () => {
                   onClick={() => handleSubmit('publish')}
                   disabled={loading}
                 >
-                  {loading ? <span className="loading-spinner" /> : 'Publish Course'}
+                  {loading ? <span className="loading-spinner" /> : t('createCourse.actions.publish', 'Publish Course')}
                 </button>
               </>
             )}
@@ -305,10 +305,9 @@ const CourseCreationWizard = () => {
             <div className="icon-container">
               <i className="fas fa-check-circle"></i>
             </div>
-            <h2>Course Created Successfully!</h2>
+            <h2>{t('createCourse.success.title', 'Course Created Successfully!')}</h2>
             <p>
-              Your course "{createdCourse.title}" has been created. What would you like to do
-              next?
+              {t('createCourse.success.text', 'Your course "{{title}}" has been created. What would you like to do next?', { title: createdCourse.title })}
             </p>
 
             <div className="next-steps">
@@ -318,8 +317,8 @@ const CourseCreationWizard = () => {
               >
                 <i className="fas fa-book-open"></i>
                 <div className="step-content">
-                  <strong>Add Lessons</strong>
-                  <span>Begin building your curriculum content</span>
+                  <strong>{t('createCourse.success.addLessons.title', 'Add Lessons')}</strong>
+                  <span>{t('createCourse.success.addLessons.text', 'Begin building your curriculum content')}</span>
                 </div>
               </button>
 
@@ -329,8 +328,8 @@ const CourseCreationWizard = () => {
               >
                 <i className="fas fa-question-circle"></i>
                 <div className="step-content">
-                  <strong>Create Quiz Bank</strong>
-                  <span>Set up assessment questions</span>
+                  <strong>{t('createCourse.success.quiz.title', 'Create Quiz Bank')}</strong>
+                  <span>{t('createCourse.success.quiz.text', 'Set up assessment questions')}</span>
                 </div>
               </button>
 
@@ -340,21 +339,21 @@ const CourseCreationWizard = () => {
               >
                 <i className="fas fa-eye"></i>
                 <div className="step-content">
-                  <strong>Preview as Student</strong>
-                  <span>View course from student perspective</span>
+                  <strong>{t('createCourse.success.preview.title', 'Preview as Student')}</strong>
+                  <span>{t('createCourse.success.preview.text', 'View course from student perspective')}</span>
                 </div>
               </button>
             </div>
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => navigate(user?.role === 'ADMIN' ? '/admin' : '/tutor')}>
-                Back to Dashboard
+                {t('createCourse.success.back', 'Back to Dashboard')}
               </button>
               <button
                 className="btn-primary"
                 onClick={() => navigate(`/tutor/courses/${createdCourse.id}/lessons`)}
               >
-                Add Lessons
+                {t('createCourse.success.addLessons.title', 'Add Lessons')}
               </button>
             </div>
           </div>

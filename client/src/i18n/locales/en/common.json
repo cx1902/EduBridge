@@ -148,11 +148,14 @@
     "hero": {
       "title": "Transform Your Learning Journey with EduBridge",
       "subtitle": "Access world-class courses, connect with expert tutors, and achieve your educational goals with our comprehensive learning platform.",
+      "badge": "Welcome to the Future of Learning",
       "getStarted": "Get Started Free",
       "browseCourses": "Browse Courses"
     },
     "features": {
       "title": "Why Choose EduBridge?",
+      "subtitle": "Everything you need to succeed in your learning journey",
+      "learnMore": "Learn more",
       "selfPaced": {
         "title": "Self-Paced Learning",
         "description": "Learn at your own pace with high-quality video lessons and interactive content."
@@ -166,10 +169,411 @@
         "description": "Stay motivated with points, badges, and streaks as you progress."
       }
     },
+    "testimonials": {
+      "title": "What Our Students Say",
+      "subtitle": "Join thousands of satisfied learners",
+      "item1": {
+        "name": "Sarah Chen",
+        "role": "Computer Science Student",
+        "quote": "EduBridge transformed my learning experience. The platform is intuitive and the tutors are exceptional!"
+      },
+      "item2": {
+        "name": "Marcus Johnson",
+        "role": "Data Science Learner",
+        "quote": "The gamification features keep me motivated. I've completed 15 courses in just 6 months!"
+      },
+      "item3": {
+        "name": "Emily Rodriguez",
+        "role": "Business Student",
+        "quote": "Best online learning platform I've used. The live tutoring sessions are incredibly valuable."
+      }
+    },
     "cta": {
       "title": "Ready to Start Learning?",
       "subtitle": "Join thousands of students already transforming their education.",
-      "button": "Create Free Account"
+      "button": "Create Free Account",
+      "note": "No credit card required • Start learning in minutes"
+    }
+  ,
+  "stats": {
+    "activeStudents": "Active Students",
+    "qualityCourses": "Quality Courses",
+    "expertTutors": "Expert Tutors",
+    "learningHours": "Learning Hours"
+  }
+  },
+  "about": {
+    "hero": {
+      "title": "Empowering Learners, Connecting Educators",
+      "subtitle": "Join thousands of students and tutors building the future of education together",
+      "joinStudent": "Join as Student",
+      "becomeTutor": "Become a Tutor"
+    },
+    "mission": {
+      "title": "Our Mission",
+      "text": "To bridge the gap between passionate learners and expert educators, creating a seamless, engaging platform where knowledge flows freely and everyone can achieve their full potential."
+    },
+    "story": {
+      "title": "Our Story",
+      "problem": {
+        "title": "The Problem",
+        "text": "We noticed that quality education was often limited by geography, time constraints, and accessibility. Students struggled to find expert tutors, and talented educators lacked a platform to reach eager learners."
+      },
+      "solution": {
+        "title": "The Solution",
+        "text": "EduBridge was born from the vision to democratize education. We built a comprehensive platform combining self-paced courses, live tutoring, interactive quizzes, and gamification to create an engaging learning experience accessible to everyone, anywhere."
+      },
+      "impact": {
+        "title": "The Impact",
+        "text": "Today, we're proud to connect thousands of students with expert tutors, creating meaningful learning experiences that transform lives and build brighter futures."
+      }
+    },
+    "offerings": {
+      "title": "What We Offer",
+      "subtitle": "Everything you need for a complete learning experience",
+      "courses": {
+        "title": "Comprehensive Courses",
+        "text": "Access hundreds of high-quality courses across various subjects and skill levels, created by expert tutors and industry professionals.",
+        "features": {
+          "selfPaced": "Self-paced learning",
+          "videoLessons": "Video lessons",
+          "resources": "Downloadable resources",
+          "lifetimeAccess": "Lifetime access"
+        }
+      },
+      "liveTutoring": {
+        "title": "Live Tutoring",
+        "text": "Book one-on-one or group sessions with expert tutors for personalized guidance and real-time interaction.",
+        "features": {
+          "flexibleScheduling": "Flexible scheduling",
+          "screenSharing": "Screen sharing",
+          "whiteboard": "Interactive whiteboard",
+          "recordings": "Session recordings"
+        }
+      },
+      "quizzes": {
+        "title": "Interactive Quizzes",
+        "text": "Test your knowledge with engaging quizzes, get instant feedback, and track your progress over time.",
+        "features": {
+          "multipleTypes": "Multiple question types",
+          "instantGrading": "Instant grading",
+          "explanations": "Detailed explanations",
+          "progressTracking": "Progress tracking"
+        }
+      },
+      "gamification": {
+        "title": "Gamification",
+        "text": "Stay motivated with points, badges, streaks, and leaderboards that make learning fun and rewarding.",
+        "features": {
+          "pointsRewards": "Points & rewards",
+          "badges": "Achievement badges",
+          "streaks": "Learning streaks",
+          "leaderboards": "Leaderboards"
+        }
+      }
+    },
+    "how": {
+      "title": "How EduBridge Works",
+      "subtitle": "Get started in four simple steps",
+      "steps": {
+        "signUp": {
+          "title": "Sign Up",
+          "text": "Create your free account in seconds. Choose to join as a student to learn or as a tutor to teach."
+        },
+        "choose": {
+          "title": "Choose Subject",
+          "text": "Browse our extensive catalog of courses and tutors. Filter by subject, level, price, and ratings."
+        },
+        "learn": {
+          "title": "Learn & Practice",
+          "text": "Engage with video lessons, complete quizzes, join live sessions, and practice your new skills."
+        },
+        "track": {
+          "title": "Track Progress",
+          "text": "Monitor your learning journey with detailed analytics, earn badges, and celebrate your achievements."
+        }
+      }
+    },
+    "benefits": {
+      "students": {
+        "title": "For Students",
+        "items": {
+          "0": "Access to 500+ quality courses",
+          "1": "Learn at your own pace, anytime",
+          "2": "Book live sessions with expert tutors",
+          "3": "Earn points, badges, and certificates",
+          "4": "Track your progress with analytics",
+          "5": "Join a supportive learning community",
+          "6": "30-day money-back guarantee"
+        },
+        "cta": "Start Learning"
+      },
+      "tutors": {
+        "title": "For Tutors",
+        "items": {
+          "0": "Reach thousands of eager students",
+          "1": "Create and sell your own courses",
+          "2": "Set your own schedule and rates",
+          "3": "Earn competitive income teaching",
+          "4": "Access powerful teaching tools",
+          "5": "Build your professional reputation",
+          "6": "Secure payment processing"
+        },
+        "cta": "Become a Tutor"
+      }
+    },
+    "quality": {
+      "title": "Quality & Safety",
+      "subtitle": "Your trust and safety are our top priorities",
+      "tutorScreening": {
+        "title": "Tutor Screening",
+        "text": "Every tutor undergoes a comprehensive verification process including:",
+        "items": {
+          "0": "Identity verification",
+          "1": "Qualification validation",
+          "2": "Background checks",
+          "3": "Teaching assessment",
+          "4": "Trial lesson evaluation"
+        }
+      },
+      "contentReview": {
+        "title": "Content Review",
+        "text": "All courses are reviewed for quality before publication:",
+        "items": {
+          "0": "Curriculum validation",
+          "1": "Accuracy verification",
+          "2": "Quality standards check",
+          "3": "Student feedback integration",
+          "4": "Regular updates required"
+        }
+      },
+      "studentProtection": {
+        "title": "Student Protection",
+        "text": "We protect our students with comprehensive policies:",
+        "items": {
+          "0": "30-day money-back guarantee",
+          "1": "Secure payment processing",
+          "2": "24/7 customer support",
+          "3": "Dispute resolution process",
+          "4": "Privacy protection"
+        }
+      }
+    },
+    "impact": {
+      "title": "Our Impact",
+      "subtitle": "Making a difference in education worldwide",
+      "cards": {
+        "activeLearners": { "label": "Active Learners", "desc": "Students actively learning on our platform" },
+        "liveSessions": { "label": "Live Sessions", "desc": "One-on-one tutoring sessions completed" },
+        "quizCompletions": { "label": "Quiz Completions", "desc": "Quizzes taken and knowledge tested" },
+        "satisfaction": { "label": "Satisfaction Score", "desc": "Students who would recommend us" }
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about EduBridge",
+      "stillHaveQuestions": "Still have questions?",
+      "contactUs": "Contact Us",
+      "items": {
+        "0": { "question": "How do I get started with EduBridge?", "answer": "Simply sign up for a free account, browse our course catalog, and enroll in courses that interest you. You can also book live tutoring sessions with our expert tutors." },
+        "1": { "question": "Are the courses self-paced or scheduled?", "answer": "We offer both! Self-paced courses allow you to learn at your own speed, while live tutoring sessions are scheduled at specific times for real-time interaction with tutors." },
+        "2": { "question": "How does the gamification system work?", "answer": "Earn points for completing lessons, quizzes, and maintaining learning streaks. Unlock badges and climb leaderboards to stay motivated. Points can also unlock special features and recognition." },
+        "3": { "question": "What qualifications do your tutors have?", "answer": "All our tutors go through a rigorous screening process. They must have proven expertise in their subject area, excellent teaching reviews, and pass our quality assessment before being approved to teach on the platform." },
+        "4": { "question": "Is there a refund policy?", "answer": "Yes! If you're not satisfied with a paid course within the first 30 days, we offer a full refund. We're committed to ensuring quality education and student satisfaction." }
+      }
+    },
+    "finalCta": {
+      "title": "Ready to Transform Your Learning Journey?",
+      "subtitle": "Join thousands of students and tutors already making a difference",
+      "learnCta": "Start Learning Today",
+      "tutorCta": "Apply as a Tutor",
+      "note": "Free to join • No credit card required • Start in minutes"
+    },
+    "values": {
+      "title": "Our Core Values",
+      "subtitle": "The principles that guide everything we do",
+      "accessibility": {
+        "title": "Accessibility",
+        "text": "Education should be available to everyone, everywhere. We break down barriers and make learning accessible to all."
+      },
+      "trust": {
+        "title": "Trust",
+        "text": "We build trust through transparency, verified tutors, secure payments, and reliable support for our community."
+      },
+      "quality": {
+        "title": "Quality",
+        "text": "We maintain high standards through rigorous tutor screening, content review, and continuous improvement."
+      },
+      "growth": {
+        "title": "Growth",
+        "text": "We're committed to the continuous growth of our students, tutors, and platform through innovation and feedback."
+      }
+    }
+  },
+  "aboutExtras": {},
+  "createCourse": {
+    "header": {
+      "title": "Create New Course",
+      "subtitle": "Follow these steps to create a comprehensive course for your students"
+    },
+    "steps": {
+      "basics": "Basics",
+      "outcomes": "Outcomes",
+      "structure": "Structure",
+      "pricing": "Pricing"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "previous": "← Previous",
+      "next": "Next →",
+      "saveDraft": "Save Draft",
+      "publish": "Publish Course"
+    },
+    "basics": {
+      "title": "Basic Information",
+      "description": "Let's start with the fundamentals of your course. This information helps students find and understand your course.",
+      "fields": {
+        "title": "Course Title",
+        "subtitle": "Short Subtitle",
+        "educationLevel": "Education Level",
+        "subject": "Subject",
+        "tags": "Keywords/Tags (max 5)"
+      },
+      "placeholders": {
+        "title": "e.g., Algebra Basics",
+        "subtitle": "e.g., Master algebra basics in 2 weeks",
+        "tagInput": "Type and press Enter",
+        "tagMax": "Max 5 tags"
+      },
+      "help": {
+        "whatIsName": "What is the course name?",
+        "examples": "Examples: \"Algebra Basics\", \"Essay Writing for Beginners\", \"SPM Physics: Forces\"",
+        "oneSentence": "One sentence promise for your students",
+        "whoFor": "Who is this course for?",
+        "pickSubject": "Pick the subject",
+        "addKeywords": "Add keywords (comma or enter separated)",
+        "tagsExamples": "Examples: algebra, equations, beginner"
+      },
+      "level": {
+        "primary": "Primary",
+        "secondary": "Secondary",
+        "university": "University"
+      }
+    },
+    "outcomes": {
+      "title": "Learning Outcomes & Audience",
+      "description": "Define what students will learn and who should take this course. Clear outcomes help students set expectations and motivate their learning journey.",
+      "fields": {
+        "learningOutcomes": "Learning Outcomes",
+        "description": "Course Description",
+        "prerequisites": "Prerequisites",
+        "audience": "Target Audience"
+      },
+      "placeholders": {
+        "outcome": "Learning outcome {{index}}",
+        "description": "Provide a detailed description of your course...",
+        "prerequisites": "e.g., Basic arithmetic, understanding of fractions",
+        "audience": "e.g., Students aged 13-16 preparing for secondary exams"
+      },
+      "help": {
+        "simple": "Add short phrases or words for each outcome (one per line).",
+        "describe": "Describe what the course covers, teaching methods, and student expectations",
+        "characters": "characters (minimum 50)",
+        "knowFirst": "What should students know first?",
+        "whoShouldTake": "Who should take this course?"
+      },
+      "actions": {
+        "remove": "Remove outcome",
+        "addAnother": "Add another outcome (max 5)"
+      }
+    },
+    "structure": {
+      "title": "Structure & Media",
+      "description": "Define the course scope and add visual elements to attract students. These details help set proper expectations.",
+      "fields": {
+        "estimatedHours": "Estimated Total Time (hours)",
+        "difficulty": "Difficulty Level",
+        "coverUrl": "Cover Image URL",
+        "coverAlt": "Cover Image Alt Text",
+        "introUrl": "Intro/Trailer Video URL"
+      },
+      "placeholders": {
+        "estimatedHours": "e.g., 6",
+        "coverUrl": "https://example.com/cover-image.jpg",
+        "coverAlt": "Describe the cover image for accessibility",
+        "introUrl": "https://youtube.com/watch?v=..."
+      },
+      "level": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "advanced": "Advanced"
+      },
+      "help": {
+        "timeExpect": "Time students should expect to complete the course",
+        "skillLevel": "Skill level expectation",
+        "coverMin": "Minimum 1200×675 pixels recommended",
+        "coverTip": "Tip: \"Use a clean image with big shapes; avoid tiny text.\"",
+        "coverAlt": "Helps visually impaired students understand the image",
+        "introTip": "Tip: \"30–60 seconds, say who it's for, what they'll learn, and results.\""
+      }
+    },
+    "pricing": {
+      "title": "Pricing & SEO",
+      "description": "Set your pricing model and optimize your course for search engines. You're almost done!",
+      "fields": {
+        "accessType": "Access Type",
+        "price": "Price (MYR)",
+        "slug": "Custom URL Slug",
+        "metaDescription": "Meta Description (SEO)",
+        "language": "Course Language"
+      },
+      "placeholders": {
+        "price": "0.00",
+        "slug": "algebra-basics",
+        "metaDescription": "Learn algebra fundamentals with clear examples and practice exercises designed for secondary students."
+      },
+      "help": {
+        "paymentModel": "Payment model for course access",
+        "priceCurrency": "Course price in Malaysian Ringgit",
+        "slugInfo": "Auto-generated from title if left empty. Use lowercase letters, numbers, and hyphens only.",
+        "slugExamples": "Example: algebra-basics, essay-writing-101",
+        "preview": "Search engine preview text",
+        "language": "Course delivery language"
+      },
+      "access": {
+        "free": "Free",
+        "oneTime": "One-time Payment",
+        "subscription": "Subscription"
+      },
+      "lang": {
+        "en": "English",
+        "zhCN": "Chinese (Simplified)",
+        "zhTW": "Chinese (Traditional)",
+        "ms": "Malay"
+      },
+      "confirm": "I confirm this content is original and follows community rules."
+    },
+    "errors": {
+      "title": "Title must be between 3-80 characters.",
+      "subtitle": "Subtitle must not exceed 120 characters.",
+      "subject": "Subject is required.",
+      "educationLevel": "Education level is required.",
+      "tags": "Tags cannot exceed 5 items.",
+      "learningOutcomes": "Please add at least 1 learning outcome.",
+      "description": "Description must be at least 50 characters.",
+      "difficulty": "Difficulty level is required.",
+      "estimatedHours": "Estimated hours must be a positive number.",
+      "pricingModel": "Pricing model is required.",
+      "price": "Price must be greater than 0 for paid courses.",
+      "metaDescription": "Meta description must not exceed 160 characters."
+    },
+    "success": {
+      "title": "Course Created Successfully!",
+      "text": "Your course \"{{title}}\" has been created. What would you like to do next?",
+      "addLessons": { "title": "Add Lessons", "text": "Begin building your curriculum content" },
+      "quiz": { "title": "Create Quiz Bank", "text": "Set up assessment questions" },
+      "preview": { "title": "Preview as Student", "text": "View course from student perspective" },
+      "back": "Back to Dashboard"
     }
   },
   "footer": {

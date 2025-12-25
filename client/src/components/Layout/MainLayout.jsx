@@ -8,11 +8,13 @@ import LanguageSwitcher from '../LanguageSwitcher';
 import './MainLayout.css';
 
 const MainLayout = () => {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, checkAuth } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useTranslation('common');
+
+  
 
   const handleThemeToggle = (e) => {
     const button = e.currentTarget;
@@ -70,7 +72,7 @@ const MainLayout = () => {
       <header className="navbar">
         <div className="container">
           <div className="navbar-content">
-            <Link to="/" className="logo">
+            <Link to={isAuthenticated ? getDashboardLink() : "/"} className="logo">
               <span className="logo-icon">📚</span>
               <span className="logo-text">EduBridge</span>
             </Link>

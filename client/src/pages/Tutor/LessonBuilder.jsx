@@ -35,8 +35,9 @@ const LessonBuilder = () => {
 
   const fetchCourse = async () => {
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/tutor/courses/${courseId}`,
+        `${API_URL}/tutor/courses/${courseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCourse(response.data);
@@ -49,8 +50,9 @@ const LessonBuilder = () => {
   const fetchLessons = async () => {
     try {
       setLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/tutor/courses/${courseId}/lessons`,
+        `${API_URL}/tutor/courses/${courseId}/lessons`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setLessons(response.data);
@@ -87,11 +89,12 @@ const LessonBuilder = () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
       if (editingLesson) {
         // Update existing lesson
         await axios.put(
-          `${import.meta.env.VITE_API_URL}/api/tutor/lessons/${editingLesson.id}`,
+          `${API_URL}/tutor/lessons/${editingLesson.id}`,
           formData,
           config
         );
@@ -99,7 +102,7 @@ const LessonBuilder = () => {
       } else {
         // Create new lesson
         await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/tutor/courses/${courseId}/lessons`,
+          `${API_URL}/tutor/courses/${courseId}/lessons`,
           formData,
           config
         );
@@ -136,8 +139,9 @@ const LessonBuilder = () => {
     if (!confirm('Are you sure you want to delete this lesson?')) return;
 
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       await axios.delete(
-        `${import.meta.env.VITE_API_URL}/api/tutor/lessons/${lessonId}`,
+        `${API_URL}/tutor/lessons/${lessonId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       alert('Lesson deleted successfully');
@@ -182,8 +186,9 @@ const LessonBuilder = () => {
     }));
 
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       await axios.patch(
-        `${import.meta.env.VITE_API_URL}/api/tutor/lessons/reorder`,
+        `${API_URL}/tutor/lessons/reorder`,
         { lessonOrders },
         { headers: { Authorization: `Bearer ${token}` } }
       );

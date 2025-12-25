@@ -148,11 +148,14 @@
     "hero": {
       "title": "与 EduBridge 一起开启学习之旅",
       "subtitle": "访问世界一流的课程，与专业导师连接，通过我们全面的学习平台实现您的教育目标。",
+      "badge": "欢迎来到学习的未来",
       "getStarted": "免费开始",
       "browseCourses": "浏览课程"
     },
     "features": {
       "title": "为什么选择 EduBridge？",
+      "subtitle": "助你在学习旅程中取得成功所需的一切",
+      "learnMore": "了解更多",
       "selfPaced": {
         "title": "自主学习",
         "description": "通过高质量的视频课程和互动内容，按照自己的节奏学习。"
@@ -166,10 +169,410 @@
         "description": "通过积分、徽章和连续学习天数保持学习动力。"
       }
     },
+    "testimonials": {
+      "title": "学生怎么说",
+      "subtitle": "加入数千名满意的学习者",
+      "item1": {
+        "name": "Sarah Chen",
+        "role": "计算机科学学生",
+        "quote": "EduBridge 改变了我的学习体验。平台直观易用，导师非常优秀！"
+      },
+      "item2": {
+        "name": "Marcus Johnson",
+        "role": "数据科学学习者",
+        "quote": "游戏化功能让我保持动力。我在短短 6 个月内完成了 15 门课程！"
+      },
+      "item3": {
+        "name": "Emily Rodriguez",
+        "role": "商科学生",
+        "quote": "这是我用过的最佳在线学习平台。直播辅导课程非常有价值。"
+      }
+    },
     "cta": {
       "title": "准备好开始学习了吗？",
       "subtitle": "加入数千名已经在转变教育之旅的学生。",
-      "button": "免费创建账户"
+      "button": "免费创建账户",
+      "note": "无需信用卡 • 几分钟内开始学习"
+    }
+  ,
+  "stats": {
+    "activeStudents": "活跃学生",
+    "qualityCourses": "优质课程",
+    "expertTutors": "专家导师",
+    "learningHours": "学习时长"
+  }
+  },
+  "createCourse": {
+    "header": {
+      "title": "创建新课程",
+      "subtitle": "按照以下步骤为学生创建一门完整的课程"
+    },
+    "steps": {
+      "basics": "基础",
+      "outcomes": "目标",
+      "structure": "结构",
+      "pricing": "定价"
+    },
+    "actions": {
+      "cancel": "取消",
+      "previous": "← 上一步",
+      "next": "下一步 →",
+      "saveDraft": "保存草稿",
+      "publish": "发布课程"
+    },
+    "basics": {
+      "title": "基本信息",
+      "description": "从课程基础开始。这些信息有助于学生找到并了解你的课程。",
+      "fields": {
+        "title": "课程标题",
+        "subtitle": "简短副标题",
+        "educationLevel": "教育阶段",
+        "subject": "科目",
+        "tags": "关键词/标签（最多 5 个）"
+      },
+      "placeholders": {
+        "title": "例如：代数基础",
+        "subtitle": "例如：2 周掌握代数基础",
+        "tagInput": "输入后按回车",
+        "tagMax": "最多 5 个标签"
+      },
+      "help": {
+        "whatIsName": "课程名称是什么？",
+        "examples": "示例：“代数基础”“初学者作文写作”“SPM 物理：力”",
+        "oneSentence": "给学生的一句承诺",
+        "whoFor": "这门课程适合谁？",
+        "pickSubject": "选择科目",
+        "addKeywords": "添加关键词（用逗号或回车分隔）",
+        "tagsExamples": "示例：代数、方程、初学者"
+      },
+      "level": {
+        "primary": "小学",
+        "secondary": "中学",
+        "university": "大学"
+      }
+    },
+    "outcomes": {
+      "title": "学习目标与受众",
+      "description": "明确学生将学到的内容以及适合的受众。清晰的目标有助于设定预期并提升学习动力。",
+      "fields": {
+        "learningOutcomes": "学习目标",
+        "description": "课程描述",
+        "prerequisites": "先修要求",
+        "audience": "目标受众"
+      },
+      "placeholders": {
+        "outcome": "学习目标 {{index}}",
+        "description": "详细介绍你的课程……",
+        "prerequisites": "例如：基础算术、理解分数",
+        "audience": "例如：13–16 岁备考中学考试的学生"
+      },
+      "help": {
+        "simple": "每行添加一个简短词组或关键词即可。",
+        "describe": "描述课程涵盖内容、教学方式与学生预期",
+        "characters": "字符（至少 50）",
+        "knowFirst": "学生需要先具备什么？",
+        "whoShouldTake": "谁应该学习本课程？"
+      },
+      "actions": {
+        "remove": "移除目标",
+        "addAnother": "再添加一个目标（最多 5 个）"
+      }
+    },
+    "structure": {
+      "title": "结构与媒体",
+      "description": "定义课程范围并添加视觉元素以吸引学生，这些信息有助于设定合理预期。",
+      "fields": {
+        "estimatedHours": "预计总时长（小时）",
+        "difficulty": "难度级别",
+        "coverUrl": "封面图片 URL",
+        "coverAlt": "封面图片替代文本",
+        "introUrl": "简介/预告视频 URL"
+      },
+      "placeholders": {
+        "estimatedHours": "例如：6",
+        "coverUrl": "https://example.com/cover-image.jpg",
+        "coverAlt": "为无障碍描述封面图片",
+        "introUrl": "https://youtube.com/watch?v=..."
+      },
+      "level": {
+        "beginner": "初级",
+        "intermediate": "中级",
+        "advanced": "高级"
+      },
+      "help": {
+        "timeExpect": "学生完成课程所需的预计时间",
+        "skillLevel": "技能水平预期",
+        "coverMin": "建议最小 1200×675 像素",
+        "coverTip": "提示：“使用大形状的干净图片，避免过小文字。”",
+        "coverAlt": "帮助视障学生理解图片内容",
+        "introTip": "提示：“30–60 秒，说明适合谁、学到什么以及将获得的结果。”"
+      }
+    },
+    "pricing": {
+      "title": "定价与 SEO",
+      "description": "设置访问类型并优化搜索表现，你已接近完成！",
+      "fields": {
+        "accessType": "访问类型",
+        "price": "价格（马币）",
+        "slug": "自定义 URL 后缀",
+        "metaDescription": "Meta 描述（SEO）",
+        "language": "课程语言"
+      },
+      "placeholders": {
+        "price": "0.00",
+        "slug": "algebra-basics",
+        "metaDescription": "通过清晰示例与练习掌握代数基础，专为中学生设计。"
+      },
+      "help": {
+        "paymentModel": "课程访问的付费模式",
+        "priceCurrency": "课程价格单位为马来西亚林吉特",
+        "slugInfo": "若留空将根据标题自动生成。仅使用小写字母、数字与连字符。",
+        "slugExamples": "示例：algebra-basics、essay-writing-101",
+        "preview": "搜索引擎预览文本",
+        "language": "课程授课语言"
+      },
+      "access": {
+        "free": "免费",
+        "oneTime": "一次性付费",
+        "subscription": "订阅"
+      },
+      "lang": {
+        "en": "英语",
+        "zhCN": "简体中文",
+        "zhTW": "繁体中文",
+        "ms": "马来语"
+      },
+      "confirm": "我确认该内容为原创并遵守社区规范。"
+    },
+    "errors": {
+      "title": "标题长度需在 3–80 个字符之间。",
+      "subtitle": "副标题长度不得超过 120 个字符。",
+      "subject": "科目为必填项。",
+      "educationLevel": "教育阶段为必填项。",
+      "tags": "标签数量不得超过 5 个。",
+      "learningOutcomes": "请至少添加 1 个学习目标。",
+      "description": "课程描述至少 50 个字符。",
+      "difficulty": "请选择难度级别。",
+      "estimatedHours": "预计时长需为正数。",
+      "pricingModel": "请选择访问类型。",
+      "price": "付费课程价格需大于 0。",
+      "metaDescription": "Meta 描述不得超过 160 个字符。"
+    },
+    "success": {
+      "title": "课程创建成功！",
+      "text": "你的课程“{{title}}”已创建。下一步要做什么？",
+      "addLessons": { "title": "新增课节", "text": "开始构建课程内容" },
+      "quiz": { "title": "建立题库", "text": "设置评测题目" },
+      "preview": { "title": "学生视角预览", "text": "以学生身份查看课程" },
+      "back": "返回仪表板"
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "赋能学习者，连接教育者",
+      "subtitle": "加入数千名学生和导师，共同建设教育的未来",
+      "joinStudent": "加入为学生",
+      "becomeTutor": "成为导师"
+    },
+    "mission": {
+      "title": "我们的使命",
+      "text": "弥合热情学习者与专家教育者之间的鸿沟，打造一个无缝且充满参与感的平台，让知识自由流动，帮助每个人充分发挥潜能。"
+    },
+    "story": {
+      "title": "我们的故事",
+      "problem": {
+        "title": "问题",
+        "text": "我们发现，优质教育常常受到地域、时间和可达性的限制。学生难以找到优秀导师，许多有才华的教育者也缺乏平台触达渴望学习的学生。"
+      },
+      "solution": {
+        "title": "解决方案",
+        "text": "EduBridge 源于普惠教育的愿景。我们将自主课程、在线辅导、互动测验与游戏化结合，打造人人随时随地都能参与的沉浸式学习体验。"
+      },
+      "impact": {
+        "title": "影响",
+        "text": "如今，我们自豪地将成千上万名学生与专家导师连接起来，创造有意义的学习体验，改变人生并开创更光明的未来。"
+      }
+    },
+    "offerings": {
+      "title": "我们提供的内容",
+      "subtitle": "完整学习体验所需的一切",
+      "courses": {
+        "title": "综合课程",
+        "text": "获取由专家导师与行业专业人士打造的高质量课程，覆盖多学科与不同水平。",
+        "features": {
+          "selfPaced": "自主学习",
+          "videoLessons": "视频课程",
+          "resources": "可下载资源",
+          "lifetimeAccess": "终身访问"
+        }
+      },
+      "liveTutoring": {
+        "title": "在线辅导",
+        "text": "预约专家导师的一对一或小组课程，获得个性化指导与实时互动。",
+        "features": {
+          "flexibleScheduling": "灵活排课",
+          "screenSharing": "屏幕共享",
+          "whiteboard": "互动白板",
+          "recordings": "课程录制"
+        }
+      },
+      "quizzes": {
+        "title": "互动测验",
+        "text": "通过有趣的测验检验知识，获得即时反馈，并持续追踪学习进度。",
+        "features": {
+          "multipleTypes": "多种题型",
+          "instantGrading": "即时评分",
+          "explanations": "详细解析",
+          "progressTracking": "进度追踪"
+        }
+      },
+      "gamification": {
+        "title": "游戏化",
+        "text": "通过积分、徽章、学习连续天数与排行榜，让学习更有趣、更有动力。",
+        "features": {
+          "pointsRewards": "积分与奖励",
+          "badges": "成就徽章",
+          "streaks": "学习连续天数",
+          "leaderboards": "排行榜"
+        }
+      }
+    },
+    "how": {
+      "title": "EduBridge 如何运作",
+      "subtitle": "四个简单步骤开始使用",
+      "steps": {
+        "signUp": {
+          "title": "注册账户",
+          "text": "几秒钟即可创建免费账户。选择作为学生开始学习或作为导师进行教学。"
+        },
+        "choose": {
+          "title": "选择科目",
+          "text": "浏览丰富的课程与导师目录，可按科目、等级、价格与评分进行筛选。"
+        },
+        "learn": {
+          "title": "学习与实践",
+          "text": "观看视频课程、完成测验、参与直播课程，并实践新技能。"
+        },
+        "track": {
+          "title": "追踪进度",
+          "text": "通过详细的分析数据追踪学习进度，获得徽章并庆祝你的成就。"
+        }
+      }
+    },
+    "benefits": {
+      "students": {
+        "title": "为学生",
+        "items": {
+          "0": "获取 500+ 门优质课程",
+          "1": "随时随地按自己的节奏学习",
+          "2": "预约专业导师的直播课程",
+          "3": "获得积分、徽章和证书",
+          "4": "通过分析数据追踪学习进度",
+          "5": "加入支持性的学习社区",
+          "6": "30 天退款保证"
+        },
+        "cta": "开始学习"
+      },
+      "tutors": {
+        "title": "为导师",
+        "items": {
+          "0": "触达成千上万渴望学习的学生",
+          "1": "创建并销售自己的课程",
+          "2": "自由设置时间与收费",
+          "3": "教学获得具有竞争力的收入",
+          "4": "使用强大的教学工具",
+          "5": "建立专业声誉",
+          "6": "安全的支付处理"
+        },
+        "cta": "成为导师"
+      }
+    },
+    "quality": {
+      "title": "质量与安全",
+      "subtitle": "您的信任与安全是我们的首要任务",
+      "tutorScreening": {
+        "title": "导师筛选",
+        "text": "每位导师都需通过全面的审核流程：",
+        "items": {
+          "0": "身份验证",
+          "1": "资质验证",
+          "2": "背景调查",
+          "3": "教学评估",
+          "4": "试讲评估"
+        }
+      },
+      "contentReview": {
+        "title": "内容审核",
+        "text": "所有课程在发布前都会进行质量审核：",
+        "items": {
+          "0": "课程大纲验证",
+          "1": "准确性核查",
+          "2": "质量标准检查",
+          "3": "学生反馈整合",
+          "4": "要求定期更新"
+        }
+      },
+      "studentProtection": {
+        "title": "学生保障",
+        "text": "我们通过完善的政策保护学生：",
+        "items": {
+          "0": "30 天退款保证",
+          "1": "安全支付处理",
+          "2": "7×24 小时客服支持",
+          "3": "纠纷解决流程",
+          "4": "隐私保护"
+        }
+      }
+    },
+    "impact": {
+      "title": "我们的影响力",
+      "subtitle": "在全球范围推动教育变革",
+      "cards": {
+        "activeLearners": { "label": "活跃学习者", "desc": "在平台上积极学习的学生" },
+        "liveSessions": { "label": "直播课程", "desc": "完成的一对一辅导课程" },
+        "quizCompletions": { "label": "测验完成数", "desc": "参与测验并测试知识" },
+        "satisfaction": { "label": "满意度评分", "desc": "愿意推荐我们的学生" }
+      }
+    },
+    "faq": {
+      "title": "常见问题",
+      "subtitle": "关于 EduBridge 的一切你想知道的",
+      "stillHaveQuestions": "还有疑问？",
+      "contactUs": "联系我们",
+      "items": {
+        "0": { "question": "如何开始使用 EduBridge？", "answer": "注册一个免费账户，浏览课程目录并报名感兴趣的课程。你也可以预约专家导师的直播辅导。"},
+        "1": { "question": "课程是自主学习还是按时安排？", "answer": "两者都有！自主课程让你按自己的节奏学习；直播辅导在特定时间进行，便于与导师实时互动。"},
+        "2": { "question": "游戏化系统如何运作？", "answer": "完成课程、测验并保持学习连续天数可获得积分。解锁徽章并登上排行榜，保持学习动力。"},
+        "3": { "question": "导师具备哪些资格？", "answer": "所有导师都要通过严格的筛选流程，具备学科专业能力、优秀教学评价，并通过我们的质量评估后方可授课。"},
+        "4": { "question": "是否有退款政策？", "answer": "有！若你在付费课程的前 30 天不满意，我们提供全额退款。我们致力于保证教育质量与学生满意度。"}
+      }
+    },
+    "finalCta": {
+      "title": "准备好踏上学习旅程了吗？",
+      "subtitle": "加入数千名学生与导师，共同创造改变",
+      "learnCta": "立即开始学习",
+      "tutorCta": "申请成为导师",
+      "note": "免费加入 • 无需信用卡 • 几分钟即可开始"
+    },
+    "values": {
+      "title": "我们的核心价值",
+      "subtitle": "指引我们一切工作的原则",
+      "accessibility": {
+        "title": "可及性",
+        "text": "教育应当向所有人开放。我们打破障碍，让学习人人可达。"
+      },
+      "trust": {
+        "title": "信任",
+        "text": "我们通过透明、公认导师、支付安全与可靠支持建立信任。"
+      },
+      "quality": {
+        "title": "质量",
+        "text": "通过严格的导师筛选、内容审核与持续改进，保持高标准。"
+      },
+      "growth": {
+        "title": "成长",
+        "text": "我们致力于学生、导师与平台的持续成长与创新。"
+      }
     }
   },
   "footer": {

@@ -38,22 +38,28 @@
   margin: 2rem 0 4rem;
   position: relative;
   padding: 0 2rem;
+  isolation: isolate;
 }
 
-.step-indicator::before {
-  content: '';
+.progress-line {
   position: absolute;
-  top: 24px;
-  left: 20%;
-  right: 20%;
+  top: 28px;
+  left: 12%;
+  right: 12%;
   height: 4px;
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-  z-index: 0;
   border-radius: 4px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.18) 0%, rgba(139, 92, 246, 0.18) 100%);
+  z-index: 0;
 }
 
-[data-theme="dark"] .step-indicator::before {
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
+.progress-line .progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+}
+
+[data-theme="dark"] .progress-line {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.28) 0%, rgba(139, 92, 246, 0.28) 100%);
 }
 
 .step-item {
@@ -81,6 +87,7 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   position: relative;
+  z-index: 2;
 }
 
 .step-circle::before {
@@ -139,10 +146,16 @@
   color: #6b7280;
   text-align: center;
   font-weight: 500;
+  position: relative;
+  z-index: 1;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: #ffffff;
 }
 
 [data-theme="dark"] .step-label {
   color: #9ca3af !important;
+  background: #0f172a;
 }
 
 .step-item.active .step-label {

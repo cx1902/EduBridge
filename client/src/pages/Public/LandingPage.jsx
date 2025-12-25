@@ -60,7 +60,7 @@ const LandingPage = () => {
           <div className="hero-content-modern">
             <div className="hero-badge">
               <span className="badge-icon">✨</span>
-              <span>Welcome to the Future of Learning</span>
+              <span>{t('landing.hero.badge', 'Welcome to the Future of Learning')}</span>
             </div>
             <h1 className="hero-title">
               {t('landing.hero.title')}
@@ -94,22 +94,22 @@ const LandingPage = () => {
             <div className="stat-card">
               <div className="stat-icon">👥</div>
               <div className="stat-number">{stats.students.toLocaleString()}+</div>
-              <div className="stat-label">Active Students</div>
+              <div className="stat-label">{t('landing.stats.activeStudents', 'Active Students')}</div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">📚</div>
               <div className="stat-number">{stats.courses.toLocaleString()}+</div>
-              <div className="stat-label">Quality Courses</div>
+              <div className="stat-label">{t('landing.stats.qualityCourses', 'Quality Courses')}</div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">🎓</div>
               <div className="stat-number">{stats.tutors.toLocaleString()}+</div>
-              <div className="stat-label">Expert Tutors</div>
+              <div className="stat-label">{t('landing.stats.expertTutors', 'Expert Tutors')}</div>
             </div>
             <div className="stat-card">
               <div className="stat-icon">⏱️</div>
               <div className="stat-number">{stats.hours.toLocaleString()}+</div>
-              <div className="stat-label">Learning Hours</div>
+              <div className="stat-label">{t('landing.stats.learningHours', 'Learning Hours')}</div>
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@ const LandingPage = () => {
         <div className="container">
           <div className="section-header">
             <h2 className="section-title">{t('landing.features.title')}</h2>
-            <p className="section-subtitle">Everything you need to succeed in your learning journey</p>
+            <p className="section-subtitle">{t('landing.features.subtitle', 'Everything you need to succeed in your learning journey')}</p>
           </div>
           <div className="features-grid">
             <div className="feature-card-modern">
@@ -130,7 +130,7 @@ const LandingPage = () => {
               <h3 className="feature-title">{t('landing.features.selfPaced.title')}</h3>
               <p className="feature-description">{t('landing.features.selfPaced.description')}</p>
               <Link to="/about#offerings" className="feature-link">
-                <span>Learn more</span>
+                <span>{t('landing.features.learnMore', 'Learn more')}</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -143,7 +143,7 @@ const LandingPage = () => {
               <h3 className="feature-title">{t('landing.features.liveTutoring.title')}</h3>
               <p className="feature-description">{t('landing.features.liveTutoring.description')}</p>
               <Link to="/about#offerings" className="feature-link">
-                <span>Learn more</span>
+                <span>{t('landing.features.learnMore', 'Learn more')}</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -156,7 +156,7 @@ const LandingPage = () => {
               <h3 className="feature-title">{t('landing.features.gamification.title')}</h3>
               <p className="feature-description">{t('landing.features.gamification.description')}</p>
               <Link to="/about#offerings" className="feature-link">
-                <span>Learn more</span>
+                <span>{t('landing.features.learnMore', 'Learn more')}</span>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -170,46 +170,40 @@ const LandingPage = () => {
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">What Our Students Say</h2>
-            <p className="section-subtitle">Join thousands of satisfied learners</p>
+            <h2 className="section-title">{t('landing.testimonials.title', 'What Our Students Say')}</h2>
+            <p className="section-subtitle">{t('landing.testimonials.subtitle', 'Join thousands of satisfied learners')}</p>
           </div>
           <div className="testimonials-grid">
             <div className="testimonial-card">
               <div className="testimonial-stars">⭐⭐⭐⭐⭐</div>
-              <p className="testimonial-text">
-                "EduBridge transformed my learning experience. The platform is intuitive and the tutors are exceptional!"
-              </p>
+              <p className="testimonial-text">{t('landing.testimonials.item1.quote', 'EduBridge transformed my learning experience. The platform is intuitive and the tutors are exceptional!')}</p>
               <div className="testimonial-author">
                 <div className="author-avatar">👤</div>
                 <div>
-                  <div className="author-name">Sarah Chen</div>
-                  <div className="author-role">Computer Science Student</div>
+                  <div className="author-name">{t('landing.testimonials.item1.name', 'Sarah Chen')}</div>
+                  <div className="author-role">{t('landing.testimonials.item1.role', 'Computer Science Student')}</div>
                 </div>
               </div>
             </div>
             <div className="testimonial-card">
               <div className="testimonial-stars">⭐⭐⭐⭐⭐</div>
-              <p className="testimonial-text">
-                "The gamification features keep me motivated. I've completed 15 courses in just 6 months!"
-              </p>
+              <p className="testimonial-text">{t('landing.testimonials.item2.quote', "The gamification features keep me motivated. I've completed 15 courses in just 6 months!")}</p>
               <div className="testimonial-author">
                 <div className="author-avatar">👤</div>
                 <div>
-                  <div className="author-name">Marcus Johnson</div>
-                  <div className="author-role">Data Science Learner</div>
+                  <div className="author-name">{t('landing.testimonials.item2.name', 'Marcus Johnson')}</div>
+                  <div className="author-role">{t('landing.testimonials.item2.role', 'Data Science Learner')}</div>
                 </div>
               </div>
             </div>
             <div className="testimonial-card">
               <div className="testimonial-stars">⭐⭐⭐⭐⭐</div>
-              <p className="testimonial-text">
-                "Best online learning platform I've used. The live tutoring sessions are incredibly valuable."
-              </p>
+              <p className="testimonial-text">{t('landing.testimonials.item3.quote', "Best online learning platform I've used. The live tutoring sessions are incredibly valuable.")}</p>
               <div className="testimonial-author">
                 <div className="author-avatar">👤</div>
                 <div>
-                  <div className="author-name">Emily Rodriguez</div>
-                  <div className="author-role">Business Student</div>
+                  <div className="author-name">{t('landing.testimonials.item3.name', 'Emily Rodriguez')}</div>
+                  <div className="author-role">{t('landing.testimonials.item3.role', 'Business Student')}</div>
                 </div>
               </div>
             </div>
@@ -233,7 +227,7 @@ const LandingPage = () => {
                 <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Link>
-            <p className="cta-note">✨ No credit card required • Start learning in minutes</p>
+            <p className="cta-note">✨ {t('landing.cta.note', 'No credit card required • Start learning in minutes')}</p>
           </div>
         </div>
       </section>

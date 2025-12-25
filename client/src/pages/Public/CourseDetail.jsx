@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import './CourseDetail.css';
+import CourseResourcesSection from '../../components/Course/CourseResourcesSection';
+import { DEFAULT_COURSE_IMAGE } from '../../utils/images';
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -18,6 +20,7 @@ const CourseDetail = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [canEdit, setCanEdit] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  
 
   useEffect(() => {
     fetchCourseDetails();
@@ -36,7 +39,7 @@ const CourseDetail = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/courses/${id}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${id}`,
         { headers }
       );
 
@@ -65,7 +68,7 @@ const CourseDetail = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/courses/${id}/components`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${id}/components`,
         { headers }
       );
 
@@ -91,7 +94,7 @@ const CourseDetail = () => {
       setEnrolling(true);
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/courses/${id}/enroll`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${id}/enroll`,
         {},
         {
           headers: {
@@ -243,13 +246,7 @@ const CourseDetail = () => {
         <div className="hero-content">
           <div className="hero-left">
             <div className="course-thumbnail">
-              {course.thumbnailUrl ? (
-                <img src={course.thumbnailUrl} alt={course.title} />
-              ) : (
-                <div className="placeholder-thumbnail">
-                  <i className="fas fa-graduation-cap"></i>
-                </div>
-              )}
+              <img src={course.thumbnailUrl || DEFAULT_COURSE_IMAGE} alt={course.title} />
             </div>
           </div>
           <div className="hero-right">
@@ -357,6 +354,7 @@ const CourseDetail = () => {
             <i className="fas fa-cog"></i> Manage
           </button>
         )}
+        
       </div>
 
       <div className="course-content-wrapper">
@@ -408,62 +406,7 @@ const CourseDetail = () => {
             )}
           </section>
 
-          {/* Curriculum Section */}
-          <section className="course-section curriculum-section">
-            <h2>Course Curriculum</h2>
-            <div className="curriculum-stats">
-              <span><i className="fas fa-book"></i> {course.lessons?.length || 0} lessons</span>
-              <span><i className="fas fa-clock"></i> {course.estimatedHours} total hours</span>
-            </div>
-            <div className="lessons-list">
-              {course.lessons && course.lessons.length > 0 ? (
-                course.lessons.map((lesson, index) => (
-                  <div key={lesson.id} className="lesson-item">
-                    <div className="lesson-header" onClick={() => toggleLesson(lesson.id)}>
-                      <div className="lesson-number">{index + 1}</div>
-                      <div className="lesson-info">
-                        <h4>{lesson.title}</h4>
-                        <div className="lesson-meta">
-                          <span className="lesson-duration">
-                            <i className="far fa-clock"></i> {formatDuration(lesson.estimatedDuration)}
-                          </span>
-                          {lesson._count?.quizzes > 0 && (
-                            <span className="has-quiz">
-                              <i className="fas fa-question-circle"></i> Quiz included
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="lesson-toggle">
-                        <i className={`fas fa-chevron-${expandedLessons[lesson.id] ? 'up' : 'down'}`}></i>
-                      </div>
-                    </div>
-                    {expandedLessons[lesson.id] && (
-                      <div className="lesson-details">
-                        <p>{lesson.learningObjectives || 'Learn key concepts in this lesson.'}</p>
-                        {isEnrolled && (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/student/courses/${id}/lesson/${lesson.id}`);
-                            }}
-                            className="btn-secondary btn-small"
-                          >
-                            <i className="fas fa-play"></i> Start Lesson
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="no-lessons">
-                  <i className="fas fa-book-open"></i>
-                  <p>No lessons added yet.</p>
-                </div>
-              )}
-            </div>
-          </section>
+          <CourseResourcesSection courseId={id} canManage={canEdit} isStudent={!canEdit} />
 
           {/* Reviews Section */}
           {course.reviews && course.reviews.length > 0 && (
@@ -578,6 +521,7 @@ const CourseDetail = () => {
           </div>
         </aside>
       </div>
+      
     </div>
   );
 };

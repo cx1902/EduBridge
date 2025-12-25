@@ -23,12 +23,13 @@ const TutorDashboard = () => {
       const config = {
         headers: { Authorization: `Bearer ${token}` },
       };
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
       const [statsRes, sessionsRes, enrollmentsRes, notificationsRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_URL}/api/tutor/dashboard/stats`, config),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/tutor/dashboard/sessions/today`, config),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/tutor/dashboard/enrollments/recent`, config),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/tutor/dashboard/notifications`, config),
+        axios.get(`${API_URL}/tutor/dashboard/stats`, config),
+        axios.get(`${API_URL}/tutor/dashboard/sessions/today`, config),
+        axios.get(`${API_URL}/tutor/dashboard/enrollments/recent`, config),
+        axios.get(`${API_URL}/tutor/dashboard/notifications`, config),
       ]);
 
       setStats(statsRes.data);

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import './CourseCatalog.css';
+import { DEFAULT_COURSE_IMAGE } from '../../utils/images';
 
 const CourseCatalog = () => {
   const navigate = useNavigate();
+  const { token, user, isAuthenticated } = useAuthStore();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,10 +34,26 @@ const CourseCatalog = () => {
           queryParams.append(key, filters[key]);
         }
       });
+      // If user is a tutor/admin, they might want to see their own drafts
+      if (isAuthenticated && user && (user.role === 'TUTOR' || user.role === 'ADMIN')) {
+        queryParams.append('includeOwnDrafts', 'true');
+      }
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      console.log(`Fetching courses from: ${API_URL}/courses?${queryParams.toString()}`);
+
+      // Add Authorization header only if token is available
+      const config = {};
+      if (token) {
+        config.headers = { Authorization: `Bearer ${token}` };
+      }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/courses?${queryParams.toString()}`
+        `${API_URL}/courses?${queryParams.toString()}`,
+        config
       );
+
+      console.log('Courses API response:', response.data);
 
       if (response.data.success) {
         setCourses(response.data.data.courses);
@@ -138,13 +157,7 @@ const CourseCatalog = () => {
               onClick={() => handleCourseClick(course.id)}
             >
               <div className="course-thumbnail">
-                {course.thumbnailUrl ? (
-                  <img src={course.thumbnailUrl} alt={course.title} />
-                ) : (
-                  <div className="placeholder-thumbnail">
-                    <i className="fas fa-graduation-cap"></i>
-                  </div>
-                )}
+                <img src={course.thumbnailUrl || DEFAULT_COURSE_IMAGE} alt={course.title} />
                 {course.pricingModel === 'FREE' && (
                   <span className="free-badge">FREE</span>
                 )}
@@ -173,16 +186,19 @@ const CourseCatalog = () => {
                         {course.tutor.firstName[0]}{course.tutor.lastName[0]}
                       </div>
                     )}
-                    <span>
-                      {course.tutor.firstName} {course.tutor.lastName}
-                    </span>
+                    <div className="tutor-text">
+                      <span className="tutor-label">Instructor</span>
+                      <span className="tutor-name">
+                        {course.tutor.firstName} {course.tutor.lastName}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="course-stats">
-                    <span>
+                    <span title="Students enrolled">
                       <i className="fas fa-users"></i> {course._count.enrollments}
                     </span>
-                    <span>
+                    <span title="Lessons">
                       <i className="fas fa-book"></i> {course._count.lessons}
                     </span>
                   </div>

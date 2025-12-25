@@ -1,5 +1,5 @@
 const prisma = require('../utils/prisma');
-const { generateUniqueCourseSlug, isValidSlug, isSlugAvailable } = require('../utils/slugGenerator');
+const { generateUniqueCourseSlug, isValidSlug, isSlugAvailable, generateSlug } = require('../utils/slugGenerator');
 const path = require('path');
 
 // Get tutor dashboard statistics
@@ -225,20 +225,24 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ error: 'Subject category and education level are required' });
     }
 
-    // Validate learning outcomes - Required, 3-5 items per design spec
+    // Validate learning outcomes - Required, 1-5 items
     if (!learningOutcomes || !Array.isArray(learningOutcomes)) {
-      return res.status(400).json({ error: 'Please add at least 3 learning outcomes.' });
+      return res.status(400).json({ error: 'Please add at least 1 learning outcome.' });
     }
-    if (learningOutcomes.length < 3) {
-      return res.status(400).json({ error: 'Please add at least 3 learning outcomes.' });
+    if (learningOutcomes.length < 1) {
+      return res.status(400).json({ error: 'Please add at least 1 learning outcome.' });
     }
     if (learningOutcomes.length > 5) {
       return res.status(400).json({ error: 'Learning outcomes cannot exceed 5 items.' });
     }
-    // Validate each outcome is 10-120 characters
+    // Validate each outcome is non-empty (trimmed) and reasonable length
     for (let outcome of learningOutcomes) {
-      if (!outcome || outcome.length < 10 || outcome.length > 120) {
-        return res.status(400).json({ error: 'Each learning outcome must be between 10-120 characters.' });
+      const text = typeof outcome === 'string' ? outcome.trim() : '';
+      if (!text) {
+        return res.status(400).json({ error: 'Learning outcomes cannot be empty.' });
+      }
+      if (text.length > 120) {
+        return res.status(400).json({ error: 'Each learning outcome must not exceed 120 characters.' });
       }
     }
 
@@ -276,22 +280,10 @@ const createCourse = async (req, res) => {
     // Generate or validate slug
     let finalSlug;
     if (slug) {
-      // Custom slug provided - validate it
-      if (!isValidSlug(slug)) {
-        return res.status(400).json({
-          error: 'Invalid slug format. Use lowercase letters, numbers, and hyphens only.',
-        });
-      }
-      
-      // Check if slug is available
-      const slugAvailable = await isSlugAvailable(slug);
-      if (!slugAvailable) {
-        return res.status(400).json({
-          error: 'This slug is already taken. Please choose a different one.',
-        });
-      }
-      
-      finalSlug = slug;
+      // Sanitize provided slug and generate a unique version
+      const sanitized = generateSlug(slug);
+      const baseForSlug = sanitized && sanitized.length >= 1 ? sanitized : title;
+      finalSlug = await generateUniqueCourseSlug(baseForSlug, tutorId);
     } else {
       // Auto-generate unique slug from title
       finalSlug = await generateUniqueCourseSlug(title, tutorId);
@@ -316,9 +308,9 @@ const createCourse = async (req, res) => {
         introVideoUrl: introVideoUrl || null,
         slug: finalSlug,
         metaDescription: metaDescription || null,
-        learningOutcomes: learningOutcomes ? JSON.stringify(learningOutcomes) : JSON.stringify([]),
+        learningOutcomes: learningOutcomes || [],
         targetAudience: targetAudience || null,
-        tags: tags ? JSON.stringify(tags) : JSON.stringify([]),
+        tags: tags || [],
         changeLog: JSON.stringify([{
           action: 'CREATED',
           timestamp: new Date().toISOString(),

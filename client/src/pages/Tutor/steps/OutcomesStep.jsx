@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const OutcomesStep = ({ formData, onChange, errors }) => {
   const handleOutcomeChange = (index, value) => {
@@ -14,41 +15,36 @@ const OutcomesStep = ({ formData, onChange, errors }) => {
   };
 
   const removeOutcome = (index) => {
-    if (formData.learningOutcomes.length > 3) {
+    if (formData.learningOutcomes.length > 1) {
       const newOutcomes = formData.learningOutcomes.filter((_, i) => i !== index);
       onChange('learningOutcomes', newOutcomes);
     }
   };
 
+  const { t } = useTranslation('common');
   return (
     <div>
-      <h2 className="step-title">Learning Outcomes & Audience</h2>
+      <h2 className="step-title">{t('createCourse.outcomes.title', 'Learning Outcomes & Audience')}</h2>
       <p className="step-description">
-        Define what students will learn and who should take this course. Clear outcomes help
-        students set expectations and motivate their learning journey.
+        {t('createCourse.outcomes.description', 'Define what students will learn and who should take this course. Clear outcomes help students set expectations and motivate their learning journey.')}
       </p>
 
       <div className={`form-group ${errors.learningOutcomes ? 'has-error' : ''}`}>
         <label>
-          Learning Outcomes <span className="required">*</span>
+          {t('createCourse.outcomes.fields.learningOutcomes', 'Learning Outcomes')} <span className="required">*</span>
         </label>
         <p className="form-help">
-          By the end, students will be able to… (one line each)
-        </p>
-        <p className="form-help examples">
-          Template: "By the end, students can [action] [object]"
-          <br />
-          Example: "Solve linear equations with one variable"
+          {t('createCourse.outcomes.help.simple', 'Add short phrases or words for each outcome (one per line).')}
         </p>
 
         <ul className="outcomes-list">
           {formData.learningOutcomes.map((outcome, index) => (
-            <li key={index} className={`outcome-item ${errors.learningOutcomes && outcome.length > 0 && (outcome.length < 10 || outcome.length > 120) ? 'has-error' : ''}`}>
+            <li key={index} className="outcome-item">
               <input
                 type="text"
                 value={outcome}
                 onChange={(e) => handleOutcomeChange(index, e.target.value)}
-                placeholder={`Learning outcome ${index + 1}`}
+                placeholder={t('createCourse.outcomes.placeholders.outcome', 'Learning outcome {{index}}', { index: index + 1 })}
                 maxLength={120}
               />
               {formData.learningOutcomes.length > 3 && (
@@ -56,7 +52,7 @@ const OutcomesStep = ({ formData, onChange, errors }) => {
                   type="button"
                   className="btn-remove"
                   onClick={() => removeOutcome(index)}
-                  title="Remove outcome"
+                  title={t('createCourse.outcomes.actions.remove', 'Remove outcome')}
                 >
                   <i className="fas fa-trash"></i>
                 </button>
@@ -72,60 +68,60 @@ const OutcomesStep = ({ formData, onChange, errors }) => {
           disabled={formData.learningOutcomes.length >= 5}
         >
           <i className="fas fa-plus"></i>
-          Add another outcome (max 5)
+          {t('createCourse.outcomes.actions.addAnother', 'Add another outcome (max 5)')}
         </button>
 
         {errors.learningOutcomes && (
           <div className="form-error">
-            <i className="fas fa-exclamation-circle"></i> {errors.learningOutcomes}
+            <i className="fas fa-exclamation-circle"></i> {t('createCourse.errors.learningOutcomes', 'Please add at least 3 learning outcomes.')}
           </div>
         )}
       </div>
 
       <div className={`form-group ${errors.description ? 'has-error' : ''}`}>
         <label htmlFor="description">
-          Course Description <span className="required">*</span>
+          {t('createCourse.outcomes.fields.description', 'Course Description')} <span className="required">*</span>
         </label>
         <textarea
           id="description"
           value={formData.description}
           onChange={(e) => onChange('description', e.target.value)}
-          placeholder="Provide a detailed description of your course..."
+          placeholder={t('createCourse.outcomes.placeholders.description', 'Provide a detailed description of your course...')}
           rows={6}
         />
         <small className="form-help">
-          Describe what the course covers, teaching methods, and student expectations
-          <span className="char-count">{formData.description.length} characters (minimum 50)</span>
+          {t('createCourse.outcomes.help.describe', 'Describe what the course covers, teaching methods, and student expectations')}
+          <span className="char-count">{formData.description.length} {t('createCourse.outcomes.help.characters', 'characters (minimum 50)')}</span>
         </small>
         {errors.description && (
           <div className="form-error">
-            <i className="fas fa-exclamation-circle"></i> {errors.description}
+            <i className="fas fa-exclamation-circle"></i> {t('createCourse.errors.description', 'Description must be at least 50 characters.')}
           </div>
         )}
       </div>
 
       <div className="form-group">
-        <label htmlFor="prerequisites">Prerequisites</label>
+        <label htmlFor="prerequisites">{t('createCourse.outcomes.fields.prerequisites', 'Prerequisites')}</label>
         <textarea
           id="prerequisites"
           value={formData.prerequisites}
           onChange={(e) => onChange('prerequisites', e.target.value)}
-          placeholder="e.g., Basic arithmetic, understanding of fractions"
+          placeholder={t('createCourse.outcomes.placeholders.prerequisites', 'e.g., Basic arithmetic, understanding of fractions')}
           rows={3}
         />
-        <small className="form-help">What should students know first?</small>
+        <small className="form-help">{t('createCourse.outcomes.help.knowFirst', 'What should students know first?')}</small>
       </div>
 
       <div className="form-group">
-        <label htmlFor="targetAudience">Target Audience</label>
+        <label htmlFor="targetAudience">{t('createCourse.outcomes.fields.audience', 'Target Audience')}</label>
         <textarea
           id="targetAudience"
           value={formData.targetAudience}
           onChange={(e) => onChange('targetAudience', e.target.value)}
-          placeholder="e.g., Students aged 13-16 preparing for secondary exams"
+          placeholder={t('createCourse.outcomes.placeholders.audience', 'e.g., Students aged 13-16 preparing for secondary exams')}
           rows={3}
         />
-        <small className="form-help">Who should take this course?</small>
+        <small className="form-help">{t('createCourse.outcomes.help.whoShouldTake', 'Who should take this course?')}</small>
       </div>
     </div>
   );

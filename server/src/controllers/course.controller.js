@@ -1,5 +1,28 @@
 const prisma = require('../utils/prisma');
 
+// Helper: parse JSON fields stored as text
+function parseJsonField(value, fallback = []) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim().length) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
+function normalizeCourse(course) {
+  if (!course) return course;
+  return {
+    ...course,
+    learningOutcomes: parseJsonField(course.learningOutcomes),
+    tags: parseJsonField(course.tags),
+  };
+}
+
 // Get all courses with filters
 exports.getAllCourses = async (req, res) => {
   try {
@@ -16,40 +39,53 @@ exports.getAllCourses = async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Build filter conditions
-    const where = {
-      status: 'PUBLISHED' // Only show published courses
-    };
+    // Build filter conditions using AND to combine search/filters with status visibility
+    const andConditions = [];
 
     if (search) {
-      where.OR = [
+      andConditions.push({
+        OR: [
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } }
-      ];
+        ]
+      });
     }
 
     if (subjectCategory) {
-      where.subjectCategory = subjectCategory;
+      andConditions.push({ subjectCategory });
     }
 
     if (educationLevel) {
-      where.educationLevel = educationLevel;
+      andConditions.push({ educationLevel });
     }
 
     if (difficulty) {
-      where.difficulty = difficulty;
+      andConditions.push({ difficulty });
     }
 
     if (pricingModel) {
-      where.pricingModel = pricingModel;
+      andConditions.push({ pricingModel });
     }
 
     if (language) {
-      where.language = language;
+      andConditions.push({ language });
     }
 
+    // Status visibility: published for everyone; plus own drafts if requested and authenticated
+    const statusOr = [{ status: 'PUBLISHED' }];
+    if (req.user && req.query.includeOwnDrafts === 'true') {
+      statusOr.push({ status: 'DRAFT', tutorId: req.user.id });
+    }
+    
+    // Add debugging log
+    console.log('Fetching courses with conditions:', JSON.stringify(andConditions, null, 2));
+    
+    andConditions.push({ OR: statusOr });
+
+    const where = andConditions.length ? { AND: andConditions } : {};
+
     // Fetch courses with tutor information
-    const [courses, totalCount] = await Promise.all([
+    const [coursesRaw, totalCount] = await Promise.all([
       prisma.course.findMany({
         where,
         skip,
@@ -76,6 +112,8 @@ exports.getAllCourses = async (req, res) => {
       }),
       prisma.course.count({ where })
     ]);
+
+    const courses = coursesRaw.map(normalizeCourse);
 
     res.json({
       success: true,
@@ -107,7 +145,7 @@ exports.getCourseById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const course = await prisma.course.findUnique({
+    const courseRaw = await prisma.course.findUnique({
       where: { id },
       include: {
         tutor: {
@@ -159,7 +197,7 @@ exports.getCourseById = async (req, res) => {
       }
     });
 
-    if (!course) {
+    if (!courseRaw) {
       return res.status(404).json({
         success: false,
         error: {
@@ -169,6 +207,8 @@ exports.getCourseById = async (req, res) => {
         }
       });
     }
+
+    const course = normalizeCourse(courseRaw);
 
     // Check if user is enrolled (if authenticated)
     let isEnrolled = false;

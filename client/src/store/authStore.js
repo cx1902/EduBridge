@@ -138,14 +138,7 @@ export const useAuthStore = create(
             isAuthenticated: true,
           });
         } catch (error) {
-          // Token is invalid or expired - silently fail
-          console.log('Auth check failed, clearing token');
-          delete axios.defaults.headers.common['Authorization'];
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-          });
+          // Soft fail: keep existing auth state to avoid unintended logout on transient errors
         }
       },
 

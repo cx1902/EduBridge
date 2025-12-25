@@ -42,24 +42,45 @@ const CourseEditor = () => {
   });
 
   useEffect(() => {
-    if (courseId) {
+    if (courseId && courseId !== 'new' && courseId !== 'undefined') {
       fetchCourse();
     }
   }, [courseId]);
 
   useEffect(() => {
-    updateCharCounts();
+    if (formData) {
+      updateCharCounts();
+    }
   }, [formData.title, formData.subtitle, formData.description, formData.metaDescription]);
 
   const fetchCourse = async () => {
     try {
       setLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/tutor/courses/${courseId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API_URL}/tutor/courses/${courseId}`,
+        config
       );
       
       const courseData = response.data;
+      
+      // Helper to safely parse JSON fields
+      const parseJson = (data, fallback) => {
+        if (!data) return fallback;
+        if (Array.isArray(data)) return data;
+        if (typeof data === 'string') {
+          try {
+            return JSON.parse(data);
+          } catch (e) {
+            console.error('JSON parse error:', e);
+            return fallback;
+          }
+        }
+        return fallback;
+      };
+
       setFormData({
         title: courseData.title || '',
         subtitle: courseData.subtitle || '',
@@ -75,24 +96,25 @@ const CourseEditor = () => {
         thumbnailUrl: courseData.thumbnailUrl || '',
         thumbnailAltText: courseData.thumbnailAltText || '',
         introVideoUrl: courseData.introVideoUrl || '',
-        learningOutcomes: courseData.learningOutcomes 
-          ? (typeof courseData.learningOutcomes === 'string' 
-              ? JSON.parse(courseData.learningOutcomes) 
-              : courseData.learningOutcomes)
-          : ['', '', ''],
+        learningOutcomes: parseJson(courseData.learningOutcomes, ['', '', '']),
         targetAudience: courseData.targetAudience || '',
-        tags: courseData.tags 
-          ? (typeof courseData.tags === 'string' 
-              ? JSON.parse(courseData.tags) 
-              : courseData.tags)
-          : ['', '', ''],
+        tags: parseJson(courseData.tags, ['', '', '']),
         slug: courseData.slug || '',
         metaDescription: courseData.metaDescription || '',
       });
       setCourse(courseData);
     } catch (error) {
       console.error('Error fetching course:', error);
-      alert('Failed to load course');
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to load course';
+      
+      // Handle 401 Unauthorized explicitly
+      if (error.response?.status === 401) {
+        alert('Your session has expired. Please log in again.');
+        // Optionally redirect to login page
+        // navigate('/login'); 
+      } else {
+        alert(`Error: ${errorMsg}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -147,10 +169,10 @@ const CourseEditor = () => {
     const errors = {};
 
     // Title validation
-    if (!formData.title || formData.title.length < 5) {
-      errors.title = 'Title must be at least 5 characters';
-    } else if (formData.title.length > 200) {
-      errors.title = 'Title must not exceed 200 characters';
+    if (!formData.title || formData.title.length < 3) {
+      errors.title = 'Title must be at least 3 characters';
+    } else if (formData.title.length > 80) {
+      errors.title = 'Title must not exceed 80 characters';
     }
 
     // Subtitle validation
@@ -170,18 +192,16 @@ const CourseEditor = () => {
 
     // Learning outcomes validation
     const validOutcomes = formData.learningOutcomes.filter(o => o.trim() !== '');
-    if (validOutcomes.length < 3) {
-      errors.learningOutcomes = 'At least 3 learning outcomes are required';
+    if (validOutcomes.length < 1) {
+      errors.learningOutcomes = 'At least 1 learning outcome is required';
     } else if (validOutcomes.length > 5) {
       errors.learningOutcomes = 'Maximum 5 learning outcomes allowed';
     }
 
     // Tags validation
     const validTags = formData.tags.filter(t => t.trim() !== '');
-    if (validTags.length < 3) {
-      errors.tags = 'At least 3 tags are required';
-    } else if (validTags.length > 10) {
-      errors.tags = 'Maximum 10 tags allowed';
+    if (validTags.length > 5) {
+      errors.tags = 'Maximum 5 tags allowed';
     }
 
     // Meta description validation
@@ -209,6 +229,7 @@ const CourseEditor = () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
       // Filter out empty array items
       const submitData = {
@@ -220,7 +241,7 @@ const CourseEditor = () => {
       if (courseId) {
         // Update existing course
         await axios.put(
-          `${import.meta.env.VITE_API_URL}/api/tutor/courses/${courseId}`,
+          `${API_URL}/tutor/courses/${courseId}`,
           submitData,
           config
         );
@@ -229,7 +250,7 @@ const CourseEditor = () => {
       } else {
         // Create new course
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/tutor/courses`,
+          `${API_URL}/tutor/courses`,
           submitData,
           config
         );
@@ -251,8 +272,9 @@ const CourseEditor = () => {
     }
 
     try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       await axios.patch(
-        `${import.meta.env.VITE_API_URL}/api/tutor/courses/${courseId}/publish`,
+        `${API_URL}/tutor/courses/${courseId}/publish`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -381,7 +403,7 @@ const CourseEditor = () => {
       </section>
 
       <section className="form-section">
-        <h3>Learning Outcomes (3-5 required) <span className="required">*</span></h3>
+        <h3>Learning Outcomes (1-5 required) <span className="required">*</span></h3>
         {validationErrors.learningOutcomes && (
           <span className="error-message">{validationErrors.learningOutcomes}</span>
         )}
@@ -395,7 +417,7 @@ const CourseEditor = () => {
                 onChange={(e) => handleArrayChange('learningOutcomes', index, e.target.value)}
                 placeholder="e.g., solve linear equations with one variable"
               />
-              {formData.learningOutcomes.length > 3 && (
+              {formData.learningOutcomes.length > 1 && (
                 <button
                   type="button"
                   className="btn-remove"
@@ -419,7 +441,7 @@ const CourseEditor = () => {
       </section>
 
       <section className="form-section">
-        <h3>Tags (3-10 required) <span className="required">*</span></h3>
+        <h3>Tags (Optional, max 5)</h3>
         <p className="field-hint">Use lowercase, hyphen-separated keywords</p>
         {validationErrors.tags && (
           <span className="error-message">{validationErrors.tags}</span>
@@ -433,19 +455,17 @@ const CourseEditor = () => {
                 onChange={(e) => handleArrayChange('tags', index, e.target.value)}
                 placeholder="e.g., algebra"
               />
-              {formData.tags.length > 3 && (
-                <button
-                  type="button"
-                  className="btn-remove-tag"
-                  onClick={() => removeArrayItem('tags', index)}
-                >
-                  ×
-                </button>
-              )}
+              <button
+                type="button"
+                className="btn-remove-tag"
+                onClick={() => removeArrayItem('tags', index)}
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
-        {formData.tags.length < 10 && (
+        {formData.tags.length < 5 && (
           <button
             type="button"
             className="btn-add-item"
@@ -631,12 +651,14 @@ const CourseEditor = () => {
 
   return (
     <div className="course-editor">
-      <div className="editor-header">
-        <button className="btn-back" onClick={() => navigate('/tutor/courses')}>
-          <i className="fas fa-arrow-left"></i> Back to Courses
-        </button>
-        <h1>{courseId ? 'Edit Course' : 'Create New Course'}</h1>
-      </div>
+      <header className="page-header">
+        <nav className="breadcrumb">
+          <button className="back-btn" onClick={() => navigate('/tutor')}>
+            <span className="chev">‹</span> Back to Dashboard
+          </button>
+        </nav>
+        <h1 className="page-title">{courseId && courseId !== 'new' ? 'Edit Course' : 'Create New Course'}</h1>
+      </header>
 
       <div className="editor-tabs">
         <button
