@@ -1,1 +1,1 @@
-export const DEFAULT_COURSE_IMAGE = "https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=cute%20education%20illustration%20with%20graduation%20cap%2C%20stack%20of%20books%2C%20clipboard%20with%20lightbulb%20sketch%2C%20pencil%2C%20glasses%2C%20ruler%2C%20green%20ribbon%20banner%20text%20'COURSE%20PREVIEW'%2C%20soft%20blue%20sky%20background%2C%20rounded%20corners%2C%20vector%20flat%20style%2C%20high%20quality&image_size=square_hd";
+export const DEFAULT_COURSE_IMAGE = '/course-default.png'

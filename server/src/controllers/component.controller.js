@@ -1,4 +1,4 @@
-const prisma = require('../utils/prisma');
+const prisma = require('../utils/prisma')
 
 /**
  * Create a new course component
@@ -7,21 +7,22 @@ const prisma = require('../utils/prisma');
  */
 exports.createComponent = async (req, res) => {
   try {
-    const { courseId } = req.params;
-    const { componentType, title, description, configuration, isPublished } = req.body;
-    const userId = req.user.id;
+    const { courseId } = req.params
+    const { componentType, title, description, configuration, isPublished } =
+      req.body
+    const userId = req.user.id
 
     // Verify course exists and user has permission
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: { tutorId: true }
-    });
+    })
 
     if (!course) {
       return res.status(404).json({
         success: false,
         error: { message: 'Course not found' }
-      });
+      })
     }
 
     // Check if user is course owner or admin
@@ -29,7 +30,7 @@ exports.createComponent = async (req, res) => {
       return res.status(403).json({
         success: false,
         error: { message: 'Not authorized to add components to this course' }
-      });
+      })
     }
 
     // Get the next sequence order
@@ -37,9 +38,9 @@ exports.createComponent = async (req, res) => {
       where: { courseId },
       orderBy: { sequenceOrder: 'desc' },
       select: { sequenceOrder: true }
-    });
+    })
 
-    const sequenceOrder = lastComponent ? lastComponent.sequenceOrder + 1 : 1;
+    const sequenceOrder = lastComponent ? lastComponent.sequenceOrder + 1 : 1
 
     // Create component
     const component = await prisma.courseComponent.create({
@@ -68,20 +69,20 @@ exports.createComponent = async (req, res) => {
           }
         }
       }
-    });
+    })
 
     res.status(201).json({
       success: true,
       data: component
-    });
+    })
   } catch (error) {
-    console.error('Create component error:', error);
+    console.error('Create component error:', error)
     res.status(500).json({
       success: false,
       error: { message: 'Failed to create component' }
-    });
+    })
   }
-};
+}
 
 /**
  * Get all components for a course
@@ -90,29 +91,29 @@ exports.createComponent = async (req, res) => {
  */
 exports.getCourseComponents = async (req, res) => {
   try {
-    const { courseId } = req.params;
-    const userId = req.user?.id;
+    const { courseId } = req.params
+    const userId = req.user?.id
 
     // Check if course exists
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: { tutorId: true, status: true }
-    });
+    })
 
     if (!course) {
       return res.status(404).json({
         success: false,
         error: { message: 'Course not found' }
-      });
+      })
     }
 
     // Determine what components user can see
-    const isTutor = course.tutorId === userId;
-    const isAdmin = req.user?.role === 'ADMIN';
-    const showAll = isTutor || isAdmin;
+    const isTutor = course.tutorId === userId
+    const isAdmin = req.user?.role === 'ADMIN'
+    const showAll = isTutor || isAdmin
 
     // Check if student is enrolled
-    let isEnrolled = false;
+    let isEnrolled = false
     if (userId && !showAll) {
       const enrollment = await prisma.enrollment.findUnique({
         where: {
@@ -121,18 +122,78 @@ exports.getCourseComponents = async (req, res) => {
             courseId
           }
         }
-      });
-      isEnrolled = !!enrollment;
+      })
+      isEnrolled = !!enrollment
     }
 
     // Build where clause
     const where = {
       courseId
-    };
+    }
 
     // Only show published components to non-owners
     if (!showAll) {
-      where.isPublished = true;
+      where.isPublished = true
+    }
+
+    // Check if fixed channels exist, if not create them
+    const componentsCount = await prisma.courseComponent.count({ where })
+
+    if (componentsCount === 0 && showAll) {
+      const fixedChannels = [
+        { title: 'General', type: 'ANNOUNCEMENT', order: 0 },
+        {
+          title: 'Teaching/Learning Material',
+          type: 'LEARNING_MATERIALS',
+          order: 1
+        },
+        { title: 'Quizzes', type: 'QUIZ', order: 2 },
+        { title: 'Homework Submission', type: 'ASSIGNMENT', order: 3 }
+      ]
+
+      try {
+        for (const channel of fixedChannels) {
+          await prisma.courseComponent.create({
+            data: {
+              courseId,
+              title: channel.title,
+              componentType: channel.type,
+              sequenceOrder: channel.order,
+              isPublished: true,
+              createdBy: userId || course.tutorId // Fallback to tutor if admin
+            }
+          })
+        }
+      } catch (err) {
+        console.error('Failed to initialize default channels:', err)
+        // If it's a validation error about createdBy being null
+        if (err.meta?.target?.includes('createdBy')) {
+          console.log('Attempting fallback creation with course.tutorId')
+          // Retry with explicit course.tutorId
+          try {
+            for (const channel of fixedChannels) {
+              // Check existence first
+              const exists = await prisma.courseComponent.findFirst({
+                where: { courseId, componentType: channel.type }
+              })
+              if (!exists) {
+                await prisma.courseComponent.create({
+                  data: {
+                    courseId,
+                    title: channel.title,
+                    componentType: channel.type,
+                    sequenceOrder: channel.order,
+                    isPublished: true,
+                    createdBy: course.tutorId
+                  }
+                })
+              }
+            }
+          } catch (retryErr) {
+            console.error('Retry failed:', retryErr)
+          }
+        }
+      }
     }
 
     const components = await prisma.courseComponent.findMany({
@@ -154,7 +215,25 @@ exports.getCourseComponents = async (req, res) => {
             mimeType: true,
             description: true,
             downloadCount: true,
-            uploadedAt: true
+            uploadedAt: true,
+            scheduledAt: true
+          }
+        },
+        messages: {
+          orderBy: { scheduledAt: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            scheduledAt: true,
+            createdAt: true,
+            creator: {
+              select: {
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true
+              }
+            }
           }
         },
         _count: {
@@ -163,13 +242,27 @@ exports.getCourseComponents = async (req, res) => {
           }
         }
       }
-    });
+    })
+
+    // Filter scheduled items for students
+    const now = new Date()
+    const filteredComponents = components.map(comp => {
+      if (!showAll) {
+        comp.files = comp.files.filter(
+          f => !f.scheduledAt || new Date(f.scheduledAt) <= now
+        )
+        comp.messages = comp.messages.filter(
+          m => !m.scheduledAt || new Date(m.scheduledAt) <= now
+        )
+      }
+      return comp
+    })
 
     // For students, add their submission info if enrolled
-    let componentsWithSubmissions = components;
+    let componentsWithSubmissions = filteredComponents
     if (userId && isEnrolled && !showAll) {
       componentsWithSubmissions = await Promise.all(
-        components.map(async (component) => {
+        components.map(async component => {
           if (component.componentType === 'ASSIGNMENT') {
             const submission = await prisma.assignmentSubmission.findFirst({
               where: {
@@ -185,12 +278,12 @@ exports.getCourseComponents = async (req, res) => {
                 grade: true,
                 isLate: true
               }
-            });
-            return { ...component, userSubmission: submission };
+            })
+            return { ...component, userSubmission: submission }
           }
-          return component;
+          return component
         })
-      );
+      )
     }
 
     res.json({
@@ -200,15 +293,15 @@ exports.getCourseComponents = async (req, res) => {
         isEnrolled,
         canEdit: showAll
       }
-    });
+    })
   } catch (error) {
-    console.error('Get course components error:', error);
+    console.error('Get course components error:', error)
     res.status(500).json({
       success: false,
       error: { message: 'Failed to fetch components' }
-    });
+    })
   }
-};
+}
 
 /**
  * Get a single component by ID
@@ -217,8 +310,8 @@ exports.getCourseComponents = async (req, res) => {
  */
 exports.getComponentById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user?.id;
+    const { id } = req.params
+    const userId = req.user?.id
 
     const component = await prisma.courseComponent.findUnique({
       where: { id },
@@ -246,38 +339,38 @@ exports.getComponentById = async (req, res) => {
           }
         }
       }
-    });
+    })
 
     if (!component) {
       return res.status(404).json({
         success: false,
         error: { message: 'Component not found' }
-      });
+      })
     }
 
     // Check permissions
-    const isTutor = component.course.tutorId === userId;
-    const isAdmin = req.user?.role === 'ADMIN';
+    const isTutor = component.course.tutorId === userId
+    const isAdmin = req.user?.role === 'ADMIN'
 
     if (!component.isPublished && !isTutor && !isAdmin) {
       return res.status(403).json({
         success: false,
         error: { message: 'Component is not published' }
-      });
+      })
     }
 
     res.json({
       success: true,
       data: component
-    });
+    })
   } catch (error) {
-    console.error('Get component error:', error);
+    console.error('Get component error:', error)
     res.status(500).json({
       success: false,
       error: { message: 'Failed to fetch component' }
-    });
+    })
   }
-};
+}
 
 /**
  * Update a component
@@ -286,9 +379,10 @@ exports.getComponentById = async (req, res) => {
  */
 exports.updateComponent = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { title, description, configuration, isPublished, componentType } = req.body;
-    const userId = req.user.id;
+    const { id } = req.params
+    const { title, description, configuration, isPublished, componentType } =
+      req.body
+    const userId = req.user.id
 
     // Get component with course info
     const component = await prisma.courseComponent.findUnique({
@@ -296,13 +390,13 @@ exports.updateComponent = async (req, res) => {
       include: {
         course: { select: { tutorId: true } }
       }
-    });
+    })
 
     if (!component) {
       return res.status(404).json({
         success: false,
         error: { message: 'Component not found' }
-      });
+      })
     }
 
     // Check permissions
@@ -310,7 +404,7 @@ exports.updateComponent = async (req, res) => {
       return res.status(403).json({
         success: false,
         error: { message: 'Not authorized to update this component' }
-      });
+      })
     }
 
     // Update component
@@ -338,20 +432,20 @@ exports.updateComponent = async (req, res) => {
           }
         }
       }
-    });
+    })
 
     res.json({
       success: true,
       data: updated
-    });
+    })
   } catch (error) {
-    console.error('Update component error:', error);
+    console.error('Update component error:', error)
     res.status(500).json({
       success: false,
       error: { message: 'Failed to update component' }
-    });
+    })
   }
-};
+}
 
 /**
  * Delete a component
@@ -360,8 +454,8 @@ exports.updateComponent = async (req, res) => {
  */
 exports.deleteComponent = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user.id;
+    const { id } = req.params
+    const userId = req.user.id
 
     // Get component with course info
     const component = await prisma.courseComponent.findUnique({
@@ -370,13 +464,13 @@ exports.deleteComponent = async (req, res) => {
         course: { select: { tutorId: true } },
         _count: { select: { submissions: true } }
       }
-    });
+    })
 
     if (!component) {
       return res.status(404).json({
         success: false,
         error: { message: 'Component not found' }
-      });
+      })
     }
 
     // Check permissions
@@ -384,7 +478,7 @@ exports.deleteComponent = async (req, res) => {
       return res.status(403).json({
         success: false,
         error: { message: 'Not authorized to delete this component' }
-      });
+      })
     }
 
     // Warn if has submissions
@@ -395,26 +489,26 @@ exports.deleteComponent = async (req, res) => {
           message: `Cannot delete component with ${component._count.submissions} student submissions`,
           submissionCount: component._count.submissions
         }
-      });
+      })
     }
 
     // Delete component (will cascade delete files)
     await prisma.courseComponent.delete({
       where: { id }
-    });
+    })
 
     res.json({
       success: true,
       message: 'Component deleted successfully'
-    });
+    })
   } catch (error) {
-    console.error('Delete component error:', error);
+    console.error('Delete component error:', error)
     res.status(500).json({
       success: false,
       error: { message: 'Failed to delete component' }
-    });
+    })
   }
-};
+}
 
 /**
  * Reorder components
@@ -423,28 +517,28 @@ exports.deleteComponent = async (req, res) => {
  */
 exports.reorderComponents = async (req, res) => {
   try {
-    const { courseId } = req.params;
-    const { componentOrders } = req.body; // Array of { id, sequenceOrder }
-    const userId = req.user.id;
+    const { courseId } = req.params
+    const { componentOrders } = req.body // Array of { id, sequenceOrder }
+    const userId = req.user.id
 
     // Verify course ownership
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: { tutorId: true }
-    });
+    })
 
     if (!course) {
       return res.status(404).json({
         success: false,
         error: { message: 'Course not found' }
-      });
+      })
     }
 
     if (course.tutorId !== userId && req.user.role !== 'ADMIN') {
       return res.status(403).json({
         success: false,
         error: { message: 'Not authorized to reorder components' }
-      });
+      })
     }
 
     // Update each component's sequence order
@@ -455,17 +549,171 @@ exports.reorderComponents = async (req, res) => {
           data: { sequenceOrder }
         })
       )
-    );
+    )
 
     res.json({
       success: true,
       message: 'Components reordered successfully'
-    });
+    })
   } catch (error) {
-    console.error('Reorder components error:', error);
+    console.error('Reorder components error:', error)
     res.status(500).json({
       success: false,
       error: { message: 'Failed to reorder components' }
-    });
+    })
   }
-};
+}
+
+/**
+ * Create a message in a component
+ * @route POST /api/components/:componentId/messages
+ * @access Private (Tutor/Admin)
+ */
+exports.createMessage = async (req, res) => {
+  try {
+    const { componentId } = req.params
+    const { title, content, scheduledAt } = req.body
+    const userId = req.user.id
+
+    // Verify component exists and user has permission
+    const component = await prisma.courseComponent.findUnique({
+      where: { id: componentId },
+      include: { course: { select: { tutorId: true } } }
+    })
+
+    if (!component) {
+      return res
+        .status(404)
+        .json({ success: false, error: { message: 'Component not found' } })
+    }
+
+    if (component.course.tutorId !== userId && req.user.role !== 'ADMIN') {
+      return res
+        .status(403)
+        .json({ success: false, error: { message: 'Not authorized' } })
+    }
+
+    const message = await prisma.componentMessage.create({
+      data: {
+        componentId,
+        title,
+        content,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(), // Default to now if not provided
+        createdBy: userId
+      },
+      include: {
+        creator: {
+          select: { firstName: true, lastName: true, profilePictureUrl: true }
+        }
+      }
+    })
+
+    res.status(201).json({ success: true, data: message })
+  } catch (error) {
+    console.error('Create message error:', error)
+    res
+      .status(500)
+      .json({ success: false, error: { message: 'Failed to create message' } })
+  }
+}
+
+/**
+ * Update a message
+ * @route PUT /api/messages/:id
+ * @access Private (Tutor/Admin)
+ */
+exports.updateMessage = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { title, content, scheduledAt } = req.body
+    const userId = req.user.id
+
+    const message = await prisma.componentMessage.findUnique({
+      where: { id },
+      include: {
+        component: { include: { course: { select: { tutorId: true } } } }
+      }
+    })
+
+    if (!message) {
+      return res
+        .status(404)
+        .json({ success: false, error: { message: 'Message not found' } })
+    }
+
+    if (
+      message.component.course.tutorId !== userId &&
+      req.user.role !== 'ADMIN'
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, error: { message: 'Not authorized' } })
+    }
+
+    const updatedMessage = await prisma.componentMessage.update({
+      where: { id },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(content !== undefined && { content }),
+        ...(scheduledAt !== undefined && {
+          scheduledAt: scheduledAt ? new Date(scheduledAt) : null
+        })
+      },
+      include: {
+        creator: {
+          select: { firstName: true, lastName: true, profilePictureUrl: true }
+        }
+      }
+    })
+
+    res.json({ success: true, data: updatedMessage })
+  } catch (error) {
+    console.error('Update message error:', error)
+    res
+      .status(500)
+      .json({ success: false, error: { message: 'Failed to update message' } })
+  }
+}
+
+/**
+ * Delete a message
+ * @route DELETE /api/messages/:id
+ * @access Private (Tutor/Admin)
+ */
+exports.deleteMessage = async (req, res) => {
+  try {
+    const { id } = req.params
+    const userId = req.user.id
+
+    const message = await prisma.componentMessage.findUnique({
+      where: { id },
+      include: {
+        component: { include: { course: { select: { tutorId: true } } } }
+      }
+    })
+
+    if (!message) {
+      return res
+        .status(404)
+        .json({ success: false, error: { message: 'Message not found' } })
+    }
+
+    if (
+      message.component.course.tutorId !== userId &&
+      req.user.role !== 'ADMIN'
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, error: { message: 'Not authorized' } })
+    }
+
+    await prisma.componentMessage.delete({ where: { id } })
+
+    res.json({ success: true, message: 'Message deleted successfully' })
+  } catch (error) {
+    console.error('Delete message error:', error)
+    res
+      .status(500)
+      .json({ success: false, error: { message: 'Failed to delete message' } })
+  }
+}

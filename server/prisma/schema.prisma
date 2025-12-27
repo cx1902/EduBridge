@@ -79,6 +79,7 @@ model User {
   courseReviews      CourseReview[]
   createdComponents  CourseComponent[]             @relation("ComponentCreator")
   uploadedFiles      ComponentFile[]               @relation("FileUploader")
+  messages           ComponentMessage[]            @relation("MessageCreator")
   submissions        AssignmentSubmission[]        @relation("StudentSubmissions")
   gradedSubmissions  AssignmentSubmission[]        @relation("GradedSubmissions")
 
@@ -721,6 +722,7 @@ model CourseComponent {
   course              Course                 @relation("CourseComponents", fields: [courseId], references: [id], onDelete: Cascade)
   creator             User                   @relation("ComponentCreator", fields: [createdBy], references: [id], onDelete: Cascade)
   files               ComponentFile[]
+  messages            ComponentMessage[]
   submissions         AssignmentSubmission[]
 
   @@index([courseId])
@@ -728,6 +730,25 @@ model CourseComponent {
   @@index([createdBy])
   @@index([sequenceOrder])
   @@map("course_components")
+}
+
+// Component Message Model (for scheduled posts/announcements)
+model ComponentMessage {
+  id          String    @id @default(uuid())
+  componentId String    @map("component_id")
+  title       String?
+  content     String    @db.Text
+  scheduledAt DateTime? @map("scheduled_at")
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  component CourseComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  creator   User            @relation("MessageCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([componentId])
+  @@map("component_messages")
 }
 
 // Component File Model
@@ -740,6 +761,7 @@ model ComponentFile {
   mimeType       String          @map("mime_type") @db.VarChar(100)
   uploadedBy     String          @map("uploaded_by")
   description    String?         @db.Text
+  scheduledAt    DateTime?       @map("scheduled_at")
   downloadCount  Int             @default(0) @map("download_count")
   uploadedAt     DateTime        @default(now()) @map("uploaded_at")
 

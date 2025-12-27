@@ -412,7 +412,7 @@ exports.createCourse = async (req, res) => {
         pricingModel: pricingModel || 'FREE',
         estimatedHours: parseInt(estimatedHours),
         language: language || 'en',
-        status: 'DRAFT'
+        status: req.body.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'
       }
     });
 
