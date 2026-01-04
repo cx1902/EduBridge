@@ -1,5 +1,10 @@
 const { PrismaClient } = require('@prisma/client')
 
+// Handle BigInt serialization
+BigInt.prototype.toJSON = function () {
+  return this.toString()
+}
+
 const prisma = new PrismaClient({
   log:
     process.env.NODE_ENV === 'development'

@@ -440,7 +440,7 @@ exports.resetPassword = async (req, res) => {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         resetPasswordToken: null,
         resetPasswordExpires: null,
       },

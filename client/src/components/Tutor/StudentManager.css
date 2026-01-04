@@ -1,0 +1,103 @@
+.student-manager {
+  padding: 1rem;
+}
+
+.students-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.student-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.student-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.student-avatar {
+  margin-bottom: 1rem;
+}
+
+.student-avatar img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--color-background);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border: 3px solid var(--color-background);
+}
+
+.student-info {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.student-info h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text);
+  font-size: 1.1rem;
+  display: block;
+}
+
+.student-email {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.student-meta {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meta-item .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.meta-item .value {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}

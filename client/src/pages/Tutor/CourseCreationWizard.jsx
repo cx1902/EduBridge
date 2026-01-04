@@ -42,9 +42,7 @@ const CourseCreationWizard = () => {
     thumbnailAltText: '',
     introVideoUrl: '',
 
-    // Step 4: Pricing & Access
-    pricingModel: 'FREE',
-    price: 0,
+    // Step 4: Settings & SEO
     status: 'DRAFT',
 
     // Step 5: SEO & Compliance (optional)
@@ -71,7 +69,7 @@ const CourseCreationWizard = () => {
     },
     {
       number: 4,
-      label: t('createCourse.steps.pricing', 'Pricing'),
+      label: t('createCourse.steps.settings', 'Settings'),
       component: PricingStep
     }
   ]
@@ -137,16 +135,7 @@ const CourseCreationWizard = () => {
         newErrors.estimatedHours = 'Estimated hours must be a positive number.'
       }
     } else if (step === 4) {
-      // Validate Pricing & Access
-      if (!formData.pricingModel) {
-        newErrors.pricingModel = 'Pricing model is required.'
-      }
-      if (
-        formData.pricingModel !== 'FREE' &&
-        (!formData.price || formData.price <= 0)
-      ) {
-        newErrors.price = 'Price must be greater than 0 for paid courses.'
-      }
+      // Validate Settings & SEO
       if (formData.metaDescription && formData.metaDescription.length > 160) {
         newErrors.metaDescription =
           'Meta description must not exceed 160 characters.'
@@ -195,9 +184,6 @@ const CourseCreationWizard = () => {
         thumbnailUrl: formData.thumbnailUrl || null,
         thumbnailAltText: formData.thumbnailAltText || null,
         introVideoUrl: formData.introVideoUrl || null,
-        pricingModel: formData.pricingModel,
-        price:
-          formData.pricingModel === 'FREE' ? 0 : parseFloat(formData.price),
         slug: formData.slug || null,
         metaDescription: formData.metaDescription || null,
         language: formData.language || 'en',

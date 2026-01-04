@@ -17,6 +17,7 @@ import AboutUs from './pages/Public/AboutUs';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 import OAuthCallback from './pages/Auth/OAuthCallback';
 
 // Student Pages
@@ -25,15 +26,22 @@ import MyCourses from './pages/Student/MyCourses';
 import CourseLesson from './pages/Student/CourseLesson';
 import MyProgress from './pages/Student/MyProgress';
 import LiveSessions from './pages/Student/LiveSessions';
+import RequestTutor from './pages/Student/RequestTutor';
+import TutorMatches from './pages/Student/TutorMatches';
+import BookTutor from './pages/Student/BookTutor';
 
 // Tutor Pages
 import TutorDashboard from './pages/Tutor/Dashboard';
+import TutorProfile from './pages/Tutor/TutorProfile';
+import TutorAvailability from './pages/Tutor/TutorAvailability';
+import TutorMyCourses from './pages/Tutor/MyCourses'; // New
 // import CourseBuilder from './pages/Tutor/CourseBuilder';
 import CourseEditor from './pages/Tutor/CourseEditor';
 import CourseCreationWizard from './pages/Tutor/CourseCreationWizard';
 import LessonBuilder from './pages/Tutor/LessonBuilder';
 import TutorAnalytics from './pages/Tutor/Analytics';
 import SessionManagement from './pages/Tutor/SessionManagement';
+import SessionReports from './pages/Tutor/SessionReports'; // New
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -43,6 +51,7 @@ import PlatformAnalytics from './pages/Admin/Analytics';
 
 // Common Pages
 import Profile from './pages/Profile';
+import Inbox from './pages/Inbox/Inbox';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
@@ -91,6 +100,7 @@ function App() {
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
+        <Route path="reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* OAuth Callback Route */}
@@ -110,6 +120,11 @@ function App() {
         <Route path="courses/:courseId/lesson/:lessonId" element={<CourseLesson />} />
         <Route path="progress" element={<MyProgress />} />
         <Route path="sessions" element={<LiveSessions />} />
+
+        {/* Tutor Matching Routes */}
+        <Route path="tutoring/request" element={<RequestTutor />} />
+        <Route path="tutoring/matches/:requestId" element={<TutorMatches />} />
+        <Route path="tutoring/book/:requestId" element={<BookTutor />} />
       </Route>
 
       {/* Tutor Routes */}
@@ -122,6 +137,7 @@ function App() {
         }
       >
         <Route index element={<TutorDashboard />} />
+        <Route path="courses" element={<TutorMyCourses />} />
         {/* <Route path="courses" element={<CourseBuilder />} /> */}
         <Route path="courses/create" element={<CourseCreationWizard />} />
         <Route path="courses/wizard" element={<CourseCreationWizard />} />
@@ -134,6 +150,11 @@ function App() {
         <Route path="lessons/:id/edit" element={<LessonBuilder />} />
         <Route path="analytics" element={<TutorAnalytics />} />
         <Route path="sessions" element={<SessionManagement />} />
+        <Route path="reports" element={<SessionReports />} />
+
+        {/* Profile & Availability */}
+        <Route path="profile" element={<TutorProfile />} />
+        <Route path="availability" element={<TutorAvailability />} />
       </Route>
 
       {/* Admin Routes */}
@@ -161,6 +182,7 @@ function App() {
         }
       >
         <Route path="profile" element={<Profile />} />
+        <Route path="inbox" element={<Inbox />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

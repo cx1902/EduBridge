@@ -26,17 +26,37 @@ const {
   updateQuestion,
   deleteQuestion,
   reorderQuestions,
+  getStudentEngagement,
+  getSessionStatistics,
+  // Profile & Availability
+  updateTutorProfile,
+  getTutorProfile,
+  addAvailabilitySlot,
+  getAvailabilitySlots,
+  deleteAvailabilitySlot
 } = require('../controllers/tutor.controller');
 
 // All routes require authentication and tutor role
 router.use(authenticate);
 router.use(authorize('TUTOR', 'ADMIN'));
 
+// Profile & Availability Endpoints
+router.get('/profile', getTutorProfile);
+router.put('/profile', updateTutorProfile);
+
+router.get('/availability', getAvailabilitySlots);
+router.post('/availability', addAvailabilitySlot);
+router.delete('/availability/:id', deleteAvailabilitySlot);
+
 // Dashboard endpoints
 router.get('/dashboard/stats', getDashboardStats);
 router.get('/dashboard/sessions/today', getTodaysSessions);
 router.get('/dashboard/enrollments/recent', getRecentEnrollments);
 router.get('/dashboard/notifications', getTutorNotifications);
+
+// Analytics & Reports
+router.get('/analytics/engagement', getStudentEngagement);
+router.get('/analytics/sessions', getSessionStatistics);
 
 // Course management endpoints
 router.post('/courses', createCourse);

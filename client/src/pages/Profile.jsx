@@ -87,7 +87,14 @@ const Profile = () => {
       
       // Add text fields
       Object.keys(formData).forEach(key => {
-        if (formData[key]) {
+        // Special handling for dateOfBirth: only send if it has a value
+        // Sending empty string for date might cause backend parsing issues or be ignored
+        if (key === 'dateOfBirth') {
+          if (formData[key]) {
+            formDataToSend.append(key, formData[key]);
+          }
+        } else {
+          // For other fields, send even if empty (to allow clearing phone/bio)
           formDataToSend.append(key, formData[key]);
         }
       });

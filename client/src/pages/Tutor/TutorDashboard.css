@@ -137,6 +137,19 @@
   color: white;
 }
 
+/* View Button specific style */
+.action-btn.view-btn {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.action-btn.view-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.05); /* Slight blue tint */
+}
+
 /* Dashboard Content */
 .dashboard-content {
   display: grid;

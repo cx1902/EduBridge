@@ -276,6 +276,8 @@ exports.getCourseComponents = async (req, res) => {
                 submittedAt: true,
                 status: true,
                 grade: true,
+                feedback: true,
+                gradedAt: true,
                 isLate: true
               }
             })

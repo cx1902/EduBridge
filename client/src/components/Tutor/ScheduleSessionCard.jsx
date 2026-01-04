@@ -28,11 +28,25 @@ const ScheduleSessionCard = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('/api/tutor/courses', {
+        const token = useAuthStore.getState().token || localStorage.getItem('token') || sessionStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          return;
+        }
+
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const response = await fetch(`${API_URL}/tutor/courses`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
+
+        if (response.status === 401) {
+           console.error('Unauthorized: Invalid token');
+           // Optionally redirect to login or show a warning
+           return;
+        }
+
         const data = await response.json();
         if (data.success) {
           setCourses(data.data);
@@ -50,9 +64,13 @@ const ScheduleSessionCard = () => {
     if (formData.courseId) {
       const fetchEnrolledStudents = async () => {
         try {
-          const response = await fetch(`/api/courses/${formData.courseId}/enrollments`, {
+          const token = useAuthStore.getState().token || localStorage.getItem('token') || sessionStorage.getItem('token');
+          if (!token) return;
+
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+          const response = await fetch(`${API_URL}/courses/${formData.courseId}/enrollments`, {
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+              'Authorization': `Bearer ${token}`,
             },
           });
           const data = await response.json();
@@ -120,11 +138,14 @@ const ScheduleSessionCard = () => {
 
     try {
       // Create session
-      const sessionResponse = await fetch('/api/sessions', {
+      const token = useAuthStore.getState().token || localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const sessionResponse = await fetch(`${API_URL}/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           subject: formData.topic || formData.subject,
@@ -142,11 +163,11 @@ const ScheduleSessionCard = () => {
 
       if (sessionData.success) {
         // Send invitations
-        const inviteResponse = await fetch(`/api/sessions/${sessionData.data.id}/invite`, {
+        const inviteResponse = await fetch(`${API_URL}/sessions/${sessionData.data.id}/invite`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
             studentIds: selectedStudents,

@@ -59,7 +59,9 @@ app.use('/api/notifications', require('./routes/notification.routes'))
 app.use('/api/admin', require('./routes/admin.routes'))
 app.use('/api/tutor', require('./routes/tutor.routes'))
 app.use('/api/upload', require('./routes/upload.routes'))
+app.use('/api/inbox', require('./routes/inbox.routes'))
 app.use('/api', require('./routes/component.routes'))
+app.use('/api/tutoring', require('./routes/tutoring.routes'))
 
 // Error handling middleware
 app.use((err, req, res, next) => {

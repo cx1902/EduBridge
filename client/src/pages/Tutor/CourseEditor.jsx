@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
+import { getCourseImageUrl } from '../../utils/images'
+import LessonBuilder from './LessonBuilder'
+import QuizManager from '../../components/Tutor/QuizManager'
+import StudentManager from '../../components/Tutor/StudentManager'
 import './CourseEditor.css'
 
 const CourseEditor = () => {
@@ -19,8 +23,6 @@ const CourseEditor = () => {
     educationLevel: 'SECONDARY',
     difficulty: 'BEGINNER',
     prerequisites: '',
-    price: 0,
-    pricingModel: 'FREE',
     estimatedHours: 0,
     language: 'en',
     thumbnailUrl: '',
@@ -96,8 +98,6 @@ const CourseEditor = () => {
         educationLevel: courseData.educationLevel || 'SECONDARY',
         difficulty: courseData.difficulty || 'BEGINNER',
         prerequisites: courseData.prerequisites || '',
-        price: courseData.price || 0,
-        pricingModel: courseData.pricingModel || 'FREE',
         estimatedHours: courseData.estimatedHours || 0,
         language: courseData.language || 'en',
         thumbnailUrl: courseData.thumbnailUrl || '',
@@ -569,7 +569,7 @@ const CourseEditor = () => {
             {formData.thumbnailUrl && (
               <div className='image-preview' style={{ marginTop: '10px' }}>
                 <img
-                  src={formData.thumbnailUrl}
+                  src={getCourseImageUrl(formData.thumbnailUrl)}
                   alt='Course cover preview'
                   style={{
                     maxWidth: '100%',
@@ -664,38 +664,9 @@ const CourseEditor = () => {
       </section>
 
       <section className='form-section'>
-        <h3>Pricing & Access</h3>
+        <h3>Access</h3>
 
         <div className='form-row'>
-          <div className='form-group'>
-            <label htmlFor='pricingModel'>Pricing Model</label>
-            <select
-              id='pricingModel'
-              name='pricingModel'
-              value={formData.pricingModel}
-              onChange={handleInputChange}
-            >
-              <option value='FREE'>Free</option>
-              <option value='ONE_TIME'>One-time Purchase</option>
-              <option value='SUBSCRIPTION'>Subscription</option>
-            </select>
-          </div>
-
-          {formData.pricingModel !== 'FREE' && (
-            <div className='form-group'>
-              <label htmlFor='price'>Price ($)</label>
-              <input
-                type='number'
-                id='price'
-                name='price'
-                value={formData.price}
-                onChange={handleInputChange}
-                min='0'
-                step='0.01'
-              />
-            </div>
-          )}
-
           <div className='form-group'>
             <label htmlFor='estimatedHours'>Estimated Hours</label>
             <input
@@ -762,82 +733,109 @@ const CourseEditor = () => {
 
   return (
     <div className='course-editor'>
-      <header className='page-header'>
-        <nav className='breadcrumb'>
-          <button className='back-btn' onClick={() => navigate('/tutor')}>
-            <span className='chev'>‹</span> Back to Dashboard
+      <header className='editor-header'>
+        <div className='header-top-row'>
+          <button className='btn-back-text' onClick={() => navigate('/tutor')}>
+            <i className='fas fa-arrow-left'></i> Back to Courses
           </button>
-        </nav>
-        <h1 className='page-title'>
-          {courseId && courseId !== 'new' ? 'Edit Course' : 'Create New Course'}
-        </h1>
+          {course && (
+            <span className={`status-badge ${course.status?.toLowerCase() || 'draft'}`}>
+              {course.status || 'DRAFT'}
+            </span>
+          )}
+        </div>
+        <div className='header-main-row'>
+          <div>
+            <h1 className='editor-title'>
+              {courseId === 'new' ? 'Create New Course' : (formData.title || 'Untitled Course')}
+            </h1>
+            <p className='editor-subtitle'>
+              {courseId === 'new'
+                ? 'Start building your new learning experience'
+                : 'Manage curriculum, quizzes, and student progress'}
+            </p>
+          </div>
+          <div className='header-actions'>
+            {/* We can move primary actions here later if needed, for now keeping them in form */}
+          </div>
+        </div>
       </header>
 
       <div className='editor-tabs'>
         <button
+          type='button'
           className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
           Overview
         </button>
         <button
+          type='button'
           className={`tab ${activeTab === 'curriculum' ? 'active' : ''}`}
           onClick={() => setActiveTab('curriculum')}
-          disabled={!courseId}
+          disabled={courseId === 'new'}
         >
           Curriculum
         </button>
         <button
+          type='button'
           className={`tab ${activeTab === 'quizzes' ? 'active' : ''}`}
           onClick={() => setActiveTab('quizzes')}
-          disabled={!courseId}
+          disabled={courseId === 'new'}
         >
           Quizzes
         </button>
         <button
+          type='button'
           className={`tab ${activeTab === 'students' ? 'active' : ''}`}
           onClick={() => setActiveTab('students')}
-          disabled={!courseId}
+          disabled={courseId === 'new'}
         >
           Students
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className='editor-form'>
-        {activeTab === 'overview' && renderOverviewTab()}
-        {activeTab === 'curriculum' && (
-          <div className='tab-content'>
-            <p>Curriculum tab - Coming soon</p>
-          </div>
-        )}
-        {activeTab === 'quizzes' && (
-          <div className='tab-content'>
-            <p>Quizzes tab - Coming soon</p>
-          </div>
-        )}
-        {activeTab === 'students' && (
-          <div className='tab-content'>
-            <p>Students tab - Coming soon</p>
-          </div>
-        )}
-
-        <div className='editor-actions'>
-          <button type='submit' className='btn-save' disabled={loading}>
-            {loading ? 'Saving...' : 'Save Draft'}
-          </button>
-
-          {courseId && course?.status !== 'PUBLISHED' && (
-            <button
-              type='button'
-              className='btn-publish'
-              onClick={handlePublish}
-              disabled={loading}
-            >
-              Publish Course
+      {activeTab === 'overview' ? (
+        <form onSubmit={handleSubmit} className='editor-form'>
+          {renderOverviewTab()}
+          <div className='editor-actions'>
+            <button type='submit' className='btn-save' disabled={loading}>
+              {loading ? 'Saving...' : 'Save Draft'}
             </button>
+
+            {courseId && course?.status !== 'PUBLISHED' && (
+              <button
+                type='button'
+                className='btn-publish'
+                onClick={handlePublish}
+                disabled={loading}
+              >
+                Publish Course
+              </button>
+            )}
+          </div>
+        </form>
+      ) : (
+        <div className='editor-panel-clean'>
+          {activeTab === 'curriculum' && (
+            <div className='tab-content full-width'>
+              <LessonBuilder embedded={true} />
+            </div>
+          )}
+          
+          {activeTab === 'quizzes' && (
+            <div className='tab-content full-width'>
+              <QuizManager />
+            </div>
+          )}
+          
+          {activeTab === 'students' && (
+            <div className='tab-content full-width'>
+              <StudentManager />
+            </div>
           )}
         </div>
-      </form>
+      )}
     </div>
   )
 }

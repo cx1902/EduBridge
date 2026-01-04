@@ -53,10 +53,9 @@ exports.uploadImage = (req, res) => {
     }
 
     // Return the file URL
-    // Use server's host
-    const protocol = req.protocol
-    const host = req.get('host')
-    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`
+    // Use relative path to make it device-agnostic
+    // The frontend will prepend the API base URL
+    const fileUrl = `/uploads/${req.file.filename}`
 
     res.json({
       success: true,

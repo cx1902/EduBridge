@@ -1,5 +1,247 @@
 const prisma = require('../utils/prisma');
 
+// Create a new quiz
+exports.createQuiz = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    const {
+      title,
+      instructions,
+      timeLimitMinutes,
+      passingPercentage,
+      maxAttempts,
+      pointsOnPass,
+      shuffleQuestions,
+      shuffleAnswers,
+      immediateFeedback,
+      questions
+    } = req.body;
+    const userId = req.user.id;
+
+    // Verify lesson ownership
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: { course: true }
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, error: { message: 'Lesson not found' } });
+    }
+
+    if (lesson.course.tutorId !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: { message: 'Not authorized' } });
+    }
+
+    // Check if quiz already exists for this lesson
+    const existingQuiz = await prisma.quiz.findFirst({
+      where: { lessonId }
+    });
+
+    if (existingQuiz) {
+      return res.status(400).json({ success: false, error: { message: 'Quiz already exists for this lesson' } });
+    }
+
+    // Create quiz with questions in a transaction
+    const quiz = await prisma.quiz.create({
+      data: {
+        lessonId,
+        courseId: lesson.courseId,
+        title,
+        instructions,
+        timeLimitMinutes: parseInt(timeLimitMinutes),
+        passingPercentage: parseInt(passingPercentage),
+        maxAttempts: maxAttempts ? parseInt(maxAttempts) : null,
+        pointsOnPass: parseInt(pointsOnPass),
+        shuffleQuestions,
+        shuffleAnswers,
+        immediateFeedback,
+        questions: {
+          create: questions.map((q, index) => ({
+            questionText: q.questionText,
+            questionType: q.questionType,
+            questionImageUrl: q.questionImageUrl,
+            points: parseInt(q.points),
+            explanation: q.explanation,
+            sequenceOrder: index + 1,
+            answerOptions: {
+              create: q.answerOptions.map((opt, optIndex) => ({
+                optionText: opt.optionText,
+                isCorrect: opt.isCorrect,
+                sequenceOrder: optIndex + 1
+              }))
+            }
+          }))
+        }
+      },
+      include: {
+        questions: {
+          include: {
+            answerOptions: true
+          }
+        }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: quiz,
+      message: 'Quiz created successfully'
+    });
+  } catch (error) {
+    console.error('Create quiz error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to create quiz', details: error.message }
+    });
+  }
+};
+
+// Update quiz
+exports.updateQuiz = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      instructions,
+      timeLimitMinutes,
+      passingPercentage,
+      maxAttempts,
+      pointsOnPass,
+      shuffleQuestions,
+      shuffleAnswers,
+      immediateFeedback,
+      questions
+    } = req.body;
+    const userId = req.user.id;
+
+    const quiz = await prisma.quiz.findUnique({
+      where: { id },
+      include: { lesson: { include: { course: true } } }
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ success: false, error: { message: 'Quiz not found' } });
+    }
+
+    if (quiz.lesson.course.tutorId !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: { message: 'Not authorized' } });
+    }
+
+    // Update quiz using a transaction to handle nested updates
+    const updatedQuiz = await prisma.$transaction(async (tx) => {
+      // 1. Update quiz details
+      const updated = await tx.quiz.update({
+        where: { id },
+        data: {
+          title,
+          instructions,
+          timeLimitMinutes: parseInt(timeLimitMinutes),
+          passingPercentage: parseInt(passingPercentage),
+          maxAttempts: maxAttempts ? parseInt(maxAttempts) : null,
+          pointsOnPass: parseInt(pointsOnPass),
+          shuffleQuestions,
+          shuffleAnswers,
+          immediateFeedback
+        }
+      });
+
+      // 2. Delete existing questions (simplest way to handle reordering and updates)
+      // Note: In a production app with huge data, we might want to diff and update, 
+      // but for this scale, delete-and-recreate ensures consistency.
+      await tx.question.deleteMany({
+        where: { quizId: id }
+      });
+
+      // 3. Re-create questions
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        await tx.question.create({
+          data: {
+            quizId: id,
+            questionText: q.questionText,
+            questionType: q.questionType,
+            questionImageUrl: q.questionImageUrl,
+            points: parseInt(q.points),
+            explanation: q.explanation,
+            sequenceOrder: i + 1,
+            answerOptions: {
+              create: q.answerOptions.map((opt, optIndex) => ({
+                optionText: opt.optionText,
+                isCorrect: opt.isCorrect,
+                sequenceOrder: optIndex + 1
+              }))
+            }
+          }
+        });
+      }
+
+      return updated;
+    });
+
+    // Fetch the final result
+    const finalQuiz = await prisma.quiz.findUnique({
+      where: { id },
+      include: {
+        questions: {
+          orderBy: { sequenceOrder: 'asc' },
+          include: {
+            answerOptions: { orderBy: { sequenceOrder: 'asc' } }
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: finalQuiz,
+      message: 'Quiz updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Update quiz error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to update quiz', details: error.message }
+    });
+  }
+};
+
+// Delete quiz
+exports.deleteQuiz = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const quiz = await prisma.quiz.findUnique({
+      where: { id },
+      include: { lesson: { include: { course: true } } }
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ success: false, error: { message: 'Quiz not found' } });
+    }
+
+    if (quiz.lesson.course.tutorId !== userId && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: { message: 'Not authorized' } });
+    }
+
+    await prisma.quiz.delete({
+      where: { id }
+    });
+
+    res.json({
+      success: true,
+      message: 'Quiz deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete quiz error:', error);
+    res.status(500).json({
+      success: false,
+      error: { message: 'Failed to delete quiz', details: error.message }
+    });
+  }
+};
+
 // Get quiz by lesson ID
 exports.getQuizByLesson = async (req, res) => {
   try {

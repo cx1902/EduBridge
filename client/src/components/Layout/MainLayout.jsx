@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX, FiMail } from 'react-icons/fi';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../LanguageSwitcher';
@@ -100,6 +100,9 @@ const MainLayout = () => {
 
               {isAuthenticated ? (
                 <div className="user-menu">
+                  <Link to="/inbox" className="icon-btn" aria-label="Inbox">
+                    <FiMail />
+                  </Link>
                   <Link to="/profile" className="btn btn-ghost">
                     <FiUser />
                     <span>{user?.firstName}</span>

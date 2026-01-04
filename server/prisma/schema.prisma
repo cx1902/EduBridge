@@ -42,46 +42,55 @@ model User {
   emailVerified Boolean       @default(false) @map("email_verified")
   loginAttempts Int           @default(0) @map("login_attempts")
   lastLogin     DateTime?     @map("last_login")
-  
+
   // Password Reset
   resetPasswordToken   String?   @map("reset_password_token")
   resetPasswordExpires DateTime? @map("reset_password_expires")
-  
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  createdCourses     Course[]                      @relation("TutorCourses")
-  enrollments        Enrollment[]
-  quizAttempts       QuizAttempt[]
-  userBadges         UserBadge[]
-  pointsTransactions PointsTransaction[]
-  sessionBookings    SessionBooking[]
-  transactions       Transaction[]
-  notifications      Notification[]
-  tutoredSessions    TutoringSession[]             @relation("TutorSessions")
-  progressRecords    Progress[]
-  emailTracking      SessionEmailTracking[]        @relation("StudentEmailTracking")
-  sessionResponses   StudentSessionResponse[]      @relation("StudentSessionResponses")
-  emailPreferences   EmailNotificationPreferences?
-  featureRequests    FeatureRequest[]
-  generatedReports   PlatformReport[]
-  createdTemplates   LessonTemplate[]              @relation("CreatedTemplates")
-  createdSnippets    ContentSnippet[]              @relation("CreatedSnippets")
-  tutorApplications  TutorVerificationApplication[] @relation("TutorApplications")
+  createdCourses       Course[]                       @relation("TutorCourses")
+  enrollments          Enrollment[]
+  quizAttempts         QuizAttempt[]
+  userBadges           UserBadge[]
+  pointsTransactions   PointsTransaction[]
+  sessionBookings      SessionBooking[]
+  notifications        Notification[]
+  tutoredSessions      TutoringSession[]              @relation("TutorSessions")
+  progressRecords      Progress[]
+  emailTracking        SessionEmailTracking[]         @relation("StudentEmailTracking")
+  sessionResponses     StudentSessionResponse[]       @relation("StudentSessionResponses")
+  emailPreferences     EmailNotificationPreferences?
+  featureRequests      FeatureRequest[]
+  generatedReports     PlatformReport[]
+  createdTemplates     LessonTemplate[]               @relation("CreatedTemplates")
+  createdSnippets      ContentSnippet[]               @relation("CreatedSnippets")
+  tutorApplications    TutorVerificationApplication[] @relation("TutorApplications")
   reviewedApplications TutorVerificationApplication[] @relation("ReviewedApplications")
-  submittedReports   ContentReport[]               @relation("SubmittedReports")
-  resolvedReports    ContentReport[]               @relation("ResolvedReports")
-  auditLogsPerformed AuditLog[]                    @relation("AdminActions")
-  createdBroadcasts  BroadcastMessage[]            @relation("BroadcastCreator")
-  warningsReceived   UserWarning[]                 @relation("WarningRecipient")
-  warningsIssued     UserWarning[]                 @relation("WarningIssuer")
-  courseReviews      CourseReview[]
-  createdComponents  CourseComponent[]             @relation("ComponentCreator")
-  uploadedFiles      ComponentFile[]               @relation("FileUploader")
-  messages           ComponentMessage[]            @relation("MessageCreator")
-  submissions        AssignmentSubmission[]        @relation("StudentSubmissions")
-  gradedSubmissions  AssignmentSubmission[]        @relation("GradedSubmissions")
+  submittedReports     ContentReport[]                @relation("SubmittedReports")
+  resolvedReports      ContentReport[]                @relation("ResolvedReports")
+  auditLogsPerformed   AuditLog[]                     @relation("AdminActions")
+  createdBroadcasts    BroadcastMessage[]             @relation("BroadcastCreator")
+  warningsReceived     UserWarning[]                  @relation("WarningRecipient")
+  warningsIssued       UserWarning[]                  @relation("WarningIssuer")
+  courseReviews        CourseReview[]
+  createdComponents    CourseComponent[]              @relation("ComponentCreator")
+  uploadedFiles        ComponentFile[]                @relation("FileUploader")
+  messages             ComponentMessage[]             @relation("MessageCreator")
+  submissions          AssignmentSubmission[]         @relation("StudentSubmissions")
+  gradedSubmissions    AssignmentSubmission[]         @relation("GradedSubmissions")
+  sentMessages         InboxMessage[]                 @relation("SentMessages")
+  receivedMessages     InboxMessage[]                 @relation("ReceivedMessages")
+
+  // Tutor Matching Features
+  tutorProfile  TutorProfile?
+  tutorSubjects TutorSubject[]
+
+  tutoringRequests  TutoringRequest[]  @relation("StudentTutoringRequests")
+  matchedRequests   TutoringRequest[]  @relation("MatchedTutor")
+  availabilitySlots AvailabilitySlot[]
 
   @@map("users")
 }
@@ -100,8 +109,6 @@ model Course {
   thumbnailUrl     String?        @map("thumbnail_url")
   thumbnailAltText String?        @map("thumbnail_alt_text")
   introVideoUrl    String?        @map("intro_video_url")
-  price            Decimal        @default(0) @db.Decimal(10, 2)
-  pricingModel     PricingModel   @default(FREE) @map("pricing_model")
   estimatedHours   Int            @map("estimated_hours")
   language         String         @default("en")
   status           CourseStatus   @default(DRAFT)
@@ -123,13 +130,14 @@ model Course {
   publishedAt DateTime? @map("published_at")
 
   // Relations
-  tutor       User            @relation("TutorCourses", fields: [tutorId], references: [id], onDelete: Cascade)
-  lessons     Lesson[]
-  quizzes     Quiz[]
-  enrollments Enrollment[]
-  reviews     CourseReview[]
-  versions    CourseVersion[]
-  components  CourseComponent[] @relation("CourseComponents")
+  tutor         User              @relation("TutorCourses", fields: [tutorId], references: [id], onDelete: Cascade)
+  lessons       Lesson[]
+  quizzes       Quiz[]
+  enrollments   Enrollment[]
+  reviews       CourseReview[]
+  versions      CourseVersion[]
+  components    CourseComponent[] @relation("CourseComponents")
+  inboxMessages InboxMessage[]
 
   @@index([tutorId])
   @@index([status])
@@ -392,7 +400,6 @@ model TutoringSession {
   actualStart     DateTime?      @map("actual_start")
   actualEnd       DateTime?      @map("actual_end")
   maxParticipants Int            @map("max_participants")
-  pricePerStudent Decimal        @map("price_per_student") @db.Decimal(10, 2)
   sessionType     SessionType    @map("session_type")
   videoRoomId     String?        @map("video_room_id")
   recordingUrl    String?        @map("recording_url")
@@ -410,6 +417,13 @@ model TutoringSession {
   emailTracking    SessionEmailTracking[]
   sessionResponses StudentSessionResponse[]
 
+  // Booking Integration
+  requestId String? @unique @map("request_id")
+  slotId    String? @unique @map("slot_id")
+
+  request TutoringRequest?  @relation(fields: [requestId], references: [id])
+  slot    AvailabilitySlot? @relation(fields: [slotId], references: [id])
+
   @@index([tutorId])
   @@index([scheduledStart])
   @@map("tutoring_sessions")
@@ -417,14 +431,13 @@ model TutoringSession {
 
 // Session Booking Model
 model SessionBooking {
-  id         String        @id @default(uuid())
-  studentId  String        @map("student_id")
-  sessionId  String        @map("session_id")
-  bookedAt   DateTime      @default(now()) @map("booked_at")
-  status     BookingStatus @default(CONFIRMED)
-  amountPaid Decimal       @map("amount_paid") @db.Decimal(10, 2)
-  rating     Int?
-  review     String?       @db.Text
+  id        String        @id @default(uuid())
+  studentId String        @map("student_id")
+  sessionId String        @map("session_id")
+  bookedAt  DateTime      @default(now()) @map("booked_at")
+  status    BookingStatus @default(CONFIRMED)
+  rating    Int?
+  review    String?       @db.Text
 
   // Relations
   student User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -433,28 +446,6 @@ model SessionBooking {
   @@index([studentId])
   @@index([sessionId])
   @@map("session_bookings")
-}
-
-// Transaction Model
-model Transaction {
-  id                String            @id @default(uuid())
-  userId            String            @map("user_id")
-  type              TransactionType
-  amount            Decimal           @db.Decimal(10, 2)
-  currency          String            @default("USD")
-  paymentMethod     String?           @map("payment_method")
-  paymentGatewayRef String?           @map("payment_gateway_reference")
-  status            TransactionStatus @default(PENDING)
-
-  createdAt   DateTime  @default(now()) @map("created_at")
-  completedAt DateTime? @map("completed_at")
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@map("transactions")
 }
 
 // Course Review Model
@@ -534,12 +525,6 @@ enum Difficulty {
   ADVANCED
 }
 
-enum PricingModel {
-  FREE
-  ONE_TIME
-  SUBSCRIPTION
-}
-
 enum CourseStatus {
   DRAFT
   PENDING_APPROVAL
@@ -586,20 +571,6 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
-}
-
-enum TransactionType {
-  COURSE_PURCHASE
-  SESSION_PAYMENT
-  SUBSCRIPTION
-  REFUND
-}
-
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
 }
 
 enum NotificationType {
@@ -706,24 +677,24 @@ enum PriorityLevel {
 
 // Course Component Model
 model CourseComponent {
-  id             String        @id @default(uuid())
-  courseId       String        @map("course_id")
-  componentType  ComponentType @map("component_type")
-  title          String        @db.VarChar(200)
-  description    String?       @db.Text
-  configuration  Json?         @default("{}")
-  sequenceOrder  Int           @map("sequence_order")
-  isPublished    Boolean       @default(false) @map("is_published")
-  createdBy      String        @map("created_by")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
+  id            String        @id @default(uuid())
+  courseId      String        @map("course_id")
+  componentType ComponentType @map("component_type")
+  title         String        @db.VarChar(200)
+  description   String?       @db.Text
+  configuration Json?         @default("{}")
+  sequenceOrder Int           @map("sequence_order")
+  isPublished   Boolean       @default(false) @map("is_published")
+  createdBy     String        @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  course              Course                 @relation("CourseComponents", fields: [courseId], references: [id], onDelete: Cascade)
-  creator             User                   @relation("ComponentCreator", fields: [createdBy], references: [id], onDelete: Cascade)
-  files               ComponentFile[]
-  messages            ComponentMessage[]
-  submissions         AssignmentSubmission[]
+  course      Course                 @relation("CourseComponents", fields: [courseId], references: [id], onDelete: Cascade)
+  creator     User                   @relation("ComponentCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  files       ComponentFile[]
+  messages    ComponentMessage[]
+  submissions AssignmentSubmission[]
 
   @@index([courseId])
   @@index([componentType])
@@ -753,21 +724,21 @@ model ComponentMessage {
 
 // Component File Model
 model ComponentFile {
-  id             String          @id @default(uuid())
-  componentId    String          @map("component_id")
-  fileName       String          @map("file_name") @db.VarChar(255)
-  filePath       String          @map("file_path") @db.VarChar(500)
-  fileSize       BigInt          @map("file_size")
-  mimeType       String          @map("mime_type") @db.VarChar(100)
-  uploadedBy     String          @map("uploaded_by")
-  description    String?         @db.Text
-  scheduledAt    DateTime?       @map("scheduled_at")
-  downloadCount  Int             @default(0) @map("download_count")
-  uploadedAt     DateTime        @default(now()) @map("uploaded_at")
+  id            String    @id @default(uuid())
+  componentId   String    @map("component_id")
+  fileName      String    @map("file_name") @db.VarChar(255)
+  filePath      String    @map("file_path") @db.VarChar(500)
+  fileSize      BigInt    @map("file_size")
+  mimeType      String    @map("mime_type") @db.VarChar(100)
+  uploadedBy    String    @map("uploaded_by")
+  description   String?   @db.Text
+  scheduledAt   DateTime? @map("scheduled_at")
+  downloadCount Int       @default(0) @map("download_count")
+  uploadedAt    DateTime  @default(now()) @map("uploaded_at")
 
   // Relations
-  component   CourseComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  uploader    User            @relation("FileUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+  component CourseComponent @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  uploader  User            @relation("FileUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
 
   @@index([componentId])
   @@index([uploadedBy])
@@ -792,10 +763,10 @@ model AssignmentSubmission {
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   // Relations
-  component   CourseComponent    @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  student     User               @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
-  grader      User?              @relation("GradedSubmissions", fields: [gradedBy], references: [id], onDelete: SetNull)
-  files       SubmissionFile[]
+  component CourseComponent  @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  student   User             @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  grader    User?            @relation("GradedSubmissions", fields: [gradedBy], references: [id], onDelete: SetNull)
+  files     SubmissionFile[]
 
   @@unique([componentId, studentId, attemptNumber])
   @@index([componentId])
@@ -807,13 +778,13 @@ model AssignmentSubmission {
 
 // Submission File Model
 model SubmissionFile {
-  id           String               @id @default(uuid())
-  submissionId String               @map("submission_id")
-  fileName     String               @map("file_name") @db.VarChar(255)
-  filePath     String               @map("file_path") @db.VarChar(500)
-  fileSize     BigInt               @map("file_size")
-  mimeType     String               @map("mime_type") @db.VarChar(100)
-  uploadedAt   DateTime             @default(now()) @map("uploaded_at")
+  id           String   @id @default(uuid())
+  submissionId String   @map("submission_id")
+  fileName     String   @map("file_name") @db.VarChar(255)
+  filePath     String   @map("file_path") @db.VarChar(500)
+  fileSize     BigInt   @map("file_size")
+  mimeType     String   @map("mime_type") @db.VarChar(100)
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
 
   // Relations
   submission AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
@@ -1008,20 +979,20 @@ model ContentSnippet {
 
 // Tutor Verification Application Model
 model TutorVerificationApplication {
-  id              String                       @id @default(uuid())
-  userId          String                       @map("user_id")
-  documents       Json                         @default("[]")
-  subjects        Json                         @default("[]")
-  sampleLessonUrl String?                      @map("sample_lesson_url")
-  qualifications  String                       @db.Text
-  teachingExperience String?                   @map("teaching_experience") @db.Text
-  status          TutorVerificationStatus      @default(PENDING)
-  reviewerId      String?                      @map("reviewer_id")
-  reviewNotes     String?                      @map("review_notes") @db.Text
-  submittedAt     DateTime                     @default(now()) @map("submitted_at")
-  reviewedAt      DateTime?                    @map("reviewed_at")
-  createdAt       DateTime                     @default(now()) @map("created_at")
-  updatedAt       DateTime                     @updatedAt @map("updated_at")
+  id                 String                  @id @default(uuid())
+  userId             String                  @map("user_id")
+  documents          Json                    @default("[]")
+  subjects           Json                    @default("[]")
+  sampleLessonUrl    String?                 @map("sample_lesson_url")
+  qualifications     String                  @db.Text
+  teachingExperience String?                 @map("teaching_experience") @db.Text
+  status             TutorVerificationStatus @default(PENDING)
+  reviewerId         String?                 @map("reviewer_id")
+  reviewNotes        String?                 @map("review_notes") @db.Text
+  submittedAt        DateTime                @default(now()) @map("submitted_at")
+  reviewedAt         DateTime?               @map("reviewed_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
 
   // Relations
   applicant User  @relation("TutorApplications", fields: [userId], references: [id], onDelete: Cascade)
@@ -1035,20 +1006,20 @@ model TutorVerificationApplication {
 
 // Content Report Model
 model ContentReport {
-  id               String              @id @default(uuid())
-  reporterId       String              @map("reporter_id")
-  reportedItemType ReportedItemType    @map("reported_item_type")
-  reportedItemId   String              @map("reported_item_id")
+  id               String           @id @default(uuid())
+  reporterId       String           @map("reporter_id")
+  reportedItemType ReportedItemType @map("reported_item_type")
+  reportedItemId   String           @map("reported_item_id")
   category         ReportCategory
-  description      String              @db.Text
-  priority         ReportPriority      @default(NORMAL)
-  status           ReportStatus        @default(NEW)
-  resolverId       String?             @map("resolver_id")
-  resolution       String?             @db.Text
-  evidenceUrls     Json?               @default("[]")
-  createdAt        DateTime            @default(now()) @map("created_at")
-  resolvedAt       DateTime?           @map("resolved_at")
-  updatedAt        DateTime            @updatedAt @map("updated_at")
+  description      String           @db.Text
+  priority         ReportPriority   @default(NORMAL)
+  status           ReportStatus     @default(NEW)
+  resolverId       String?          @map("resolver_id")
+  resolution       String?          @db.Text
+  evidenceUrls     Json?            @default("[]")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  resolvedAt       DateTime?        @map("resolved_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
 
   // Relations
   reporter User  @relation("SubmittedReports", fields: [reporterId], references: [id], onDelete: Cascade)
@@ -1063,16 +1034,16 @@ model ContentReport {
 
 // System Setting Model
 model SystemSetting {
-  id             String         @id @default(uuid())
-  settingKey     String         @unique @map("setting_key")
-  settingValue   Json           @map("setting_value")
+  id             String           @id @default(uuid())
+  settingKey     String           @unique @map("setting_key")
+  settingValue   Json             @map("setting_value")
   valueType      SettingValueType @map("value_type")
   category       SettingCategory
-  description    String         @db.Text
-  lastModifiedBy String?        @map("last_modified_by")
-  lastModifiedAt DateTime       @default(now()) @map("last_modified_at")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  description    String           @db.Text
+  lastModifiedBy String?          @map("last_modified_by")
+  lastModifiedAt DateTime         @default(now()) @map("last_modified_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
   @@index([category])
   @@index([settingKey])
@@ -1081,18 +1052,18 @@ model SystemSetting {
 
 // Email Template Model
 model EmailTemplate {
-  id           String               @id @default(uuid())
-  templateKey  String               @unique @map("template_key")
-  templateName String               @map("template_name")
+  id           String                @id @default(uuid())
+  templateKey  String                @unique @map("template_key")
+  templateName String                @map("template_name")
   subject      String
-  bodyHtml     String               @db.Text @map("body_html")
-  bodyPlain    String               @db.Text @map("body_plain")
-  variables    Json                 @default("[]")
+  bodyHtml     String                @map("body_html") @db.Text
+  bodyPlain    String                @map("body_plain") @db.Text
+  variables    Json                  @default("[]")
   category     EmailTemplateCategory
-  isActive     Boolean              @default(true) @map("is_active")
-  version      Int                  @default(1)
-  createdAt    DateTime             @default(now()) @map("created_at")
-  updatedAt    DateTime             @updatedAt @map("updated_at")
+  isActive     Boolean               @default(true) @map("is_active")
+  version      Int                   @default(1)
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
 
   @@index([category])
   @@index([isActive])
@@ -1101,20 +1072,20 @@ model EmailTemplate {
 
 // Broadcast Message Model
 model BroadcastMessage {
-  id             String                @id @default(uuid())
-  createdBy      String                @map("created_by")
-  targetAudience BroadcastAudience     @map("target_audience")
-  targetRole     UserRole?             @map("target_role")
+  id             String            @id @default(uuid())
+  createdBy      String            @map("created_by")
+  targetAudience BroadcastAudience @map("target_audience")
+  targetRole     UserRole?         @map("target_role")
   subject        String
-  body           String                @db.Text
-  priority       BroadcastPriority     @default(NORMAL)
-  scheduledFor   DateTime?             @map("scheduled_for")
-  expiresAt      DateTime?             @map("expires_at")
-  sentCount      Int                   @default(0) @map("sent_count")
-  status         BroadcastStatus       @default(DRAFT)
-  sentAt         DateTime?             @map("sent_at")
-  createdAt      DateTime              @default(now()) @map("created_at")
-  updatedAt      DateTime              @updatedAt @map("updated_at")
+  body           String            @db.Text
+  priority       BroadcastPriority @default(NORMAL)
+  scheduledFor   DateTime?         @map("scheduled_for")
+  expiresAt      DateTime?         @map("expires_at")
+  sentCount      Int               @default(0) @map("sent_count")
+  status         BroadcastStatus   @default(DRAFT)
+  sentAt         DateTime?         @map("sent_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
 
   // Relations
   creator User @relation("BroadcastCreator", fields: [createdBy], references: [id], onDelete: Cascade)
@@ -1168,19 +1139,19 @@ model QuestionPerformance {
 
 // User Warning Model (for tracking content violations)
 model UserWarning {
-  id          String        @id @default(uuid())
-  userId      String        @map("user_id")
-  issuedBy    String        @map("issued_by")
-  reason      String        @db.Text
-  severity    WarningSeverity @default(LOW)
-  relatedItemType String?   @map("related_item_type")
-  relatedItemId   String?   @map("related_item_id")
-  acknowledged Boolean      @default(false)
-  createdAt   DateTime      @default(now()) @map("created_at")
+  id              String          @id @default(uuid())
+  userId          String          @map("user_id")
+  issuedBy        String          @map("issued_by")
+  reason          String          @db.Text
+  severity        WarningSeverity @default(LOW)
+  relatedItemType String?         @map("related_item_type")
+  relatedItemId   String?         @map("related_item_id")
+  acknowledged    Boolean         @default(false)
+  createdAt       DateTime        @default(now()) @map("created_at")
 
   // Relations
-  user    User @relation("WarningRecipient", fields: [userId], references: [id], onDelete: Cascade)
-  issuer  User @relation("WarningIssuer", fields: [issuedBy], references: [id], onDelete: Cascade)
+  user   User @relation("WarningRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  issuer User @relation("WarningIssuer", fields: [issuedBy], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([issuedBy])
@@ -1188,31 +1159,12 @@ model UserWarning {
   @@map("user_warnings")
 }
 
-// Payment Webhook Event (for Stripe reconciliation)
-model PaymentWebhookEvent {
-  id                String              @id @default(uuid())
-  eventType         String              @map("event_type")
-  stripeEventId     String              @unique @map("stripe_event_id")
-  payload           Json
-  processingStatus  WebhookProcessingStatus @default(PENDING) @map("processing_status")
-  retryCount        Int                 @default(0) @map("retry_count")
-  errorMessage      String?             @db.Text @map("error_message")
-  transactionId     String?             @map("transaction_id")
-  receivedAt        DateTime            @default(now()) @map("received_at")
-  processedAt       DateTime?           @map("processed_at")
-
-  @@index([eventType])
-  @@index([processingStatus])
-  @@index([receivedAt])
-  @@map("payment_webhook_events")
-}
-
 // Course Lock (for preventing edits during moderation)
 model CourseLock {
   id         String    @id @default(uuid())
   courseId   String    @unique @map("course_id")
   lockedBy   String    @map("locked_by")
-  lockReason String    @db.Text @map("lock_reason")
+  lockReason String    @map("lock_reason") @db.Text
   lockedAt   DateTime  @default(now()) @map("locked_at")
   expiresAt  DateTime? @map("expires_at")
 
@@ -1276,7 +1228,6 @@ enum SettingCategory {
   FEATURE_FLAG
   GAMIFICATION
   EMAIL
-  PAYMENT
   GENERAL
 }
 
@@ -1318,9 +1269,137 @@ enum WarningSeverity {
   SEVERE
 }
 
-enum WebhookProcessingStatus {
+// Inbox Message Model (Direct Messaging)
+model InboxMessage {
+  id      String @id @default(uuid())
+  subject String
+  content String @db.Text
+
+  senderId String @map("sender_id")
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  receiverId String @map("receiver_id")
+  receiver   User   @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  isRead     Boolean @default(false) @map("is_read")
+  isArchived Boolean @default(false) @map("is_archived")
+
+  type MessageType @default(GENERAL)
+
+  // Optional: Link to context
+  courseId String? @map("course_id")
+  course   Course? @relation(fields: [courseId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+  @@map("inbox_messages")
+}
+
+enum MessageType {
+  GENERAL
+  CLASS_UPDATE
+  ADMIN_TICKET
+}
+
+// ==================== TUTOR MATCHING MODELS ====================
+
+enum TutoringRequestStatus {
   PENDING
-  SUCCESS
-  FAILED
-  RETRY
+  MATCHED
+  BOOKED
+  CANCELLED
+}
+
+model TutorProfile {
+  id              String           @id @default(uuid())
+  userId          String           @unique @map("user_id")
+  hourlyRate      Decimal          @map("hourly_rate") @db.Decimal(10, 2)
+  languages       String[]         @default([]) @map("languages")
+  bio             String?          @db.Text
+  levelsSupported EducationLevel[] @default([]) @map("levels_supported")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tutor_profiles")
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tutorSubjects    TutorSubject[]
+  tutoringRequests TutoringRequest[]
+
+  @@map("subjects")
+}
+
+model TutorSubject {
+  id         String     @id @default(uuid())
+  tutorId    String     @map("tutor_id")
+  subjectId  String     @map("subject_id")
+  skillLevel Difficulty @default(BEGINNER) @map("skill_level")
+
+  // Relations
+  tutor   User    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorId, subjectId])
+  @@index([tutorId])
+  @@index([subjectId])
+  @@map("tutor_subjects")
+}
+
+model TutoringRequest {
+  id                String                @id @default(uuid())
+  studentId         String                @map("student_id")
+  subjectId         String                @map("subject_id")
+  preferredLevel    EducationLevel        @map("preferred_level")
+  budgetMax         Decimal?              @map("budget_max") @db.Decimal(10, 2)
+  preferredLanguage String?               @map("preferred_language")
+  preferredStart    DateTime?             @map("preferred_start")
+  preferredEnd      DateTime?             @map("preferred_end")
+  status            TutoringRequestStatus @default(PENDING)
+
+  matchedTutorId String? @map("matched_tutor_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  student      User    @relation("StudentTutoringRequests", fields: [studentId], references: [id], onDelete: Cascade)
+  subject      Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  matchedTutor User?   @relation("MatchedTutor", fields: [matchedTutorId], references: [id], onDelete: SetNull)
+
+  // Booking Integration (Optional but recommended for linkage)
+  session TutoringSession?
+
+  @@index([studentId])
+  @@index([subjectId])
+  @@index([matchedTutorId])
+  @@map("tutoring_requests")
+}
+
+// Added to support booking feature
+model AvailabilitySlot {
+  id        String   @id @default(uuid())
+  tutorId   String   @map("tutor_id")
+  startTime DateTime @map("start_time")
+  endTime   DateTime @map("end_time")
+  isBooked  Boolean  @default(false) @map("is_booked")
+
+  // Relations
+  tutor   User             @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  session TutoringSession?
+
+  @@index([tutorId])
+  @@index([startTime])
+  @@map("availability_slots")
 }

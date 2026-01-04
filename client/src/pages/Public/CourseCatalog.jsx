@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 import './CourseCatalog.css';
-import { DEFAULT_COURSE_IMAGE } from '../../utils/images';
+import { DEFAULT_COURSE_IMAGE, getCourseImageUrl } from '../../utils/images';
 
 const CourseCatalog = () => {
   const navigate = useNavigate();
@@ -15,9 +15,25 @@ const CourseCatalog = () => {
     search: '',
     subjectCategory: '',
     educationLevel: '',
-    difficulty: '',
-    pricingModel: ''
+    difficulty: ''
   });
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, search: debouncedSearch }));
+  }, [debouncedSearch]);
 
   useEffect(() => {
     fetchCourses();
@@ -87,8 +103,8 @@ const CourseCatalog = () => {
           <input
             type="text"
             placeholder="Search courses..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
         </div>
@@ -114,16 +130,6 @@ const CourseCatalog = () => {
             <option value="BEGINNER">Beginner</option>
             <option value="INTERMEDIATE">Intermediate</option>
             <option value="ADVANCED">Advanced</option>
-          </select>
-
-          <select
-            value={filters.pricingModel}
-            onChange={(e) => handleFilterChange('pricingModel', e.target.value)}
-            className="filter-select"
-          >
-            <option value="">All Prices</option>
-            <option value="FREE">Free</option>
-            <option value="ONE_TIME">Paid</option>
           </select>
         </div>
       </div>
@@ -157,10 +163,7 @@ const CourseCatalog = () => {
               onClick={() => handleCourseClick(course.id)}
             >
               <div className="course-thumbnail">
-                <img src={course.thumbnailUrl || DEFAULT_COURSE_IMAGE} alt={course.title} />
-                {course.pricingModel === 'FREE' && (
-                  <span className="free-badge">FREE</span>
-                )}
+                <img src={getCourseImageUrl(course.thumbnailUrl)} alt={course.title} />
               </div>
 
               <div className="course-content">

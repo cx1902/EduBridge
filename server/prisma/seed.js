@@ -160,8 +160,6 @@ async function main () {
       educationLevel: 'SECONDARY',
       difficulty: 'BEGINNER',
       thumbnailUrl: '/course-thumbnails/math-intro.jpg',
-      price: 0,
-      pricingModel: 'FREE',
       estimatedHours: 20,
       language: 'en',
       status: 'PUBLISHED',
@@ -302,6 +300,62 @@ async function main () {
     }
   })
   console.log('✅ Enrolled student in sample course')
+
+  // ==================== TUTOR MATCHING SEEDING ====================
+
+  // 1. Create Subjects
+  const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English', 'History'];
+  const subjectRecords = {};
+
+  for (const name of subjects) {
+    const sub = await prisma.subject.create({ data: { name } });
+    subjectRecords[name] = sub.id;
+  }
+  console.log('✅ Created Subjects');
+
+  // 2. Setup Tutor Profile for the main tutor
+  await prisma.tutorProfile.create({
+    data: {
+      userId: tutor.id,
+      hourlyRate: 50.00,
+      bio: 'Experienced Math tutor with 5 years of teaching experience.',
+      languages: ['English', 'Chinese'],
+      levelsSupported: ['SECONDARY', 'UNIVERSITY']
+    }
+  });
+
+  // 3. Link Tutor to Subjects
+  await prisma.tutorSubject.create({
+    data: {
+      tutorId: tutor.id,
+      subjectId: subjectRecords['Mathematics'],
+      skillLevel: 'ADVANCED'
+    }
+  });
+
+  // 4. Create Availability Slots (Next 7 days)
+  const today = new Date();
+  const slots = [];
+  
+  // Add 3 slots for the next 3 days
+  for (let i = 1; i <= 3; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() + i);
+    date.setHours(14, 0, 0, 0); // 2:00 PM
+
+    const endTime = new Date(date);
+    endTime.setHours(15, 0, 0, 0); // 3:00 PM
+
+    slots.push({
+      tutorId: tutor.id,
+      startTime: date,
+      endTime: endTime,
+      isBooked: false
+    });
+  }
+
+  await prisma.availabilitySlot.createMany({ data: slots });
+  console.log('✅ Created Tutor Profile, Subjects, and Slots');
 
   console.log('🎉 Database seeding completed!')
   console.log('\n📝 Login Credentials:')

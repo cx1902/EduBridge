@@ -19,6 +19,8 @@ const Register = () => {
   });
 
   const [validationError, setValidationError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -133,16 +135,39 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="password">{t('register.password')}</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder={t('register.passwordPlaceholder', 'Create a strong password')}
-              autoComplete="new-password"
-            />
+            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder={t('register.passwordPlaceholder', 'Create a strong password')}
+                autoComplete="new-password"
+                style={{ paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-muted)',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
+              </button>
+            </div>
             <small className="form-hint">
               {t('register.passwordHint', 'At least 8 characters with uppercase, lowercase, number, and special character')}
             </small>
@@ -150,16 +175,39 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">{t('register.confirmPassword')}</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder={t('register.confirmPasswordPlaceholder', 'Confirm your password')}
-              autoComplete="new-password"
-            />
+            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                placeholder={t('register.confirmPasswordPlaceholder', 'Confirm your password')}
+                autoComplete="new-password"
+                style={{ paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-muted)',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <i className={`fas fa-eye${showConfirmPassword ? '-slash' : ''}`}></i>
+              </button>
+            </div>
           </div>
 
           <button

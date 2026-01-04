@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useAuthStore } from '../../store/authStore'
 import './CourseResourcesSection.css'
 import {
   FaPen,
@@ -43,12 +44,16 @@ export default function CourseResourcesSection ({
     scheduledAt: ''
   })
 
+  // Submission Grading State
+  const [viewingSubmissions, setViewingSubmissions] = useState(null) // componentId
+  const [submissionsList, setSubmissionsList] = useState([])
+  const [gradingSubmission, setGradingSubmission] = useState(null)
+  const [gradeInput, setGradeInput] = useState('')
+  const [feedbackInput, setFeedbackInput] = useState('')
+
+  const { token } = useAuthStore()
+
   const headers = () => {
-    const token =
-      localStorage.getItem('token') ||
-      (localStorage.getItem('auth-storage')
-        ? JSON.parse(localStorage.getItem('auth-storage')).state.token
-        : null)
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
@@ -263,6 +268,70 @@ export default function CourseResourcesSection ({
     }
   }
 
+  const handleFetchSubmissions = async componentId => {
+    try {
+      setViewingSubmissions(componentId)
+      const res = await fetch(api(`/components/${componentId}/submissions`), {
+        headers: headers()
+      })
+      const json = await res.json()
+      if (json.success) {
+        setSubmissionsList(json.data.all || [])
+      } else {
+        alert('Failed to fetch submissions')
+      }
+    } catch (e) {
+      alert('Failed to fetch submissions')
+    }
+  }
+
+  const handleDownloadSubmissionFile = async (fileId, fileName) => {
+    try {
+      const res = await fetch(api(`/submission-files/${fileId}/download`), {
+        headers: headers()
+      })
+      if (!res.ok) throw new Error('Download failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName || 'download'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      alert('Unable to download submission file')
+    }
+  }
+
+  const handleGradeSubmission = async () => {
+    if (!gradingSubmission) return
+    try {
+      const res = await fetch(api(`/submissions/${gradingSubmission.id}/grade`), {
+        method: 'PATCH',
+        headers: { ...headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          grade: parseFloat(gradeInput),
+          feedback: feedbackInput,
+          status: 'GRADED'
+        })
+      })
+      const json = await res.json()
+      if (json.success) {
+        setGradingSubmission(null)
+        setGradeInput('')
+        setFeedbackInput('')
+        // Refresh submissions list
+        handleFetchSubmissions(viewingSubmissions)
+      } else {
+        alert(json.error?.message || 'Failed to grade submission')
+      }
+    } catch (e) {
+      alert('Failed to grade submission')
+    }
+  }
+
   const handleInitialize = async () => {
     // Force re-fetch which triggers backend creation logic
     await fetchAll()
@@ -280,6 +349,19 @@ export default function CourseResourcesSection ({
 
   const getInitials = (firstName, lastName) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase()
+  }
+
+  const getGradeLetter = (score) => {
+    if (score === null || score === undefined) return ''
+    const s = parseFloat(score)
+    if (s >= 90) return 'A+'
+    if (s >= 80) return 'A'
+    if (s >= 75) return 'B+'
+    if (s >= 70) return 'B'
+    if (s >= 65) return 'C+'
+    if (s >= 60) return 'C'
+    if (s >= 50) return 'D'
+    return 'F'
   }
 
   // Render helpers
@@ -607,33 +689,180 @@ export default function CourseResourcesSection ({
           <div className='rs-submission-footer'>
             <h4>Student Submission</h4>
             {isStudent ? (
-              <div className='rs-submission-box'>
-                <div className='rs-submission-status'>
-                  Status:{' '}
-                  {c.userSubmission ? (
-                    <span className='status-submitted'>Submitted</span>
-                  ) : (
-                    <span className='status-pending'>Pending</span>
-                  )}
+              <div className='rs-submission-box-column'>
+                <div className='rs-submission-box'>
+                  <div className='rs-submission-status'>
+                    Status:{' '}
+                    {c.userSubmission ? (
+                      <span className={`status-${c.userSubmission.status.toLowerCase()}`}>
+                        {c.userSubmission.status}
+                      </span>
+                    ) : (
+                      <span className='status-pending'>Pending</span>
+                    )}
+                  </div>
+                  <label
+                    className='rs-btn rs-btn-primary'
+                    htmlFor={`rs-submit-${c.id}`}
+                  >
+                    {submitting === c.id
+                      ? 'Submitting...'
+                      : c.userSubmission
+                      ? 'Resubmit Assignment'
+                      : 'Submit Assignment'}
+                  </label>
+                  <input
+                    id={`rs-submit-${c.id}`}
+                    type='file'
+                    style={{ display: 'none' }}
+                    onChange={e =>
+                      handleSubmitAssignment(c.id, e.target.files?.[0])
+                    }
+                  />
                 </div>
-                <label
+                
+                {/* Student Feedback Display */}
+                {c.userSubmission && (c.userSubmission.grade !== null || c.userSubmission.feedback) && (
+                  <div className='rs-feedback-box'>
+                    <h5>Grade & Feedback</h5>
+                    {c.userSubmission.grade !== null && (
+                      <div className='rs-grade'>
+                        <strong>Grade:</strong> {c.userSubmission.grade}/100 <span className={`grade-badge grade-${getGradeLetter(c.userSubmission.grade).replace('+', '-plus')}`}>({getGradeLetter(c.userSubmission.grade)})</span>
+                      </div>
+                    )}
+                    {c.userSubmission.feedback && (
+                      <div className='rs-feedback'>
+                        <strong>Feedback:</strong>
+                        <p>{c.userSubmission.feedback}</p>
+                      </div>
+                    )}
+                    {c.userSubmission.gradedAt && (
+                      <div className='rs-graded-date'>
+                        Graded on {formatDate(c.userSubmission.gradedAt)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : canManage ? (
+              <div className='rs-tutor-submission-area'>
+                <button 
                   className='rs-btn rs-btn-primary'
-                  htmlFor={`rs-submit-${c.id}`}
+                  onClick={() => viewingSubmissions === c.id ? setViewingSubmissions(null) : handleFetchSubmissions(c.id)}
                 >
-                  {submitting === c.id
-                    ? 'Submitting...'
-                    : c.userSubmission
-                    ? 'Resubmit Assignment'
-                    : 'Submit Assignment'}
-                </label>
-                <input
-                  id={`rs-submit-${c.id}`}
-                  type='file'
-                  style={{ display: 'none' }}
-                  onChange={e =>
-                    handleSubmitAssignment(c.id, e.target.files?.[0])
-                  }
-                />
+                  {viewingSubmissions === c.id ? 'Hide Submissions' : 'View Submissions'}
+                </button>
+
+                {viewingSubmissions === c.id && (
+                  <div className='rs-submissions-list'>
+                    {submissionsList.length === 0 ? (
+                      <p className='rs-no-submissions'>No submissions yet.</p>
+                    ) : (
+                      <table className='rs-submissions-table'>
+                        <thead>
+                          <tr>
+                            <th>Student</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Files</th>
+                            <th>Grade</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {submissionsList.map(sub => (
+                            <tr key={sub.id}>
+                              <td>{sub.student.firstName} {sub.student.lastName}</td>
+                              <td>{formatDate(sub.submittedAt)}</td>
+                              <td>
+                                <span className={`status-${sub.status.toLowerCase()}`}>
+                                  {sub.status}
+                                </span>
+                              </td>
+                              <td>
+                                {sub.files?.map(file => (
+                                  <div key={file.id} className='rs-sub-file'>
+                                    <button 
+                                      className='rs-link-btn'
+                                      onClick={() => handleDownloadSubmissionFile(file.id, file.fileName)}
+                                    >
+                                      {file.fileName}
+                                    </button>
+                                  </div>
+                                ))}
+                              </td>
+                              <td>
+                                {sub.grade !== null ? (
+                                  <span>
+                                    {sub.grade}/100 
+                                    <span className={`grade-badge grade-${getGradeLetter(sub.grade).replace('+', '-plus')}`}>
+                                      ({getGradeLetter(sub.grade)})
+                                    </span>
+                                  </span>
+                                ) : '-'}
+                              </td>
+                              <td>
+                                <button 
+                                  className='rs-btn rs-btn-sm rs-btn-primary'
+                                  onClick={() => {
+                                    setGradingSubmission(sub)
+                                    setGradeInput(sub.grade || '')
+                                    setFeedbackInput(sub.feedback || '')
+                                  }}
+                                >
+                                  Grade
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* Grading Modal/Inline Form */}
+                {gradingSubmission && (
+                  <div className='rs-grading-modal'>
+                    <div className='rs-grading-content'>
+                      <h4>Grade Submission: {gradingSubmission.student.firstName} {gradingSubmission.student.lastName}</h4>
+                      <div className='rs-form-group'>
+                        <label>Grade (0-100)</label>
+                        <input 
+                          type='number' 
+                          className='rs-input'
+                          min='0'
+                          max='100'
+                          value={gradeInput}
+                          onChange={e => setGradeInput(e.target.value)}
+                        />
+                      </div>
+                      <div className='rs-form-group'>
+                        <label>Feedback</label>
+                        <textarea 
+                          className='rs-input rs-textarea'
+                          value={feedbackInput}
+                          onChange={e => setFeedbackInput(e.target.value)}
+                          placeholder='Enter feedback for the student...'
+                        />
+                      </div>
+                      <div className='rs-actions'>
+                        <button 
+                          className='rs-btn'
+                          onClick={() => setGradingSubmission(null)}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          className='rs-btn rs-btn-primary'
+                          onClick={handleGradeSubmission}
+                        >
+                          Submit Grade
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className='rs-note'>

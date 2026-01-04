@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
+import QuizBuilder from '../../components/Tutor/QuizBuilder';
 import './LessonBuilder.css';
 
-const LessonBuilder = () => {
+const LessonBuilder = ({ embedded = false }) => {
   const navigate = useNavigate();
-  const { courseId } = useParams();
+  const { courseId: paramCourseId } = useParams();
+  // If embedded, we might get courseId from props, but currently it's not passed as prop. 
+  // However, CourseEditor is under the same route /tutor/courses/:courseId, so useParams works.
+  const courseId = paramCourseId;
   const { token } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [course, setCourse] = useState(null);
@@ -14,6 +18,12 @@ const LessonBuilder = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [draggedLesson, setDraggedLesson] = useState(null);
+
+  // Quiz Builder State
+  const [showQuizBuilder, setShowQuizBuilder] = useState(false);
+  const [currentLessonForQuiz, setCurrentLessonForQuiz] = useState(null);
+  const [existingQuiz, setExistingQuiz] = useState(null);
+
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -201,6 +211,32 @@ const LessonBuilder = () => {
     setDraggedLesson(null);
   };
 
+  const handleManageQuiz = async (lesson) => {
+    setCurrentLessonForQuiz(lesson);
+    setExistingQuiz(null); // Reset first
+
+    // Check if lesson already has a quiz (based on count or fetch)
+    // We'll try to fetch it to get full details
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await axios.get(
+        `${API_URL}/quizzes/lesson/${lesson.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success && response.data.data.quiz) {
+        setExistingQuiz(response.data.data.quiz);
+      }
+    } catch (error) {
+      // If 404, it just means no quiz exists yet, which is fine
+      if (error.response && error.response.status !== 404) {
+        console.error('Error fetching quiz:', error);
+      }
+    }
+
+    setShowQuizBuilder(true);
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -218,21 +254,32 @@ const LessonBuilder = () => {
   };
 
   return (
-    <div className="lesson-builder">
-      <div className="builder-header">
-        <div>
-          <button className="btn-back" onClick={() => navigate('/tutor/courses')}>
-            <i className="fas fa-arrow-left"></i> Back to Courses
-          </button>
-          <h1>{course?.title || 'Loading...'}</h1>
-          <p className="course-subtitle">Manage course lessons</p>
+    <div className={`lesson-builder ${embedded ? 'embedded' : ''}`}>
+      {!embedded && (
+        <div className="builder-header">
+          <div>
+            <button className="btn-back" onClick={() => navigate('/tutor')}>
+              <i className="fas fa-arrow-left"></i> Back to Courses
+            </button>
+            <h1>{course?.title || 'Loading...'}</h1>
+            <p className="course-subtitle">Manage course lessons</p>
+          </div>
+          {!showForm && (
+            <button className="btn-primary" onClick={() => setShowForm(true)}>
+              <i className="fas fa-plus"></i> Add Lesson
+            </button>
+          )}
         </div>
-        {!showForm && (
+      )}
+
+      {embedded && !showForm && (
+        <div className="curriculum-header">
+          <h2 className="curriculum-title">Course Lessons</h2>
           <button className="btn-primary" onClick={() => setShowForm(true)}>
             <i className="fas fa-plus"></i> Add Lesson
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {showForm ? (
         <div className="lesson-form-container">
@@ -244,50 +291,76 @@ const LessonBuilder = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="lesson-form">
-            <div className="form-group">
-              <label htmlFor="title">Lesson Title *</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                minLength={5}
-                maxLength={150}
-                placeholder="e.g., Introduction to Variables"
-              />
-              <small>{formData.title.length}/150 characters</small>
+            {/* Basic Information Section */}
+            <div className="form-section">
+              <h3 className="section-title">
+                <i className="fas fa-info-circle"></i>
+                Basic Information
+              </h3>
+
+              <div className="form-group">
+                <label htmlFor="title">Lesson Title *</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                  minLength={5}
+                  maxLength={150}
+                  placeholder="e.g., Introduction to Variables"
+                />
+                <small>{formData.title.length}/150 characters</small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="estimatedDuration">Duration (minutes) *</label>
+                <input
+                  type="number"
+                  id="estimatedDuration"
+                  name="estimatedDuration"
+                  value={formData.estimatedDuration}
+                  onChange={handleInputChange}
+                  min={1}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="learningObjectives">Learning Objectives</label>
+                <textarea
+                  id="learningObjectives"
+                  name="learningObjectives"
+                  value={formData.learningObjectives}
+                  onChange={handleInputChange}
+                  rows={3}
+                  placeholder="What will students learn in this lesson?"
+                />
+              </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="learningObjectives">Learning Objectives *</label>
-              <textarea
-                id="learningObjectives"
-                name="learningObjectives"
-                value={formData.learningObjectives}
-                onChange={handleInputChange}
-                required
-                rows={3}
-                placeholder="What will students learn in this lesson?"
-              />
-            </div>
+            {/* Content Section */}
+            <div className="form-section">
+              <h3 className="section-title">
+                <i className="fas fa-book"></i>
+                Lesson Content
+              </h3>
 
-            <div className="form-group">
-              <label htmlFor="content">Lesson Content</label>
-              <textarea
-                id="content"
-                name="content"
-                value={formData.content}
-                onChange={handleInputChange}
-                rows={10}
-                placeholder="Enter the main lesson content here..."
-                className="content-editor"
-              />
-              <small>Tip: You can use Markdown formatting</small>
-            </div>
+              <div className="form-group">
+                <label htmlFor="content">Main Content</label>
+                <textarea
+                  id="content"
+                  name="content"
+                  value={formData.content}
+                  onChange={handleInputChange}
+                  rows={10}
+                  placeholder="Enter the main lesson content here..."
+                  className="content-editor"
+                />
+                <small>Tip: You can use Markdown formatting</small>
+              </div>
 
-            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="videoUrl">Video URL</label>
                 <input
@@ -302,41 +375,37 @@ const LessonBuilder = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="estimatedDuration">Duration (minutes)</label>
-                <input
-                  type="number"
-                  id="estimatedDuration"
-                  name="estimatedDuration"
-                  value={formData.estimatedDuration}
+                <label htmlFor="notesContent">Additional Notes</label>
+                <textarea
+                  id="notesContent"
+                  name="notesContent"
+                  value={formData.notesContent}
                   onChange={handleInputChange}
-                  min={1}
-                  required
+                  rows={4}
+                  placeholder="Supplementary notes, tips, or resources..."
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="notesContent">Additional Notes</label>
-              <textarea
-                id="notesContent"
-                name="notesContent"
-                value={formData.notesContent}
-                onChange={handleInputChange}
-                rows={4}
-                placeholder="Supplementary notes, tips, or resources..."
-              />
-            </div>
+            {/* Settings Section */}
+            <div className="form-section">
+              <h3 className="section-title">
+                <i className="fas fa-cog"></i>
+                Settings
+              </h3>
 
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="published"
-                  checked={formData.published}
-                  onChange={handleInputChange}
-                />
-                <span>Publish this lesson immediately</span>
-              </label>
+              <div className="form-group">
+                <label className="checkbox-label" htmlFor="published">
+                  <input
+                    type="checkbox"
+                    id="published"
+                    name="published"
+                    checked={formData.published}
+                    onChange={handleInputChange}
+                  />
+                  <span>Publish this lesson immediately</span>
+                </label>
+              </div>
             </div>
 
             <div className="form-actions">
@@ -396,6 +465,14 @@ const LessonBuilder = () => {
                   <span className="col-actions">
                     <button
                       className="btn-icon"
+                      onClick={() => handleManageQuiz(lesson)}
+                      title="Manage Quiz"
+                      style={{ color: '#6366f1' }}
+                    >
+                      <i className="fas fa-question-circle"></i>
+                    </button>
+                    <button
+                      className="btn-icon"
                       onClick={() => handleEdit(lesson)}
                       title="Edit"
                     >
@@ -414,6 +491,17 @@ const LessonBuilder = () => {
             </div>
           )}
         </div>
+      )}
+
+      {showQuizBuilder && (
+        <QuizBuilder
+          lessonId={currentLessonForQuiz?.id}
+          existingQuiz={existingQuiz}
+          onClose={() => setShowQuizBuilder(false)}
+          onSave={() => {
+            fetchLessons(); // Refresh to update quiz count
+          }}
+        />
       )}
     </div>
   );

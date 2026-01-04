@@ -135,6 +135,12 @@
   margin-bottom: 0.5rem;
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .auth-form input,
 .auth-form select {
   width: 100%;
@@ -145,6 +151,32 @@
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.5);
   color: var(--color-text) !important;
+}
+
+.password-input-wrapper input {
+  padding-right: 3rem; /* Space for eye icon */
+}
+
+.btn-password-toggle {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.1rem;
+  transition: color 0.3s ease;
+  z-index: 2;
+  opacity: 0.7;
+}
+
+.btn-password-toggle:hover {
+  color: var(--color-primary);
+  opacity: 1;
 }
 
 [data-theme="dark"] .auth-form input,
@@ -191,10 +223,44 @@
   gap: 1rem;
 }
 
-.form-footer {
+.form-options {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.25rem;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.remember-me input[type="checkbox"]:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.remember-me label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .remember-me label {
+  color: var(--color-text-secondary) !important;
 }
 
 .forgot-link {

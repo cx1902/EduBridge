@@ -22,7 +22,7 @@ const TutorDashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 mt-lg gap-md">
+      <div className="grid grid-cols-3 mt-lg gap-md">
         <div className="card">
           <h4>{t('tutor.activeCourses')}</h4>
           <p className="stat-number">0</p>
@@ -37,11 +37,6 @@ const TutorDashboard = () => {
           <h4>{t('tutor.todaysSessions')}</h4>
           <p className="stat-number">0</p>
           <p className="text-secondary">{t('tutor.scheduledForToday')}</p>
-        </div>
-        <div className="card">
-          <h4>{t('tutor.monthRevenue')}</h4>
-          <p className="stat-number">$0</p>
-          <p className="text-secondary">{t('tutor.completedPayments')}</p>
         </div>
       </div>
 

@@ -31,7 +31,6 @@ exports.getAllCourses = async (req, res) => {
       subjectCategory,
       educationLevel,
       difficulty,
-      pricingModel,
       language,
       page = 1,
       limit = 20
@@ -61,10 +60,6 @@ exports.getAllCourses = async (req, res) => {
 
     if (difficulty) {
       andConditions.push({ difficulty });
-    }
-
-    if (pricingModel) {
-      andConditions.push({ pricingModel });
     }
 
     if (language) {
@@ -248,7 +243,7 @@ exports.getCourseById = async (req, res) => {
 exports.enrollInCourse = async (req, res) => {
   try {
     const { id: courseId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id; // Corrected from req.user.userId
 
     // Check if course exists and is published
     const course = await prisma.course.findUnique({
@@ -303,12 +298,6 @@ exports.enrollInCourse = async (req, res) => {
           details: 'You are already enrolled in this course'
         }
       });
-    }
-
-    // For paid courses, check if payment is processed (simplified for now)
-    if (course.pricingModel !== 'FREE') {
-      // TODO: Integrate payment verification
-      // For now, we'll allow enrollment but in production this should verify payment
     }
 
     // Create enrollment and progress records in a transaction
@@ -369,6 +358,19 @@ exports.enrollInCourse = async (req, res) => {
     });
   } catch (error) {
     console.error('Enrollment error:', error);
+    
+    // Handle unique constraint violation (P2002) - User already enrolled
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'ENROLLMENT_EXISTS',
+          message: 'Already enrolled in this course',
+          details: 'You are already enrolled in this course'
+        }
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: {
@@ -383,7 +385,7 @@ exports.enrollInCourse = async (req, res) => {
 // Create course (Tutor only)
 exports.createCourse = async (req, res) => {
   try {
-    const tutorId = req.user.userId;
+    const tutorId = req.user.id; // Corrected from req.user.userId
     const {
       title,
       description,
@@ -392,8 +394,6 @@ exports.createCourse = async (req, res) => {
       difficulty,
       prerequisites,
       thumbnailUrl,
-      price,
-      pricingModel,
       estimatedHours,
       language
     } = req.body;
@@ -408,8 +408,6 @@ exports.createCourse = async (req, res) => {
         difficulty,
         prerequisites,
         thumbnailUrl,
-        price: parseFloat(price) || 0,
-        pricingModel: pricingModel || 'FREE',
         estimatedHours: parseInt(estimatedHours),
         language: language || 'en',
         status: req.body.status === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'
@@ -438,7 +436,7 @@ exports.createCourse = async (req, res) => {
 exports.updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const tutorId = req.user.userId;
+    const tutorId = req.user.id; // Corrected from req.user.userId
 
     // Verify ownership
     const course = await prisma.course.findUnique({
@@ -492,7 +490,7 @@ exports.updateCourse = async (req, res) => {
 exports.deleteCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const tutorId = req.user.userId;
+    const tutorId = req.user.id; // Corrected from req.user.userId
 
     // Verify ownership
     const course = await prisma.course.findUnique({

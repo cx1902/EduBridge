@@ -14,14 +14,21 @@ const TodaySchedulePanel = () => {
 
   const fetchTodaySessions = async () => {
     try {
-      const response = await fetch('/api/sessions/today', {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) return;
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await fetch(`${API_URL}/tutor/dashboard/sessions/today`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       const data = await response.json();
       if (data.success) {
         setSessions(data.data);
+      } else if (Array.isArray(data)) {
+        // Handle case where API returns array directly (legacy)
+        setSessions(data);
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);

@@ -19,7 +19,6 @@ const createSession = async (req, res) => {
       scheduledStart,
       scheduledEnd,
       maxParticipants,
-      pricePerStudent,
       sessionType,
       videoRoomId,
     } = req.body;
@@ -41,7 +40,6 @@ const createSession = async (req, res) => {
         scheduledStart: new Date(scheduledStart),
         scheduledEnd: new Date(scheduledEnd),
         maxParticipants,
-        pricePerStudent,
         sessionType,
         videoRoomId,
         status: 'SCHEDULED',
@@ -747,8 +745,7 @@ const bookSession = async (req, res) => {
         data: {
           studentId: userId,
           sessionId,
-          status: 'CONFIRMED',
-          amountPaid: parseFloat(session.pricePerStudent)
+          status: 'CONFIRMED'
         }
       });
 

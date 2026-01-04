@@ -190,8 +190,6 @@ const createCourse = async (req, res) => {
       educationLevel,
       difficulty,
       prerequisites,
-      price,
-      pricingModel,
       estimatedHours,
       language,
       thumbnailUrl,
@@ -256,13 +254,6 @@ const createCourse = async (req, res) => {
       return res.status(400).json({ error: 'Tags cannot exceed 5 items.' });
     }
 
-    // Validate pricing - if not FREE, price must be > 0
-    if (pricingModel && pricingModel !== 'FREE') {
-      if (!price || parseFloat(price) <= 0) {
-        return res.status(400).json({ error: 'Price must be greater than 0 for paid courses.' });
-      }
-    }
-
     // Check for duplicate title by same tutor
     const existingCourse = await prisma.course.findFirst({
       where: {
@@ -299,8 +290,6 @@ const createCourse = async (req, res) => {
         educationLevel,
         difficulty,
         prerequisites: prerequisites || null,
-        price: price || 0,
-        pricingModel: pricingModel || 'FREE',
         estimatedHours: estimatedHours || 0,
         language: language || 'en',
         thumbnailUrl: thumbnailUrl || '/uploads/default-course.png',
@@ -374,7 +363,18 @@ const getTutorCourses = async (req, res) => {
       },
     });
 
-    res.json(courses);
+    // Normalize data structure for frontend
+    const formattedCourses = courses.map(course => ({
+      ...course,
+      enrollmentCount: course._count.enrollments,
+      lessonCount: course._count.lessons,
+      quizCount: course._count.quizzes
+    }));
+
+    res.json({
+      success: true,
+      data: formattedCourses
+    });
   } catch (error) {
     console.error('Error fetching tutor courses:', error);
     res.status(500).json({ error: 'Failed to fetch courses' });
@@ -1484,6 +1484,415 @@ const reorderQuestions = async (req, res) => {
   }
 };
 
+// ==================== ANALYTICS & REPORTS ====================
+
+// Get Student Engagement Analytics
+const getStudentEngagement = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+
+    // Get all courses for this tutor
+    const courses = await prisma.course.findMany({
+      where: { tutorId },
+      select: { id: true, title: true }
+    });
+
+    const courseIds = courses.map(c => c.id);
+
+    // Get enrollments for these courses
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        courseId: { in: courseIds },
+        status: 'ACTIVE'
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            profilePictureUrl: true
+          }
+        },
+        course: {
+          select: {
+            id: true,
+            title: true
+          }
+        },
+        progressRecords: {
+          where: { completed: true }
+        }
+      }
+    });
+
+    // Get quiz attempts for these students in these courses
+    // Note: QuizAttempt is linked to Quiz, which is linked to Course
+    const quizAttempts = await prisma.quizAttempt.findMany({
+      where: {
+        quiz: {
+          courseId: { in: courseIds }
+        }
+      },
+      include: {
+        quiz: {
+          select: {
+            id: true,
+            title: true,
+            courseId: true
+          }
+        }
+      }
+    });
+
+    // Process data
+    const studentData = enrollments.map(enrollment => {
+      // Find quiz attempts for this student in this specific course
+      const studentAttempts = quizAttempts.filter(qa => 
+        qa.userId === enrollment.userId && qa.quiz.courseId === enrollment.courseId
+      );
+
+      // Calculate average quiz score
+      const totalScore = studentAttempts.reduce((sum, qa) => sum + (parseFloat(qa.scorePercentage) || 0), 0);
+      const avgQuizScore = studentAttempts.length > 0 ? (totalScore / studentAttempts.length).toFixed(1) : 0;
+
+      return {
+        studentId: enrollment.userId,
+        studentName: `${enrollment.user.firstName} ${enrollment.user.lastName}`,
+        studentEmail: enrollment.user.email,
+        studentAvatar: enrollment.user.profilePictureUrl,
+        courseId: enrollment.courseId,
+        courseName: enrollment.course.title,
+        lessonsCompleted: enrollment.progressRecords.length,
+        progressPercentage: parseFloat(enrollment.progressPercentage),
+        quizzesTaken: studentAttempts.length,
+        averageQuizScore: avgQuizScore,
+        lastActive: enrollment.lastAccessedAt
+      };
+    });
+
+    res.json({
+      success: true,
+      data: studentData
+    });
+
+  } catch (error) {
+    console.error('Error fetching student engagement:', error);
+    res.status(500).json({ error: 'Failed to fetch student engagement data' });
+  }
+};
+
+// Get Session Statistics
+const getSessionStatistics = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+
+    // Get all sessions
+    const sessions = await prisma.tutoringSession.findMany({
+      where: { tutorId },
+      include: {
+        bookings: {
+          where: { status: 'COMPLETED' } // Only count completed/paid bookings for ratings
+        }
+      }
+    });
+
+    const totalSessions = sessions.length;
+    const completedSessions = sessions.filter(s => s.status === 'COMPLETED').length;
+    const completionRate = totalSessions > 0 ? ((completedSessions / totalSessions) * 100).toFixed(1) : 0;
+
+    // Calculate ratings
+    let totalRatingSum = 0;
+    let totalRatingCount = 0;
+    let earnings = 0;
+
+    sessions.forEach(session => {
+      session.bookings.forEach(booking => {
+        if (booking.rating) {
+          totalRatingSum += booking.rating;
+          totalRatingCount++;
+        }
+      });
+    });
+
+    const averageRating = totalRatingCount > 0 ? (totalRatingSum / totalRatingCount).toFixed(1) : 0;
+
+    // Get recent session history (last 5)
+    const recentSessions = await prisma.tutoringSession.findMany({
+      where: { tutorId, status: 'COMPLETED' },
+      orderBy: { actualEnd: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        subject: true,
+        actualEnd: true,
+        _count: {
+          select: { bookings: true }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      overview: {
+        totalSessions,
+        completedSessions,
+        completionRate: `${completionRate}%`,
+        averageRating,
+        totalEarnings: earnings.toFixed(2),
+        totalStudentsTaught: totalRatingCount // Approximation based on rated bookings
+      },
+      recentHistory: recentSessions.map(s => ({
+        id: s.id,
+        topic: s.subject,
+        date: s.actualEnd,
+        attendees: s._count.bookings
+      }))
+    });
+
+  } catch (error) {
+    console.error('Error fetching session statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch session statistics' });
+  }
+};
+
+// ==================== TUTOR PROFILE & AVAILABILITY ====================
+
+// Update or Create Tutor Profile
+const updateTutorProfile = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { bio, hourlyRate, languages, levelsSupported, subjects } = req.body;
+
+    // Validation
+    if (hourlyRate && parseFloat(hourlyRate) < 0) {
+      return res.status(400).json({ error: 'Hourly rate cannot be negative' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Upsert Profile
+      const profile = await tx.tutorProfile.upsert({
+        where: { userId: tutorId },
+        update: {
+          bio,
+          hourlyRate: parseFloat(hourlyRate || 0),
+          languages: languages || [],
+          levelsSupported: levelsSupported || [],
+        },
+        create: {
+          userId: tutorId,
+          bio,
+          hourlyRate: parseFloat(hourlyRate || 0),
+          languages: languages || [],
+          levelsSupported: levelsSupported || [],
+        },
+      });
+
+      // 2. Update Subjects (if provided)
+      if (subjects && Array.isArray(subjects)) {
+        // Delete existing subjects
+        await tx.tutorSubject.deleteMany({
+          where: { tutorId },
+        });
+
+        // Add new subjects
+        // subjects array expects: [{ subjectId, skillLevel }]
+        // Ensure subjectIds exist first if passing raw strings? 
+        // Assuming frontend passes valid IDs from a "Get Subjects" list.
+        if (subjects.length > 0) {
+          await tx.tutorSubject.createMany({
+            data: subjects.map((s) => ({
+              tutorId,
+              subjectId: s.subjectId,
+              skillLevel: s.skillLevel || 'BEGINNER',
+            })),
+          });
+        }
+      }
+
+      return profile;
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: result,
+    });
+  } catch (error) {
+    console.error('Error updating tutor profile:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+};
+
+// Get Tutor Profile
+const getTutorProfile = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+
+    const profile = await prisma.tutorProfile.findUnique({
+      where: { userId: tutorId },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            profilePictureUrl: true,
+          },
+        },
+      },
+    });
+
+    const tutorSubjects = await prisma.tutorSubject.findMany({
+      where: { tutorId },
+      include: {
+        subject: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ...profile,
+        subjects: tutorSubjects,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching tutor profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+};
+
+// Add Availability Slot
+const addAvailabilitySlot = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { startTime, endTime } = req.body;
+
+    if (!startTime || !endTime) {
+      return res.status(400).json({ error: 'Start and end times are required' });
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (start >= end) {
+      return res.status(400).json({ error: 'Start time must be before end time' });
+    }
+
+    // Check for overlap
+    const existing = await prisma.availabilitySlot.findFirst({
+      where: {
+        tutorId,
+        OR: [
+          {
+            startTime: { lt: end },
+            endTime: { gt: start },
+          },
+        ],
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: 'Slot overlaps with an existing slot' });
+    }
+
+    const slot = await prisma.availabilitySlot.create({
+      data: {
+        tutorId,
+        startTime: start,
+        endTime: end,
+        isBooked: false,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: slot,
+    });
+  } catch (error) {
+    console.error('Error adding availability slot:', error);
+    res.status(500).json({ error: 'Failed to add slot' });
+  }
+};
+
+// Get Availability Slots
+const getAvailabilitySlots = async (req, res) => {
+  try {
+    const tutorId = req.query.tutorId || req.user.id; // Can fetch own or others
+    const { start, end } = req.query;
+
+    const whereClause = {
+      tutorId,
+      isBooked: false, // Default to showing only available
+    };
+
+    // If viewing own, show all (booked and unbooked)
+    if (req.user.id === tutorId) {
+      delete whereClause.isBooked;
+    }
+
+    if (start && end) {
+      whereClause.startTime = {
+        gte: new Date(start),
+        lt: new Date(end),
+      };
+    } else {
+      // Default: Upcoming slots from now
+      whereClause.startTime = {
+        gte: new Date(),
+      };
+    }
+
+    const slots = await prisma.availabilitySlot.findMany({
+      where: whereClause,
+      orderBy: { startTime: 'asc' },
+    });
+
+    res.json({
+      success: true,
+      data: slots,
+    });
+  } catch (error) {
+    console.error('Error fetching availability slots:', error);
+    res.status(500).json({ error: 'Failed to fetch slots' });
+  }
+};
+
+// Delete Availability Slot
+const deleteAvailabilitySlot = async (req, res) => {
+  try {
+    const tutorId = req.user.id;
+    const { id } = req.params;
+
+    const slot = await prisma.availabilitySlot.findUnique({
+      where: { id },
+    });
+
+    if (!slot) {
+      return res.status(404).json({ error: 'Slot not found' });
+    }
+
+    if (slot.tutorId !== tutorId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (slot.isBooked) {
+      return res.status(400).json({ error: 'Cannot delete a booked slot' });
+    }
+
+    await prisma.availabilitySlot.delete({
+      where: { id },
+    });
+
+    res.json({ success: true, message: 'Slot deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting availability slot:', error);
+    res.status(500).json({ error: 'Failed to delete slot' });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getTodaysSessions,
@@ -1513,4 +1922,12 @@ module.exports = {
   updateQuestion,
   deleteQuestion,
   reorderQuestions,
+  getStudentEngagement,
+  getSessionStatistics,
+  // Tutor Profile & Availability
+  updateTutorProfile,
+  getTutorProfile,
+  addAvailabilitySlot,
+  getAvailabilitySlots,
+  deleteAvailabilitySlot
 };

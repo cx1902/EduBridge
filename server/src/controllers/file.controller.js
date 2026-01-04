@@ -1,7 +1,20 @@
 const prisma = require('../utils/prisma')
 const path = require('path')
-const fs = require('fs').promises
+const fs = require('fs')
+const fsPromises = require('fs').promises
 const crypto = require('crypto')
+
+/**
+ * Helper to check if file exists
+ */
+const fileExists = async (filePath) => {
+  try {
+    await fsPromises.access(filePath)
+    return true
+  } catch {
+    return false
+  }
+}
 
 /**
  * Upload files to a component
@@ -156,6 +169,27 @@ exports.downloadFile = async (req, res) => {
       })
     }
 
+    // Resolve file path (handle absolute paths from different environments)
+    let downloadPath = file.filePath
+    const exists = await fileExists(downloadPath)
+
+    if (!exists) {
+      // Try to find file in standard uploads directory based on filename
+      // Handle both forward and backward slashes in original path
+      const basename = file.filePath.split(/[/\\]/).pop()
+      const fallbackPath = path.join(__dirname, '../../uploads/course-files', basename)
+      
+      if (await fileExists(fallbackPath)) {
+        downloadPath = fallbackPath
+      } else {
+        console.error(`File missing at both ${file.filePath} and ${fallbackPath}`)
+        return res.status(404).json({
+          success: false,
+          error: { message: 'File not found on server' }
+        })
+      }
+    }
+
     // Increment download count
     await prisma.componentFile.update({
       where: { id: fileId },
@@ -163,7 +197,7 @@ exports.downloadFile = async (req, res) => {
     })
 
     // Send file
-    res.download(file.filePath, file.fileName, err => {
+    res.download(downloadPath, file.fileName, err => {
       if (err) {
         console.error('File download error:', err)
         if (!res.headersSent) {

@@ -4,7 +4,8 @@ import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
 import './CourseDetail.css'
 import CourseResourcesSection from '../../components/Course/CourseResourcesSection'
-import { DEFAULT_COURSE_IMAGE } from '../../utils/images'
+import CourseStudents from '../../components/Course/CourseStudents'
+import { DEFAULT_COURSE_IMAGE, getCourseImageUrl } from '../../utils/images'
 
 const CourseDetail = () => {
   const { id } = useParams()
@@ -25,6 +26,11 @@ const CourseDetail = () => {
     fetchCourseDetails()
     fetchCourseComponents()
   }, [id])
+
+  // Move canManage calculation here, before it is used in useEffect
+  const isTutor = user && course && user.id === course.tutor.id
+  const isAdmin = user && user.role === 'ADMIN'
+  const canManage = isTutor || isAdmin
 
   const fetchCourseDetails = async () => {
     try {
@@ -95,11 +101,11 @@ const CourseDetail = () => {
 
     try {
       setEnrolling(true)
-      const token = localStorage.getItem('token')
+      const token = useAuthStore.getState().token || localStorage.getItem('token') || sessionStorage.getItem('token')
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+      
       const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-        }/courses/${id}/enroll`,
+        `${API_URL}/courses/${id}/enroll`,
         {},
         {
           headers: {
@@ -215,10 +221,6 @@ const CourseDetail = () => {
     })
   }
 
-  const isTutor = user && course && user.id === course.tutor.id
-  const isAdmin = user && user.role === 'ADMIN'
-  const canManage = isTutor || isAdmin
-
   if (loading) {
     return (
       <div className='course-detail-loading'>
@@ -256,7 +258,7 @@ const CourseDetail = () => {
           <div className='hero-left'>
             <div className='course-thumbnail'>
               <img
-                src={course.thumbnailUrl || DEFAULT_COURSE_IMAGE}
+                src={getCourseImageUrl(course.thumbnailUrl)}
                 alt={course.title}
               />
             </div>
@@ -330,43 +332,6 @@ const CourseDetail = () => {
                 </p>
               </div>
             </div>
-
-            <div className='hero-actions'>
-              {canManage ? (
-                <button
-                  onClick={handleEditCourse}
-                  className='btn-primary btn-large'
-                >
-                  <i className='fas fa-edit'></i> Edit Course
-                </button>
-              ) : isEnrolled ? (
-                <button
-                  onClick={handleGoToCourse}
-                  className='btn-primary btn-large'
-                >
-                  <i className='fas fa-play'></i> Continue Learning
-                </button>
-              ) : (
-                <button
-                  onClick={handleEnroll}
-                  className='btn-primary btn-large'
-                  disabled={enrolling}
-                >
-                  {enrolling ? (
-                    <>
-                      <i className='fas fa-spinner fa-spin'></i> Enrolling...
-                    </>
-                  ) : (
-                    <>
-                      <i className='fas fa-book'></i>
-                      {course.pricingModel === 'FREE'
-                        ? 'Enroll for Free'
-                        : `Enroll - $${course.price}`}
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -385,6 +350,14 @@ const CourseDetail = () => {
         >
           <i className='fas fa-folder-open'></i> Course Resources
         </button>
+        {canManage && (
+          <button
+            className={`tab ${activeTab === 'participants' ? 'active' : ''}`}
+            onClick={() => setActiveTab('participants')}
+          >
+            <i className='fas fa-users'></i> Participants
+          </button>
+        )}
       </div>
 
       <div className='course-content-wrapper'>
@@ -475,33 +448,23 @@ const CourseDetail = () => {
                 </section>
               )}
             </>
-          ) : (
+          ) : activeTab === 'resources' ? (
             /* Resources Tab Content */
             <CourseResourcesSection
               courseId={id}
               canManage={canManage}
               isStudent={isEnrolled}
             />
+          ) : (
+            /* Participants Tab Content */
+            <CourseStudents courseId={id} />
           )}
         </div>
 
         {/* Sidebar */}
         <aside className='course-sidebar'>
           {/* Enrollment Card */}
-          <div className='enrollment-card'>
-            <div className='price-info'>
-              {course.pricingModel === 'FREE' ? (
-                <div className='price-free'>
-                  <span className='free-badge'>FREE</span>
-                </div>
-              ) : (
-                <div className='price-paid'>
-                  <span className='price-amount'>${course.price}</span>
-                  <span className='price-label'>One-time payment</span>
-                </div>
-              )}
-            </div>
-
+          <div className='course-enrollment-card'>
             {isTutor || isAdmin ? (
               <button
                 onClick={handleEditCourse}

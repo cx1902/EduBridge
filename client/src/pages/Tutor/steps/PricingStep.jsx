@@ -5,59 +5,13 @@ const PricingStep = ({ formData, onChange, errors }) => {
   const { t } = useTranslation('common');
   return (
     <div>
-      <h2 className="step-title">{t('createCourse.pricing.title', 'Pricing & SEO')}</h2>
+      <h2 className="step-title">{t('createCourse.settings.title', 'SEO & Settings')}</h2>
       <p className="step-description">
-        {t('createCourse.pricing.description', "Set your pricing model and optimize your course for search engines. You're almost done!")}
+        {t('createCourse.settings.description', "Optimize your course for search engines and configure final settings. You're almost done!")}
       </p>
 
-      <div className="form-row">
-        <div className={`form-group ${errors.pricingModel ? 'has-error' : ''}`}>
-          <label htmlFor="pricingModel">
-            {t('createCourse.pricing.fields.accessType', 'Access Type')} <span className="required">*</span>
-          </label>
-          <select
-            id="pricingModel"
-            value={formData.pricingModel}
-            onChange={(e) => onChange('pricingModel', e.target.value)}
-          >
-            <option value="FREE">{t('createCourse.pricing.access.free', 'Free')}</option>
-            <option value="ONE_TIME">{t('createCourse.pricing.access.oneTime', 'One-time Payment')}</option>
-            <option value="SUBSCRIPTION">{t('createCourse.pricing.access.subscription', 'Subscription')}</option>
-          </select>
-          <small className="form-help">{t('createCourse.pricing.help.paymentModel', 'Payment model for course access')}</small>
-          {errors.pricingModel && (
-            <div className="form-error">
-              <i className="fas fa-exclamation-circle"></i> {t('createCourse.errors.pricingModel', 'Pricing model is required.')}
-            </div>
-          )}
-        </div>
-
-        {formData.pricingModel !== 'FREE' && (
-          <div className={`form-group ${errors.price ? 'has-error' : ''}`}>
-            <label htmlFor="price">
-              {t('createCourse.pricing.fields.price', 'Price (MYR)')} <span className="required">*</span>
-            </label>
-            <input
-              type="number"
-              id="price"
-              value={formData.price}
-              onChange={(e) => onChange('price', e.target.value)}
-              min="0"
-              step="0.01"
-              placeholder={t('createCourse.pricing.placeholders.price', '0.00')}
-            />
-            <small className="form-help">{t('createCourse.pricing.help.priceCurrency', 'Course price in Malaysian Ringgit')}</small>
-            {errors.price && (
-              <div className="form-error">
-                <i className="fas fa-exclamation-circle"></i> {t('createCourse.errors.price', 'Price must be greater than 0 for paid courses.')}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       <div className="form-group">
-        <label htmlFor="slug">{t('createCourse.pricing.fields.slug', 'Custom URL Slug')}</label>
+        <label htmlFor="slug">{t('createCourse.settings.fields.slug', 'Custom URL Slug')}</label>
         <input
           type="text"
           id="slug"
@@ -111,9 +65,13 @@ const PricingStep = ({ formData, onChange, errors }) => {
       </div>
 
       <div className="form-group">
-        <label className="checkbox-label">
-          <input type="checkbox" required />
-          <span>
+        <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px', cursor: 'pointer' }}>
+          <input 
+            type="checkbox" 
+            required 
+            style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
+          />
+          <span style={{ fontWeight: 'normal' }}>
             {t('createCourse.pricing.confirm', 'I confirm this content is original and follows community rules.')}{' '}
             <span className="required">*</span>
           </span>

@@ -4,14 +4,25 @@
  */
 
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const prisma = require('./prisma');
 
 /**
- * Create email transporter
+ * Initialize Resend client if API key is available
+ */
+const resend = process.env.RESEND_API_KEY 
+  ? new Resend(process.env.RESEND_API_KEY) 
+  : null;
+
+if (resend) {
+  console.log('✉️  Using Resend email service');
+}
+
+/**
+ * Create email transporter (Fallback or Dev)
  */
 function createTransporter() {
-  // For development, you can use Gmail or other SMTP services
-  // For production, use services like SendGrid, AWS SES, or Mailgun
+  // If Resend is configured, we might not need this, but keep as fallback
   
   // Check if real SMTP credentials are configured (not example values)
   const hasValidSMTP = 
@@ -33,12 +44,13 @@ function createTransporter() {
         pass: process.env.SMTP_PASS,
       },
     });
-  } else {
-    // For development without SMTP config, use ethereal email (testing service)
-    console.warn('⚠️  No valid SMTP credentials found. Using Ethereal test email service.');
+  } else if (!resend) {
+    // Only warn about Ethereal if Resend is ALSO missing
+    console.warn('⚠️  No valid SMTP or Resend credentials found. Using Ethereal test email service.');
     console.warn('⚠️  Emails will not be delivered to real inboxes. Check console for preview URLs.');
     return null; // Will be created async in sendEmail function
   }
+  return null;
 }
 
 let transporter = createTransporter();
@@ -398,11 +410,44 @@ async function sendEmail({ to, type, data, session }) {
       attachments.push({
         filename: 'session.ics',
         content: calendarAttachment,
-        contentType: 'text/calendar',
+        contentType: 'text/calendar', // Resend might treat this differently, but let's try standard
       });
     }
 
-    // Create transporter if not configured (for Ethereal test email)
+    const fromAddress = process.env.EMAIL_FROM || '"EduBridge" <onboarding@resend.dev>';
+
+    // Option 1: Use Resend if configured
+    if (resend) {
+      // Map attachments for Resend if needed (Resend accepts { filename, content } where content is Buffer or string)
+      // Our attachment structure is already compatible (filename, content). 
+      // contentType is optional in Resend but good to keep.
+      
+      const resendData = {
+        from: fromAddress,
+        to,
+        subject,
+        html: htmlBody,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      };
+
+      const { data: resendResult, error: resendError } = await resend.emails.send(resendData);
+
+      if (resendError) {
+        console.error('❌ Resend API Error:', resendError);
+        throw new Error(`Resend Error: ${resendError.message}`);
+      }
+
+      console.log('✅ Email sent successfully via Resend:', resendResult.id);
+      
+      return {
+        success: true,
+        messageId: resendResult.id,
+        sentAt: new Date(),
+        previewUrl: null,
+      };
+    }
+
+    // Option 2: Use Nodemailer (SMTP or Ethereal)
     let emailTransporter = transporter;
     if (!emailTransporter) {
       const testAccount = await nodemailer.createTestAccount();
@@ -419,17 +464,17 @@ async function sendEmail({ to, type, data, session }) {
 
     // Send email
     const info = await emailTransporter.sendMail({
-      from: process.env.EMAIL_FROM || '"EduBridge" <noreply@edubridge.com>',
+      from: fromAddress,
       to,
       subject,
       html: htmlBody,
       attachments,
     });
 
-    console.log('✅ Email sent successfully:', info.messageId);
+    console.log('✅ Email sent successfully via SMTP/Ethereal:', info.messageId);
     
     // If using Ethereal (test), log preview URL
-    if (!transporter) {
+    if (!transporter && !resend) {
       const previewUrl = nodemailer.getTestMessageUrl(info);
       console.log('📬 Preview email at:', previewUrl);
     }
@@ -438,7 +483,7 @@ async function sendEmail({ to, type, data, session }) {
       success: true,
       messageId: info.messageId,
       sentAt: new Date(),
-      previewUrl: !transporter ? nodemailer.getTestMessageUrl(info) : null,
+      previewUrl: (!transporter && !resend) ? nodemailer.getTestMessageUrl(info) : null,
     };
   } catch (error) {
     console.error('❌ Error sending email:', error);

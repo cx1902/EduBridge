@@ -1,7 +1,13 @@
+/* Dark Glassmorphism Lesson Builder Styles */
+
 .lesson-builder {
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 0;
+  max-width: 100%;
   margin: 0 auto;
+}
+
+.lesson-builder.embedded {
+  padding: 0;
 }
 
 .builder-header {
@@ -12,14 +18,14 @@
   gap: 1rem;
 }
 
-.builder-header > div {
+.builder-header>div {
   flex: 1;
 }
 
 .btn-back {
   background: none;
   border: none;
-  color: var(--primary-color, #3b82f6);
+  color: #9ca3af;
   font-size: 0.9375rem;
   cursor: pointer;
   padding: 0.5rem 0;
@@ -31,116 +37,238 @@
 }
 
 .btn-back:hover {
-  color: var(--primary-dark, #2563eb);
+  color: #3b82f6;
 }
 
 .builder-header h1 {
   font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  font-weight: 700;
+  color: #f3f4f6;
   margin: 0;
 }
 
 .course-subtitle {
   font-size: 1rem;
-  color: var(--text-secondary, #666);
+  color: #9ca3af;
   margin: 0.5rem 0 0 0;
+}
+
+/* Curriculum Header for Embedded Mode */
+.curriculum-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+.curriculum-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
 }
 
 /* Lesson Form */
 .lesson-form-container {
-  background: white;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  color: var(--color-text);
+  width: 100%;
+  max-width: 100%; /* Ensure it uses full width */
+}
+
+/* Embedded mode - remove glassmorphic background */
+.lesson-builder.embedded .lesson-form-container {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  width: 100%;
 }
 
 .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--border-color, #e5e7eb);
+  margin-bottom: 0;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+  border-radius: 12px 12px 0 0;
+}
+
+/* Embedded mode - adjust form header to match Overview styling */
+.lesson-builder.embedded .form-header {
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  padding: 0 0 1.5rem 0;
+  margin-bottom: 1.5rem;
+  border-radius: 0;
+  width: 100%;
+}
+
+.lesson-builder.embedded .form-header h2 {
+  color: var(--color-text);
+  font-size: 1.25rem;
 }
 
 .form-header h2 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text);
   margin: 0;
 }
 
 .btn-close {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.5rem;
-  color: var(--text-secondary, #666);
+  font-size: 1.25rem;
+  color: var(--color-text-secondary);
   cursor: pointer;
   padding: 0.5rem;
-  transition: color 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-close:hover {
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text);
 }
 
 .lesson-form {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box; /* Include padding in width */
+}
+
+/* Embedded mode - restore padding since parent has none */
+.lesson-builder.embedded .lesson-form {
+  padding: 0;
+  width: 100%;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  width: 100%;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0 0 1rem 0;
+  padding: 0;
+}
+
+.section-title i {
+  font-size: 1.1rem;
+}
+
+/* Embedded mode - adjust section title color */
+.lesson-builder.embedded .section-title {
+  color: var(--color-primary);
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+  width: 100%;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 .form-group label {
   font-weight: 500;
-  color: var(--text-primary, #1a1a1a);
-  font-size: 0.9375rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color, #e5e7eb);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.2s;
+  background: var(--color-background);
+  color: var(--color-text);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Embedded mode - adjust form inputs to match theme */
+.lesson-builder.embedded .form-group input,
+.lesson-builder.embedded .form-group select,
+.lesson-builder.embedded .form-group textarea {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.lesson-builder.embedded .form-group label {
+  color: var(--color-text);
+}
+
+.lesson-builder.embedded .form-group small {
+  color: var(--color-text-secondary);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--primary-color, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: var(--color-background);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--color-text-secondary);
 }
 
 .form-group textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 120px;
 }
 
 .content-editor {
   font-family: 'Courier New', Courier, monospace;
   min-height: 300px;
+  line-height: 1.6;
 }
 
 .form-group small {
-  font-size: 0.8125rem;
-  color: var(--text-secondary, #666);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }
 
 .checkbox-label {
@@ -151,32 +279,37 @@
   padding: 0.5rem 0;
 }
 
-.checkbox-label input[type=\"checkbox\"] {
-  width: 20px;
-  height: 20px;
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
   cursor: pointer;
+  accent-color: var(--color-primary);
+  background: var(--color-background);
+  border-color: var(--color-border);
 }
 
 .checkbox-label span {
   font-weight: normal;
+  color: var(--color-text);
+  font-size: 0.95rem;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color, #e5e7eb);
+  border-top: 1px solid var(--color-border);
 }
 
 /* Buttons */
 .btn-primary,
 .btn-secondary {
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.25rem;
   border-radius: 8px;
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
@@ -186,14 +319,13 @@
 }
 
 .btn-primary {
-  background: var(--primary-color, #3b82f6);
+  background: var(--color-primary);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-dark, #2563eb);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  filter: brightness(1.1);
 }
 
 .btn-primary:disabled {
@@ -202,172 +334,225 @@
 }
 
 .btn-secondary {
-  background: white;
-  color: var(--text-primary, #1a1a1a);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .btn-secondary:hover {
-  background: var(--bg-secondary, #f9fafb);
+  background: var(--color-surface);
+  border-color: var(--color-text-secondary);
 }
 
 /* Lessons Container */
 .lessons-container {
-  background: white;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 0;
+}
+
+/* Embedded mode - make lessons list blend with parent */
+.lesson-builder.embedded .lessons-container {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  padding: 0;
+  border-radius: 0;
 }
 
 .lessons-list {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
 }
 
 .list-header {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 80px 100px 120px;
+  grid-template-columns: 40px 1fr 100px 80px 100px 100px;
   gap: 1rem;
-  padding: 1rem;
-  background: var(--bg-secondary, #f9fafb);
-  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
   font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--text-secondary, #666);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
   margin-bottom: 0.5rem;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Embedded mode - lighter background for list header */
+.lesson-builder.embedded .list-header {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  border-radius: 8px;
 }
 
 .lesson-item {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 80px 100px 120px;
+  grid-template-columns: 40px 1fr 100px 80px 100px 100px;
   gap: 1rem;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
-  background: white;
-  border: 1px solid var(--border-color, #e5e7eb);
-  margin-bottom: 0.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   transition: all 0.2s;
   cursor: move;
   align-items: center;
+  color: var(--color-text);
+}
+
+/* Embedded mode - lighter background for lesson items */
+.lesson-builder.embedded .lesson-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .lesson-item:hover {
-  background: var(--bg-secondary, #f9fafb);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .lesson-item:active {
-  opacity: 0.5;
+  cursor: grabbing;
+  opacity: 0.8;
 }
 
 .drag-handle {
-  color: var(--text-tertiary, #999);
+  color: var(--color-text-secondary);
   cursor: grab;
   margin-right: 0.5rem;
+  transition: color 0.2s;
 }
 
-.drag-handle:active {
-  cursor: grabbing;
+.lesson-item:hover .drag-handle {
+  color: var(--color-text);
 }
 
 .col-order {
   display: flex;
   align-items: center;
   font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--color-text-secondary);
 }
 
 .col-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--text-primary, #1a1a1a);
+  gap: 0.75rem;
+  color: var(--color-text);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .video-icon {
-  color: var(--primary-color, #3b82f6);
+  color: var(--color-primary);
   font-size: 0.875rem;
+  background: rgba(99, 102, 241, 0.1);
+  padding: 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .col-duration,
 .col-quizzes {
-  color: var(--text-secondary, #666);
-  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
 }
 
 .col-status {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .status-badge {
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .status-badge.published {
-  background: var(--success-light, #d1fae5);
-  color: var(--success-color, #10b981);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status-badge.draft {
-  background: var(--secondary-light, #f3f4f6);
-  color: var(--text-secondary, #666);
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.2);
 }
 
 .col-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   justify-content: flex-end;
 }
 
 .btn-icon {
-  background: none;
-  border: none;
-  color: var(--text-secondary, #666);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.25rem;
   border-radius: 6px;
   transition: all 0.2s;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-icon:hover {
-  background: var(--primary-color, #3b82f6);
-  color: white;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--color-primary);
+  border-color: rgba(99, 102, 241, 0.2);
 }
 
 .btn-icon.btn-delete:hover {
-  background: var(--error-color, #ef4444);
-  color: white;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 /* Empty State */
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
-  color: var(--text-secondary, #666);
+  padding: 3rem 1rem;
+  color: var(--color-text-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .empty-state i {
-  font-size: 4rem;
+  font-size: 3rem;
   margin-bottom: 1rem;
   opacity: 0.3;
+  color: var(--color-text-secondary);
 }
 
 .empty-state h3 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin: 1rem 0 0.5rem 0;
-  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text);
 }
 
 .empty-state p {
-  font-size: 1rem;
+  font-size: 0.95rem;
   margin: 0;
+  color: var(--color-text-secondary);
 }
 
 /* Loading State */
@@ -375,11 +560,12 @@
   text-align: center;
   padding: 4rem 2rem;
   font-size: 1.125rem;
-  color: var(--text-secondary, #666);
+  color: #9ca3af;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
+
   .list-header,
   .lesson-item {
     grid-template-columns: 50px 1fr 90px 70px 90px 100px;
@@ -401,6 +587,8 @@
   .builder-header .btn-primary {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    /* Touch target size */
   }
 
   .lesson-form-container {
@@ -418,6 +606,8 @@
   .form-actions button {
     width: 100%;
     justify-content: center;
+    min-height: 44px;
+    /* Touch target size */
   }
 
   .list-header {
@@ -427,17 +617,19 @@
   .lesson-item {
     grid-template-columns: 1fr;
     gap: 0.5rem;
-    padding: 1rem;
+    padding: 1.25rem;
   }
 
   .col-order {
     order: 1;
     justify-content: space-between;
+    margin-bottom: 0.5rem;
   }
 
   .col-title {
     order: 2;
-    font-size: 1rem;
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
   }
 
   .col-duration,
@@ -445,14 +637,27 @@
   .col-status {
     order: 3;
     display: inline-block;
+    margin-right: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .col-quizzes::before {
+    content: 'Quizzes: ';
+    color: #6b7280;
   }
 
   .col-actions {
     order: 4;
-    justify-content: flex-start;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--border-color, #e5e7eb);
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-icon {
+    flex: 1;
+    min-height: 44px;
+    /* Touch target size */
   }
 
   .lesson-item::before {
@@ -461,3 +666,5 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Force reload */

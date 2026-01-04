@@ -5,7 +5,7 @@ exports.updateVideoPosition = async (req, res) => {
   try {
     const { id: lessonId } = req.params;
     const { videoPositionSeconds } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id; // Corrected from req.user.userId
 
     // Get enrollment for this lesson
     const lesson = await prisma.lesson.findUnique({
@@ -93,7 +93,7 @@ exports.updateVideoPosition = async (req, res) => {
 exports.markLessonComplete = async (req, res) => {
   try {
     const { id: lessonId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id; // Corrected from req.user.userId
 
     // Get lesson and course info
     const lesson = await prisma.lesson.findUnique({
@@ -286,7 +286,7 @@ exports.markLessonComplete = async (req, res) => {
 // Get student progress summary
 exports.getMyProgress = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id; // Corrected from req.user.userId
 
     const [user, enrollments, quizAttempts] = await Promise.all([
       prisma.user.findUnique({
@@ -404,7 +404,7 @@ exports.saveLessonNotes = async (req, res) => {
   try {
     const { id: lessonId } = req.params;
     const { notes } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id; // Corrected from req.user.userId
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -482,7 +482,7 @@ exports.saveLessonNotes = async (req, res) => {
 exports.toggleBookmark = async (req, res) => {
   try {
     const { id: lessonId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id; // Corrected from req.user.userId
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },

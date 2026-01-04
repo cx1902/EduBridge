@@ -261,6 +261,12 @@
   flex: 1;
 }
 
+.rs-file-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .rs-filename {
   font-weight: 600;
   font-size: 1.05rem;
@@ -333,7 +339,23 @@
   font-weight: 600;
 }
 
+/* Submission Footer */
+.rs-submission-footer {
+  margin-top: 30px;
+  padding-top: 10px;
+}
+
+.rs-submission-footer h4 {
+  margin-bottom: 15px;
+}
+
 /* Submission Box */
+.rs-submission-box-column {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .rs-submission-box {
   background-color: var(--color-background);
   border: 1px solid var(--color-border);
@@ -342,11 +364,137 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.rs-feedback-box {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.rs-feedback-box h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: var(--color-text);
+  font-size: 1.1rem;
+}
+
+.rs-grade {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--color-primary);
+}
+
+.rs-feedback {
+  margin-bottom: 10px;
+  color: var(--color-text);
+}
+
+.rs-graded-date {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Tutor Submission Area */
+.rs-tutor-submission-area {
+  margin-top: 20px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 20px;
+}
+
+.rs-submissions-list {
+  margin-top: 20px;
+  background-color: var(--color-surface);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.rs-submissions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rs-submissions-table th,
+.rs-submissions-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rs-submissions-table th {
+  background-color: var(--color-background-soft);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.rs-sub-file {
+  margin-bottom: 5px;
+}
+
+.rs-link-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.rs-link-btn:hover {
+  color: var(--color-primary-dark);
+}
+
+/* Grading Modal/Inline */
+.rs-grading-modal {
+  margin-top: 20px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.rs-grading-content h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.rs-form-group {
+  margin-bottom: 15px;
+}
+
+.rs-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.rs-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
   margin-top: 20px;
 }
 
-.status-submitted {
+.rs-no-submissions {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.status-graded {
   color: #10b981;
+  font-weight: 600;
+}
+
+.status-submitted {
+  color: #3b82f6;
   font-weight: 600;
 }
 .status-pending {
@@ -388,9 +536,48 @@
   border-color: var(--color-danger);
 }
 
+/* Grade Badges */
+.grade-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: 700;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.grade-A-plus, .grade-A {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.grade-B-plus, .grade-B {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.grade-C-plus, .grade-C {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.grade-D {
+  background-color: rgba(249, 115, 22, 0.15);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.grade-F {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 /* Ensure visibility in dark mode */
-/* No specific overrides needed as variables handle it, 
-   but ensuring specific contrast if needed */
 [data-theme='dark'] .rs-btn-icon {
   background-color: var(--color-surface);
   border-color: var(--color-border);

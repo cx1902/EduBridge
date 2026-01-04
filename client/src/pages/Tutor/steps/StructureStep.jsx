@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
 import { useAuthStore } from '../../../store/authStore'
+import { getCourseImageUrl } from '../../../utils/images'
 
 const StructureStep = ({ formData, onChange, errors }) => {
   const { t } = useTranslation('common')
@@ -160,7 +161,7 @@ const StructureStep = ({ formData, onChange, errors }) => {
         {formData.thumbnailUrl && (
           <div className='image-preview' style={{ marginTop: '10px' }}>
             <img
-              src={formData.thumbnailUrl}
+              src={getCourseImageUrl(formData.thumbnailUrl)}
               alt='Course cover preview'
               style={{
                 maxWidth: '100%',

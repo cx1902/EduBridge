@@ -138,6 +138,13 @@
   overflow: hidden;
 }
 
+.icon-btn svg {
+  display: block;
+  width: 1.5em; /* Increase size slightly if needed */
+  height: 1.5em;
+  stroke: currentColor; /* Ensure stroke color is visible */
+}
+
 .icon-btn::before {
   content: '';
   position: absolute;
