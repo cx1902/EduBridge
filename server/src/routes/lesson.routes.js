@@ -3,6 +3,9 @@ const router = express.Router();
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const lessonController = require('../controllers/lesson.controller');
 
+// Get first lesson for a course
+router.get('/first/:courseId', authenticate, lessonController.getFirstLesson);
+
 // Get single lesson with progress
 router.get('/:id', authenticate, lessonController.getLessonById);
 

@@ -186,7 +186,7 @@ const StudentDashboard = () => {
                   </div>
                   <button 
                     className="btn-continue"
-                    onClick={() => navigate(`/student/courses/${enrollment.course.id}`)}
+                    onClick={() => navigate(`/student/courses/${enrollment.courseId || enrollment.course?.id}/lesson/${enrollment.lastAccessedLessonId || enrollment.nextLessonId || 'first'}`)}
                   >
                     Continue
                   </button>

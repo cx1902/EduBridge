@@ -168,6 +168,25 @@ async function main () {
   })
   console.log('✅ Created sample course:', course.title)
 
+  // Create Blockchain course
+  const blockchainCourse = await prisma.course.create({
+    data: {
+      tutorId: tutor.id,
+      title: 'Blockchain Fundamentals',
+      description:
+        'Understand the core concepts of blockchain technology, cryptocurrency, and smart contracts.',
+      subjectCategory: 'Computer Science',
+      educationLevel: 'UNIVERSITY',
+      difficulty: 'INTERMEDIATE',
+      thumbnailUrl: '/course-thumbnails/blockchain.jpg',
+      estimatedHours: 15,
+      language: 'en',
+      status: 'PUBLISHED',
+      publishedAt: new Date()
+    }
+  })
+  console.log('✅ Created sample course:', blockchainCourse.title)
+
   // Create sample lessons for the course
   const lessons = [
     {

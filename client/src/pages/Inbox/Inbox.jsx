@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import ComposeMessage from '../../components/Inbox/ComposeMessage';
+import ChatWindow from '../../components/ChatWindow';
 import './Inbox.css';
 
 const Inbox = () => {
@@ -12,6 +13,9 @@ const Inbox = () => {
   const [loading, setLoading] = useState(true);
   const [showCompose, setShowCompose] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
+  
+  // Chat state
+  const [activeChatUser, setActiveChatUser] = useState(null); // { id, name, avatar }
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -72,8 +76,18 @@ const Inbox = () => {
   };
 
   const handleReply = () => {
-    setReplyTo(selectedMessage);
-    setShowCompose(true);
+    // Check if we should open chat instead of email reply
+    const otherUser = activeTab === 'inbox' ? selectedMessage.sender : selectedMessage.receiver;
+    if (otherUser) {
+      setActiveChatUser({
+        id: otherUser.id,
+        name: `${otherUser.firstName} ${otherUser.lastName}`,
+        avatar: otherUser.profilePictureUrl
+      });
+    } else {
+      setReplyTo(selectedMessage);
+      setShowCompose(true);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -201,6 +215,16 @@ const Inbox = () => {
           </div>
         )}
       </div>
+
+      {/* Chat Window */}
+      {activeChatUser && (
+        <ChatWindow
+          recipientId={activeChatUser.id}
+          recipientName={activeChatUser.name}
+          recipientAvatar={activeChatUser.avatar}
+          onClose={() => setActiveChatUser(null)}
+        />
+      )}
 
       {/* Compose Modal */}
       {showCompose && (

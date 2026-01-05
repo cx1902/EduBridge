@@ -6,6 +6,7 @@ const sessionController = require('../controllers/session.controller');
 // Public/General routes
 router.get('/', authenticate, sessionController.getAvailableSessions);
 router.get('/today', authenticate, authorize('TUTOR'), sessionController.getTodaySessions);
+router.get('/tutor', authenticate, authorize('TUTOR'), sessionController.getTutorSessions);
 
 // Student booking routes
 router.post('/:id/book', authenticate, sessionController.bookSession);
@@ -18,6 +19,7 @@ router.post('/:sessionId/invite', authenticate, authorize('TUTOR'), sessionContr
 router.get('/:sessionId/email-status', authenticate, authorize('TUTOR', 'ADMIN'), sessionController.getEmailStatus);
 router.post('/:sessionId/resend', authenticate, authorize('TUTOR'), sessionController.resendInvitation);
 router.post('/:sessionId/remind', authenticate, authorize('TUTOR'), sessionController.sendReminder);
+router.patch('/:id/status', authenticate, authorize('TUTOR'), sessionController.updateSessionStatus);
 
 // Student routes - Session responses
 router.post('/:sessionId/confirm', authenticate, authorize('STUDENT'), sessionController.confirmAttendance);

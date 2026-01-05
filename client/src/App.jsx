@@ -26,9 +26,12 @@ import MyCourses from './pages/Student/MyCourses';
 import CourseLesson from './pages/Student/CourseLesson';
 import MyProgress from './pages/Student/MyProgress';
 import LiveSessions from './pages/Student/LiveSessions';
+import SessionHistory from './pages/Student/SessionHistory';
+import FindTutor from './pages/Student/FindTutor';
 import RequestTutor from './pages/Student/RequestTutor';
 import TutorMatches from './pages/Student/TutorMatches';
 import BookTutor from './pages/Student/BookTutor';
+import TutorProfileView from './pages/Student/TutorProfileView';
 
 // Tutor Pages
 import TutorDashboard from './pages/Tutor/Dashboard';
@@ -52,6 +55,7 @@ import PlatformAnalytics from './pages/Admin/Analytics';
 // Common Pages
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox/Inbox';
+import Chat from './pages/Chat/Chat';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
@@ -120,11 +124,15 @@ function App() {
         <Route path="courses/:courseId/lesson/:lessonId" element={<CourseLesson />} />
         <Route path="progress" element={<MyProgress />} />
         <Route path="sessions" element={<LiveSessions />} />
-
+        <Route path="session-history" element={<SessionHistory />} />
+        {/* <Route path="student/learning/:courseId" element={<CourseLearning />} /> */}
+        
         {/* Tutor Matching Routes */}
+        <Route path="find-tutor" element={<FindTutor />} />
         <Route path="tutoring/request" element={<RequestTutor />} />
         <Route path="tutoring/matches/:requestId" element={<TutorMatches />} />
         <Route path="tutoring/book/:requestId" element={<BookTutor />} />
+        <Route path="tutors/:id" element={<TutorProfileView />} />
       </Route>
 
       {/* Tutor Routes */}
@@ -183,6 +191,7 @@ function App() {
       >
         <Route path="profile" element={<Profile />} />
         <Route path="inbox" element={<Inbox />} />
+        <Route path="chat" element={<Chat />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

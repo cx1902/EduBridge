@@ -1,5 +1,35 @@
 const prisma = require('../utils/prisma');
 
+// Get first lesson for a course
+exports.getFirstLesson = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    
+    const lesson = await prisma.lesson.findFirst({
+      where: { courseId },
+      orderBy: { sequenceOrder: 'asc' }
+    });
+
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'No lessons found for this course'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: lesson
+    });
+  } catch (error) {
+    console.error('Get first lesson error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch first lesson'
+    });
+  }
+};
+
 // Get lesson by ID with progress
 exports.getLessonById = async (req, res) => {
   try {
@@ -39,12 +69,10 @@ exports.getLessonById = async (req, res) => {
     }
 
     // Check if user is enrolled in the course
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollment.findFirst({
       where: {
-        userId_courseId: {
-          userId,
-          courseId: lesson.courseId
-        }
+        userId,
+        courseId: lesson.courseId
       }
     });
 
@@ -60,12 +88,10 @@ exports.getLessonById = async (req, res) => {
     }
 
     // Get progress for this lesson
-    const progress = await prisma.progress.findUnique({
+    const progress = await prisma.progress.findFirst({
       where: {
-        enrollmentId_lessonId: {
-          enrollmentId: enrollment.id,
-          lessonId: id
-        }
+        enrollmentId: enrollment.id,
+        lessonId: id
       }
     });
 
@@ -128,12 +154,10 @@ exports.getCourseLessons = async (req, res) => {
     const userId = req.user.userId;
 
     // Check if user is enrolled
-    const enrollment = await prisma.enrollment.findUnique({
+    const enrollment = await prisma.enrollment.findFirst({
       where: {
-        userId_courseId: {
-          userId,
-          courseId
-        }
+        userId,
+        courseId
       },
       include: {
         progressRecords: {

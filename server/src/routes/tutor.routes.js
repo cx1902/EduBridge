@@ -33,11 +33,20 @@ const {
   getTutorProfile,
   addAvailabilitySlot,
   getAvailabilitySlots,
-  deleteAvailabilitySlot
+  deleteAvailabilitySlot,
+  searchTutors,
+  getTutorPublicProfile
 } = require('../controllers/tutor.controller');
 
-// All routes require authentication and tutor role
+// All routes require authentication
 router.use(authenticate);
+
+// Public/Student routes (Authenticated)
+router.get('/search', searchTutors);
+// Public profile route
+router.get('/profile/:id', getTutorPublicProfile);
+
+// Routes restricted to Tutors and Admins
 router.use(authorize('TUTOR', 'ADMIN'));
 
 // Profile & Availability Endpoints

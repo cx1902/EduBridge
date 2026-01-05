@@ -1027,6 +1027,167 @@ const getTodaySessions = async (req, res) => {
   }
 };
 
+/**
+ * Get all sessions for tutor (History + Upcoming)
+ * GET /api/sessions/tutor/all
+ */
+const getTutorSessions = async (req, res) => {
+  try {
+    const { user } = req;
+    const { status, startDate, endDate, page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+
+    if (user.role !== 'TUTOR') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    const where = {
+      tutorId: user.id
+    };
+
+    if (status) where.status = status;
+    if (startDate) where.scheduledStart = { gte: new Date(startDate) };
+    if (endDate) {
+      where.scheduledStart = { 
+        ...where.scheduledStart,
+        lte: new Date(endDate) 
+      };
+    }
+
+    const [sessions, total] = await Promise.all([
+      prisma.tutoringSession.findMany({
+        where,
+        include: {
+          bookings: {
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  email: true
+                }
+              }
+            }
+          },
+          request: {
+            include: {
+              student: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    profilePictureUrl: true,
+                    email: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          scheduledStart: 'desc'
+        },
+        skip: parseInt(skip),
+        take: parseInt(limit)
+      }),
+      prisma.tutoringSession.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: sessions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching tutor sessions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sessions'
+    });
+  }
+};
+
+/**
+ * Update session status (Tutor)
+ * PATCH /api/sessions/:id/status
+ */
+const updateSessionStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const { user } = req;
+
+    if (!['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+    }
+
+    const session = await prisma.tutoringSession.findUnique({
+      where: { id }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    if (session.tutorId !== user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    const updatedSession = await prisma.tutoringSession.update({
+      where: { id },
+      data: { status }
+    });
+
+    // Notify students if cancelled
+    if (status === 'CANCELLED') {
+      const bookings = await prisma.sessionBooking.findMany({
+        where: { sessionId: id }
+      });
+      
+      await prisma.notification.createMany({
+        data: bookings.map(b => ({
+          userId: b.studentId,
+          type: 'SESSION_CANCELLED',
+          title: 'Session Cancelled',
+          message: `The session ${session.subject} has been cancelled by the tutor.`,
+          link: `/student/sessions`
+        }))
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Session status updated',
+      data: updatedSession
+    });
+  } catch (error) {
+    console.error('Error updating session status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update status'
+    });
+  }
+};
+
 module.exports = {
   createSession,
   sendInvitations,
@@ -1042,4 +1203,6 @@ module.exports = {
   getMyBookings,
   cancelBooking,
   getTodaySessions,
+  updateSessionStatus,
+  getTutorSessions
 };

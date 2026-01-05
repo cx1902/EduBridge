@@ -88,11 +88,28 @@ model User {
   tutorProfile  TutorProfile?
   tutorSubjects TutorSubject[]
 
-  tutoringRequests  TutoringRequest[]  @relation("StudentTutoringRequests")
-  matchedRequests   TutoringRequest[]  @relation("MatchedTutor")
+  tutoringRequests TutoringRequest[] @relation("StudentTutoringRequests")
+  matchedRequests  TutoringRequest[] @relation("MatchedTutor")
+
   availabilitySlots AvailabilitySlot[]
+  tutorReviews      Review[]           @relation("TutorReviews")
 
   @@map("users")
+}
+
+// Review Model (For Tutor Reviews)
+model Review {
+  id        String   @id @default(uuid())
+  tutorId   String   @map("tutor_id")
+  rating    Int // 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tutor User @relation("TutorReviews", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@map("reviews")
 }
 
 // Course Model

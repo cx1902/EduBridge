@@ -147,8 +147,8 @@ const TutorDashboard = () => {
             View All Courses
           </Link>
           <Link to="/tutor/sessions" className="action-btn secondary">
-            <i className="fas fa-calendar"></i>
-            Schedule Session
+            <i className="fas fa-calendar-alt"></i>
+            Session Management
           </Link>
         </div>
       </div>
@@ -158,9 +158,7 @@ const TutorDashboard = () => {
         <div className="dashboard-section">
           <div className="section-header">
             <h2>Today's Sessions</h2>
-            {todaysSessions.length > 0 && (
-              <Link to="/tutor/sessions" className="view-all">View All</Link>
-            )}
+            <Link to="/tutor/sessions" className="view-all">Manage Sessions</Link>
           </div>
 
           {todaysSessions.length === 0 ? (

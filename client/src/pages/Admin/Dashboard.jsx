@@ -94,6 +94,28 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Extended Statistics */}
+      <div className="grid grid-cols-3 mt-lg" style={{ gap: '1rem' }}>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#ec4899' }}>
+            {loading ? '...' : stats.totalSessions}
+          </h3>
+          <p className="text-secondary" style={{ margin: 0 }}>Total Sessions</p>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#6366f1' }}>
+            {loading ? '...' : stats.totalFiles}
+          </h3>
+          <p className="text-secondary" style={{ margin: 0 }}>Uploaded Files</p>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#14b8a6' }}>
+            {loading ? '...' : `$${stats.totalRevenue}`}
+          </h3>
+          <p className="text-secondary" style={{ margin: 0 }}>Total Revenue</p>
+        </div>
+      </div>
+
       {/* Alerts */}
       {(stats.pendingApplications > 0 || stats.activeReports > 0) && (
         <div className="card mt-lg" style={{ backgroundColor: '#fef3c7', borderLeft: '4px solid #f59e0b' }}>

@@ -2500,3 +2500,69 @@ exports.removeEnrollment = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get comprehensive platform statistics
+ * GET /api/admin/stats
+ */
+exports.getPlatformStats = async (req, res) => {
+  try {
+    const [
+      totalUsers,
+      activeUsers,
+      tutors,
+      students,
+      totalCourses,
+      publishedCourses,
+      totalSessions,
+      completedSessions,
+      totalFiles,
+      totalRevenue
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { status: 'ACTIVE' } }),
+      prisma.user.count({ where: { role: 'TUTOR' } }),
+      prisma.user.count({ where: { role: 'STUDENT' } }),
+      prisma.course.count(),
+      prisma.course.count({ where: { status: 'PUBLISHED' } }),
+      prisma.tutoringSession.count(),
+      prisma.tutoringSession.count({ where: { status: 'COMPLETED' } }),
+      prisma.componentFile.count(),
+      // Check if Transaction model exists and has records
+      prisma.transaction ? prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: { status: 'COMPLETED' } 
+      }).catch(() => ({ _sum: { amount: 0 } })) : { _sum: { amount: 0 } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        users: {
+          total: totalUsers,
+          active: activeUsers,
+          tutors,
+          students
+        },
+        courses: {
+          total: totalCourses,
+          published: publishedCourses
+        },
+        sessions: {
+          total: totalSessions,
+          completed: completedSessions
+        },
+        content: {
+          files: totalFiles
+        },
+        revenue: {
+          total: totalRevenue._sum.amount || 0
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching platform stats:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch platform statistics' });
+  }
+};
+

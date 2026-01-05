@@ -1,0 +1,126 @@
+.session-management-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sessions-table-container {
+  background: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+}
+
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sessions-table th {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sessions-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.sessions-table tr:last-child td {
+  border-bottom: none;
+}
+
+.datetime-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.datetime-cell .date {
+  font-weight: 500;
+}
+
+.datetime-cell .time {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.subject-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-type {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  text-transform: capitalize;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-action.confirm {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-action.confirm:hover {
+  background: #bbf7d0;
+}
+
+.btn-action.complete {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-action.complete:hover {
+  background: #bfdbfe;
+}
+
+.btn-action.cancel {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-action.cancel:hover {
+  background: #fecaca;
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.text-muted {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.empty-state-cell {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .actions-cell {
+    flex-direction: column;
+  }
+}

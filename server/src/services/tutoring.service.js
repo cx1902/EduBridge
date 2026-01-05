@@ -79,22 +79,31 @@ const calculateMatchScore = async (request, tutor) => {
 
   // 4. Rating (10 points)
   // Normalize averageRating (1-5) to 0-10 scale.
-  // If no rating, assume neutral 3.5 stars -> 7 points
-  // We need to fetch average rating from Course reviews or specific Tutor reviews
-  // For now, using Course.averageRating aggregation or user.averageRating if we added it?
-  // Let's calculate from Tutor's courses for now.
-  const courses = await prisma.course.findMany({
-    where: { tutorId: tutor.id },
-    select: { averageRating: true }
+  // We fetch average rating from Tutor's Course Reviews + Direct Tutor Reviews
+  const courseReviews = await prisma.courseReview.aggregate({
+    where: { course: { tutorId: tutor.id } },
+    _avg: { rating: true },
+    _count: { rating: true }
   });
-  
+
+  const tutorReviews = await prisma.review.aggregate({
+    where: { tutorId: tutor.id },
+    _avg: { rating: true },
+    _count: { rating: true }
+  });
+
+  // Combine weighted average if both exist
   let avgRating = 0;
-  if (courses.length > 0) {
-    const total = courses.reduce((acc, c) => acc + (parseFloat(c.averageRating) || 0), 0);
-    avgRating = total / courses.length;
+  let totalCount = (courseReviews._count.rating || 0) + (tutorReviews._count.rating || 0);
+
+  if (totalCount > 0) {
+    const courseSum = (courseReviews._avg.rating || 0) * (courseReviews._count.rating || 0);
+    const tutorSum = (tutorReviews._avg.rating || 0) * (tutorReviews._count.rating || 0);
+    avgRating = (courseSum + tutorSum) / totalCount;
   }
-  
-  const ratingScore = avgRating > 0 ? (avgRating / 5) * 10 : 7; // Default 7/10 (3.5 stars)
+
+  // If no reviews, default to neutral 3.5 stars -> 7 points
+  const ratingScore = totalCount > 0 ? (avgRating / 5) * 10 : 7; 
   score += ratingScore;
   if (avgRating > 4.5) explanation.push("Top rated tutor");
 

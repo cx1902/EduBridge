@@ -74,8 +74,7 @@ router.post('/courses/:id/reject', (req, res) => {
   res.json({ success: true, message: 'Reject course' });
 });
 
-router.get('/analytics', (req, res) => {
-  res.json({ success: true, message: 'Get platform analytics' });
-});
+router.get('/stats', adminController.getPlatformStats);
+router.get('/analytics', adminController.getPlatformStats);
 
 module.exports = router;

@@ -40,7 +40,7 @@ const TutorDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Action Cards - My Courses, Student Engagement, Session Statistics */}
+      {/* Quick Action Cards - My Courses, Session Management, Session Statistics */}
       <div className="grid grid-cols-3 mt-lg gap-md">
         <div className="card">
           <h3>{t('tutor.myCourses')}</h3>
@@ -48,9 +48,9 @@ const TutorDashboard = () => {
           <Link to="/tutor/courses" className="btn btn-link mt-md">{t('tutor.viewAllCourses')}</Link>
         </div>
         <div className="card">
-          <h3>{t('tutor.studentEngagement')}</h3>
-          <p className="text-secondary">{t('tutor.studentEngagementDesc')}</p>
-          <Link to="/tutor/analytics" className="btn btn-link mt-md">{t('tutor.viewAnalytics')}</Link>
+          <h3>Session Management</h3>
+          <p className="text-secondary">Manage your upcoming and past sessions</p>
+          <Link to="/tutor/sessions" className="btn btn-link mt-md">Manage Sessions &rarr;</Link>
         </div>
         <div className="card">
           <h3>{t('tutor.sessionStatistics')}</h3>

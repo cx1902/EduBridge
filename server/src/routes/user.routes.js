@@ -90,6 +90,31 @@ router.get('/profile', authenticate, async (req, res) => {
   }
 });
 
+// Get basic user info (public)
+router.get('/basic/:id', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        role: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Get basic user info error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user info' });
+  }
+});
+
 // Update user profile
 router.put('/profile', authenticate, upload.single('profilePicture'), async (req, res) => {
   try {

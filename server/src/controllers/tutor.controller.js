@@ -1893,6 +1893,158 @@ const deleteAvailabilitySlot = async (req, res) => {
   }
 };
 
+// Search Tutors (Public/Student)
+const searchTutors = async (req, res) => {
+  try {
+    const { subject, level, minPrice, maxPrice, rating, name } = req.query;
+
+    const where = {};
+
+    // Filter by name (in User model)
+    if (name) {
+      where.user = {
+        OR: [
+          { firstName: { contains: name, mode: 'insensitive' } },
+          { lastName: { contains: name, mode: 'insensitive' } }
+        ]
+      };
+    }
+
+    // Filter by price
+    if (minPrice || maxPrice) {
+      where.hourlyRate = {};
+      if (minPrice) where.hourlyRate.gte = parseFloat(minPrice);
+      if (maxPrice) where.hourlyRate.lte = parseFloat(maxPrice);
+    }
+
+    // Filter by level (in Array)
+    if (level) {
+      where.levelsSupported = {
+        has: level
+      };
+    }
+    
+    // Filter by Subject (via TutorSubject relation)
+    if (subject) {
+      where.user = {
+        ...where.user,
+        tutorSubjects: {
+          some: {
+            subject: {
+              name: { contains: subject, mode: 'insensitive' }
+            }
+          }
+        }
+      };
+    }
+
+    const tutors = await prisma.tutorProfile.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            tutorSubjects: {
+                include: { subject: true }
+            },
+            tutorReviews: {
+                select: { rating: true }
+            }
+          }
+        }
+      },
+      take: 20
+    });
+
+    // Post-processing for rating filter (since it's computed)
+    let results = tutors.map(tutor => {
+        const ratings = tutor.user.tutorReviews || [];
+        const avgRating = ratings.length > 0 
+            ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
+            : 0;
+        
+        return {
+            ...tutor,
+            averageRating: avgRating,
+            reviewCount: ratings.length
+        };
+    });
+
+    if (rating) {
+        results = results.filter(t => t.averageRating >= parseFloat(rating));
+    }
+
+    res.json({ success: true, data: results });
+
+  } catch (error) {
+    console.error('Error searching tutors:', error);
+    res.status(500).json({ error: 'Failed to search tutors' });
+  }
+};
+
+// Get Public Tutor Profile (by ID)
+const getTutorPublicProfile = async (req, res) => {
+  try {
+    const { id } = req.params; // This is the userId of the tutor
+
+    const profile = await prisma.tutorProfile.findUnique({
+      where: { userId: id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            bio: true, // User bio might differ from Tutor bio? Schema has both.
+            tutorSubjects: {
+                include: { subject: true }
+            },
+            tutorReviews: {
+                include: {
+                    // Include review details if needed, or just aggregate
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 5
+            }
+          }
+        }
+      }
+    });
+
+    if (!profile) {
+        return res.status(404).json({ error: 'Tutor not found' });
+    }
+
+    // Get stats
+    const totalStudents = await prisma.enrollment.count({
+        where: { course: { tutorId: id }, status: 'ACTIVE' }
+    });
+    
+    const courseCount = await prisma.course.count({
+        where: { tutorId: id, status: 'PUBLISHED' }
+    });
+
+    res.json({
+        success: true,
+        data: {
+            ...profile,
+            stats: {
+                totalStudents,
+                courseCount
+            }
+        }
+    });
+
+  } catch (error) {
+    console.error('Error fetching tutor public profile:', error);
+    res.status(500).json({ error: 'Failed to fetch tutor profile' });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getTodaysSessions,
@@ -1929,5 +2081,7 @@ module.exports = {
   getTutorProfile,
   addAvailabilitySlot,
   getAvailabilitySlots,
-  deleteAvailabilitySlot
+  deleteAvailabilitySlot,
+  searchTutors,
+  getTutorPublicProfile
 };

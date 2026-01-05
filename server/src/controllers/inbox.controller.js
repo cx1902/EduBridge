@@ -343,3 +343,54 @@ exports.getMessage = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch message' });
   }
 };
+
+// Get conversation with specific user
+exports.getConversation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { participantId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const messages = await prisma.inboxMessage.findMany({
+      where: {
+        OR: [
+          { senderId: userId, receiverId: participantId },
+          { senderId: participantId, receiverId: userId }
+        ]
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true
+          }
+        },
+        receiver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc' // Oldest first for chat history
+      },
+      skip,
+      take: limit
+    });
+
+    res.json({
+      success: true,
+      data: messages
+    });
+  } catch (error) {
+    console.error('Get Conversation Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch conversation' });
+  }
+};

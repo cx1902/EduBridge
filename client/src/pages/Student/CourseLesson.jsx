@@ -6,7 +6,7 @@ import QuizPlayer from '../../components/Student/QuizPlayer';
 import './CourseLesson.css'; // I'll assume I need to create this or it exists (if not I'll create inline styles or new file)
 
 const CourseLesson = () => {
-  const { lessonId } = useParams();
+  const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
   const { token } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -15,10 +15,34 @@ const CourseLesson = () => {
   const [hasQuiz, setHasQuiz] = useState(false);
 
   useEffect(() => {
-    if (lessonId) {
+    if (lessonId === 'first' && courseId) {
+      fetchFirstLesson();
+    } else if (lessonId) {
       fetchLessonDetails();
     }
-  }, [lessonId]);
+  }, [lessonId, courseId]);
+
+  const fetchFirstLesson = async () => {
+    try {
+      setLoading(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      
+      const res = await axios.get(
+        `${API_URL}/lessons/first/${courseId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success && res.data.data) {
+        // Navigate to the actual lesson ID
+        navigate(`/student/courses/${courseId}/lesson/${res.data.data.id}`, { replace: true });
+      } else {
+        throw new Error('No lessons found');
+      }
+    } catch (error) {
+      console.error('Error fetching first lesson:', error);
+      setLoading(false);
+    }
+  };
 
   const fetchLessonDetails = async () => {
     try {
@@ -30,7 +54,13 @@ const CourseLesson = () => {
         `${API_URL}/lessons/${lessonId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setLesson(lessonRes.data);
+      
+      // Handle response structure { success: true, data: { lesson: {...} } }
+      if (lessonRes.data.success) {
+        setLesson(lessonRes.data.data.lesson);
+      } else {
+        throw new Error(lessonRes.data.error?.message || 'Failed to load lesson');
+      }
 
       // 2. Check for Quiz
       try {
@@ -59,7 +89,10 @@ const CourseLesson = () => {
   };
 
   if (loading) return <div className="loading-spinner"></div>;
-  if (!lesson) return <div className="error-message">Lesson not found</div>;
+  if (!lesson && !loading) {
+     if (lessonId === 'first') return <div className="error-message">No lessons available for this course yet.</div>;
+     return <div className="error-message">Lesson not found</div>;
+  }
 
   return (
     <div className="course-lesson-page">

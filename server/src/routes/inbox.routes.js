@@ -10,6 +10,7 @@ router.use(authenticate);
 router.get('/', inboxController.getInbox);
 router.get('/sent', inboxController.getSent);
 router.post('/send', inboxController.sendMessage);
+router.get('/conversation/:participantId', inboxController.getConversation);
 router.get('/:id', inboxController.getMessage);
 router.put('/:id/read', inboxController.markAsRead);
 

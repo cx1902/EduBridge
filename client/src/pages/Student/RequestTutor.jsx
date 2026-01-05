@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
 const RequestTutor = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preSelectedTutorId = searchParams.get('tutorId');
+
   const [subjects, setSubjects] = useState([]);
   const [formData, setFormData] = useState({
     subjectId: '',
@@ -43,7 +46,14 @@ const RequestTutor = () => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tutoring/requests`, formData);
       const requestId = res.data.data.id;
-      navigate(`/student/tutoring/matches/${requestId}`);
+      
+      if (preSelectedTutorId) {
+        // Direct booking flow
+        navigate(`/student/tutoring/book/${requestId}?tutorId=${preSelectedTutorId}`);
+      } else {
+        // Standard matching flow
+        navigate(`/student/tutoring/matches/${requestId}`);
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to submit request');
     } finally {
@@ -55,7 +65,15 @@ const RequestTutor = () => {
 
   return (
     <div className="container mx-auto p-6 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Find a Tutor</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        {preSelectedTutorId ? 'Book a Session' : 'Find a Tutor'}
+      </h1>
+      
+      {preSelectedTutorId && (
+        <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-6">
+          <p>Please provide some details about your request to proceed with booking.</p>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-6">
         {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
