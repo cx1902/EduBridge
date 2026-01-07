@@ -1,0 +1,627 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
+const bcrypt = require('bcrypt');
+const { authenticate, authorize } = require('../middleware/auth.middleware');
+const prisma = require('../utils/prisma');
+const jwt = require('jsonwebtoken');
+const { sendEmailChangeConfirmation } = require('../utils/emailService');
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads/profiles');
+    try {
+      await fs.mkdir(uploadDir, { recursive: true });
+      cb(null, uploadDir);
+    } catch (error) {
+      cb(error);
+    }
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `profile-${req.user.id}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
+
+// Get user profile
+router.get('/profile', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        dateOfBirth: true,
+        phoneNumber: true,
+        bio: true,
+        preferredLanguage: true,
+        themePreference: true,
+        fontSize: true,
+        timezone: true,
+        totalPoints: true,
+        currentStreak: true,
+        longestStreak: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { user }
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile'
+    });
+  }
+});
+
+// Get basic user info (public)
+router.get('/basic/:id', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        role: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Get basic user info error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch user info' });
+  }
+});
+
+// Update user profile
+router.put('/profile', authenticate, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const { firstName, lastName, phoneNumber, dateOfBirth, bio } = req.body;
+    const userId = req.user.id;
+
+    // Prepare update data
+    const updateData = {};
+
+    if (firstName) updateData.firstName = firstName.trim();
+    if (lastName) updateData.lastName = lastName.trim();
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber.trim() || null;
+    if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
+    if (bio !== undefined) updateData.bio = bio.trim() || null;
+
+    // Handle profile picture upload
+    if (req.file) {
+      // Delete old profile picture if exists
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { profilePictureUrl: true }
+      });
+
+      if (currentUser.profilePictureUrl) {
+        const oldImagePath = path.join(__dirname, '../../uploads/profiles', path.basename(currentUser.profilePictureUrl));
+        try {
+          await fs.unlink(oldImagePath);
+        } catch (err) {
+          console.error('Error deleting old image:', err);
+        }
+      }
+
+      // Set new profile picture URL
+      updateData.profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+    }
+
+    // Update user in database
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        dateOfBirth: true,
+        phoneNumber: true,
+        bio: true,
+        preferredLanguage: true,
+        themePreference: true,
+        fontSize: true,
+        totalPoints: true,
+        currentStreak: true,
+        longestStreak: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: { user: updatedUser }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+
+    // Delete uploaded file if update failed
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (err) {
+        console.error('Error deleting uploaded file:', err);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update profile'
+    });
+  }
+});
+
+// Request email change
+router.post('/profile/email-change-request', authenticate, async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    const userId = req.user.id;
+    const currentEmail = req.user.email;
+
+    if (!newEmail) {
+      return res.status(400).json({ success: false, message: 'New email is required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ success: false, message: 'Invalid email format' });
+    }
+
+    if (newEmail === currentEmail) {
+      return res.status(400).json({ success: false, message: 'New email must be different from current email' });
+    }
+
+    // Check if email already in use
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'Email is already in use' });
+    }
+
+    // Generate verification token
+    const token = jwt.sign(
+      { userId, newEmail, type: 'EMAIL_CHANGE' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Send confirmation email to CURRENT email
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    await sendEmailChangeConfirmation(user, newEmail, token);
+
+    res.json({
+      success: true,
+      message: 'Confirmation email sent to your current address'
+    });
+  } catch (error) {
+    console.error('Email change request error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process request' });
+  }
+});
+
+// Verify email change
+router.get('/profile/verify-email-change', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Invalid_token`);
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.type !== 'EMAIL_CHANGE') {
+      return res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Invalid_token_type`);
+    }
+
+    const { userId, newEmail } = decoded;
+
+    // Check if new email is still available
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail }
+    });
+
+    if (existingUser) {
+      return res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Email_already_taken`);
+    }
+
+    // Update user email
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: newEmail,
+        emailVerified: false
+      }
+    });
+
+    // Redirect to profile with success
+    res.redirect(`${process.env.CLIENT_URL}/student/profile?status=email_updated`);
+  } catch (error) {
+    console.error('Email change verification error:', error);
+    res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Invalid_or_expired_token`);
+  }
+});
+
+// Update user preferences (theme, font size, etc.)
+router.put('/preferences', authenticate, async (req, res) => {
+  try {
+    const { preferredLanguage, themePreference, fontSize, timezone } = req.body;
+    const userId = req.user.id;
+
+    const updateData = {};
+    if (preferredLanguage) updateData.preferredLanguage = preferredLanguage;
+    if (themePreference) updateData.themePreference = themePreference;
+    if (fontSize) updateData.fontSize = fontSize;
+    if (timezone) updateData.timezone = timezone;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        preferredLanguage: true,
+        themePreference: true,
+        fontSize: true,
+        timezone: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Preferences updated successfully',
+      data: { preferences: updatedUser }
+    });
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update preferences'
+    });
+  }
+});
+
+// Update language preference specifically
+router.patch('/preferences/language', authenticate, async (req, res) => {
+  try {
+    const { language } = req.body;
+    const userId = req.user.id;
+
+    // Validate language
+    if (!language || !['en', 'zh-CN', 'zh-TW'].includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid language. Must be one of: en, zh-CN, zh-TW'
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { preferredLanguage: language },
+      select: {
+        id: true,
+        preferredLanguage: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Language preference updated successfully',
+      user: {
+        preferredLanguage: updatedUser.preferredLanguage
+      }
+    });
+  } catch (error) {
+    console.error('Update language preference error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update language preference'
+    });
+  }
+});
+
+// Get user preferences
+router.get('/preferences', authenticate, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        preferredLanguage: true,
+        themePreference: true,
+        fontSize: true,
+        timezone: true,
+      }
+    });
+
+    res.json({
+      success: true,
+      data: { preferences: user }
+    });
+  } catch (error) {
+    console.error('Get preferences error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch preferences'
+    });
+  }
+});
+
+// Change password
+router.put('/profile/password', authenticate, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Old password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    // Get current user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true }
+    });
+
+    // Verify old password
+    const isValidPassword = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash }
+    });
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password'
+    });
+  }
+});
+
+// Upload profile picture
+router.post('/profile/picture', authenticate, upload.single('profilePicture'), async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    // Delete old profile picture if exists
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { profilePictureUrl: true }
+    });
+
+    if (currentUser.profilePictureUrl) {
+      const oldImagePath = path.join(__dirname, '../../uploads/profiles', path.basename(currentUser.profilePictureUrl));
+      try {
+        await fs.unlink(oldImagePath);
+      } catch (err) {
+        console.error('Error deleting old image:', err);
+      }
+    }
+
+    // Set new profile picture URL
+    const profilePictureUrl = `/uploads/profiles/${req.file.filename}`;
+
+    // Update user
+    await prisma.user.update({
+      where: { id: userId },
+      data: { profilePictureUrl }
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      data: { profilePictureUrl }
+    });
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+
+    // Delete uploaded file if update failed
+    if (req.file) {
+      try {
+        await fs.unlink(req.file.path);
+      } catch (err) {
+        console.error('Error deleting uploaded file:', err);
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile picture'
+    });
+  }
+});
+
+// ==================== TUTOR VERIFICATION ====================
+
+// Submit tutor verification application
+router.post('/tutor-application', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { documents, subjects, sampleLessonUrl, qualifications, teachingExperience } = req.body;
+
+    // Check if user already has a pending or approved application
+    const existing = await prisma.tutorVerificationApplication.findFirst({
+      where: {
+        userId,
+        status: { in: ['PENDING', 'UNDER_REVIEW', 'APPROVED'] },
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have a pending or approved application',
+      });
+    }
+
+    const application = await prisma.tutorVerificationApplication.create({
+      data: {
+        userId,
+        documents: documents || [],
+        subjects: subjects || [],
+        sampleLessonUrl,
+        qualifications,
+        teachingExperience,
+        status: 'PENDING',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Tutor application submitted successfully',
+      application,
+    });
+  } catch (error) {
+    console.error('Error submitting tutor application:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit application' });
+  }
+});
+
+// Get user's tutor application status
+router.get('/tutor-application', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const application = await prisma.tutorVerificationApplication.findFirst({
+      where: { userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+
+    res.json({ success: true, application });
+  } catch (error) {
+    console.error('Error fetching tutor application:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch application' });
+  }
+});
+
+// ==================== CONTENT REPORTS ====================
+
+// Submit content report
+router.post('/report', authenticate, async (req, res) => {
+  try {
+    const reporterId = req.user.id;
+    const { reportedItemType, reportedItemId, category, description, evidenceUrls } = req.body;
+
+    if (!['LESSON', 'QUIZ', 'QUESTION', 'MESSAGE', 'COURSE', 'USER'].includes(reportedItemType)) {
+      return res.status(400).json({ success: false, message: 'Invalid reported item type' });
+    }
+
+    // Auto-assign priority based on category
+    let priority = 'NORMAL';
+    if (['HARASSMENT', 'OFFENSIVE'].includes(category)) {
+      priority = 'HIGH';
+    } else if (category === 'SPAM') {
+      priority = 'LOW';
+    }
+
+    const report = await prisma.contentReport.create({
+      data: {
+        reporterId,
+        reportedItemType,
+        reportedItemId,
+        category,
+        description,
+        priority,
+        evidenceUrls: evidenceUrls || [],
+        status: 'NEW',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Report submitted successfully. Our team will review it shortly.',
+      report,
+    });
+  } catch (error) {
+    console.error('Error submitting report:', error);
+    res.status(500).json({ success: false, message: 'Failed to submit report' });
+  }
+});
+
+module.exports = router;
