@@ -9,7 +9,7 @@ const Login = () => {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { login, isLoading, error, clearError } = useAuthStore();
-  
+
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,9 +27,9 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const result = await login(formData.email, formData.password, rememberMe);
-    
+
     if (result.success) {
       // Redirect based on user role
       const user = useAuthStore.getState().user;
@@ -128,13 +128,6 @@ const Login = () => {
         <Link to="/register" className="btn btn-primary btn-block">
           {t('login.register')}
         </Link>
-
-        <div className="demo-credentials">
-          <p><strong>{t('login.demoAccounts', 'Demo Accounts')}:</strong></p>
-          <p>Student: student@edubridge.com / Student@123</p>
-          <p>Tutor: tutor@edubridge.com / Tutor@123</p>
-          <p>Admin: admin@edubridge.com / Admin@123</p>
-        </div>
       </div>
     </div>
   );

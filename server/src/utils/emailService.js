@@ -10,8 +10,8 @@ const prisma = require('./prisma');
 /**
  * Initialize Resend client if API key is available
  */
-const resend = process.env.RESEND_API_KEY 
-  ? new Resend(process.env.RESEND_API_KEY) 
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
 if (resend) {
@@ -23,15 +23,15 @@ if (resend) {
  */
 function createTransporter() {
   // If Resend is configured, we might not need this, but keep as fallback
-  
+
   // Check if real SMTP credentials are configured (not example values)
-  const hasValidSMTP = 
-    process.env.SMTP_HOST && 
-    process.env.SMTP_USER && 
+  const hasValidSMTP =
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
     process.env.SMTP_PASS &&
     !process.env.SMTP_HOST.includes('example.com') &&
     !process.env.SMTP_USER.includes('example.com');
-  
+
   if (hasValidSMTP) {
     // Use configured SMTP service
     console.log('✉️  Using configured SMTP service:', process.env.SMTP_HOST);
@@ -126,7 +126,7 @@ const EMAIL_TEMPLATES = {
       </html>
     `,
   },
-  
+
   SESSION_REMINDER: {
     subject: (data) => `Reminder: ${data.topic} session starting in ${data.timeframe}`,
     body: (data) => `
@@ -342,6 +342,54 @@ const EMAIL_TEMPLATES = {
       </html>
     `,
   },
+  EMAIL_CHANGE_CONFIRMATION: {
+    subject: () => 'Confirm Your Email Change Request',
+    body: (data) => `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #4f46e5; color: white; padding: 20px; text-align: center; }
+            .content { background: #f9fafb; padding: 30px; }
+            .verify-box { background: #dbeafe; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center; }
+            .cta-button { display: inline-block; background: #4f46e5; color: white; padding: 14px 40px; text-decoration: none; border-radius: 6px; margin: 15px 0; font-weight: bold; }
+            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
+            .warning { background: #fef3c7; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📧 Email Change Request</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${data.firstName},</p>
+              <p>We received a request to change your EduBridge account email to <strong>${data.newEmail}</strong>.</p>
+              
+              <div class="verify-box">
+                <p>To confirm this change, please click the button below:</p>
+                <a href="${data.confirmLink}" class="cta-button">Confirm Email Change</a>
+              </div>
+
+              <div class="warning">
+                <p><strong>⚠️ If you didn't request this:</strong></p>
+                <p>Please ignore this email. Your account email will remain unchanged.</p>
+              </div>
+
+              <p style="margin-top: 30px; font-size: 14px; color: #6b7280;">
+                If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${data.confirmLink}" style="color: #4f46e5; word-break: break-all;">${data.confirmLink}</a>
+              </p>
+            </div>
+            <div class="footer">
+              <p>EduBridge Learning Platform</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `,
+  },
 };
 
 /**
@@ -349,7 +397,7 @@ const EMAIL_TEMPLATES = {
  */
 function generateCalendarFile(sessionData) {
   const { topic, scheduledStart, scheduledEnd, tutorName, meetingLink, description } = sessionData;
-  
+
   // Format dates for ICS (YYYYMMDDTHHmmssZ)
   const formatDate = (date) => {
     return new Date(date).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -421,7 +469,7 @@ async function sendEmail({ to, type, data, session }) {
       // Map attachments for Resend if needed (Resend accepts { filename, content } where content is Buffer or string)
       // Our attachment structure is already compatible (filename, content). 
       // contentType is optional in Resend but good to keep.
-      
+
       const resendData = {
         from: fromAddress,
         to,
@@ -438,7 +486,7 @@ async function sendEmail({ to, type, data, session }) {
       }
 
       console.log('✅ Email sent successfully via Resend:', resendResult.id);
-      
+
       return {
         success: true,
         messageId: resendResult.id,
@@ -472,7 +520,7 @@ async function sendEmail({ to, type, data, session }) {
     });
 
     console.log('✅ Email sent successfully via SMTP/Ethereal:', info.messageId);
-    
+
     // If using Ethereal (test), log preview URL
     if (!transporter && !resend) {
       const previewUrl = nodemailer.getTestMessageUrl(info);
@@ -678,7 +726,7 @@ async function sendSessionReminder(sessionId, timeframe) {
 async function sendPasswordResetEmail(email, resetToken) {
   try {
     const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    
+
     const result = await sendEmail({
       to: email,
       type: 'PASSWORD_RESET',
@@ -701,7 +749,7 @@ async function sendPasswordResetEmail(email, resetToken) {
 async function sendVerificationEmail(user, verificationToken) {
   try {
     const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${verificationToken}`;
-    
+
     const result = await sendEmail({
       to: user.email,
       type: 'EMAIL_VERIFICATION',
@@ -718,12 +766,55 @@ async function sendVerificationEmail(user, verificationToken) {
   }
 }
 
+/**
+ * Send email change confirmation
+ */
+async function sendEmailChangeConfirmation(user, newEmail, token) {
+  try {
+    // This link points to the backend verification route which will redirect
+    // OR we point to a frontend route which calls backend. 
+    // Plan said: GET /users/profile/verify-email-change on backend.
+    // Let's assume we point to the backend directly for simplicity, or frontend if we want a clean loading state.
+    // The plan mentioned "GET /users/profile/verify-email-change" in `user.routes.js`, so it's a backend link.
+    // However, usually it's better to go to frontend then call API.
+    // But the user request said "when user click yes/proceed on the email then redirect user to their edubridge profile".
+    // A backend redirect works perfectly for this.
+    // We need the full API URL here. `process.env.API_URL` or similar? 
+    // Usually SERVER_URL/api/users/profile/verify-email-change?token=...
+    // Let's assume a standard structure. If API_URL is not set, we might need to construct it.
+
+    // NOTE: The previous code uses CLIENT_URL for links. If we want to hit the backend directly, we need the backend URL.
+    // But typically we send them to a frontend route to handle the API call and show a success message.
+    // The plan said: "redirects to client profile". So the backend route will do the work and redirect.
+    // So the link should be the BACKEND route.
+
+    const apiUrl = process.env.API_URL || 'http://localhost:3000/api'; // Fallback
+    const confirmLink = `${apiUrl}/users/profile/verify-email-change?token=${token}`;
+
+    const result = await sendEmail({
+      to: user.email, // Send to CURRENT email
+      type: 'EMAIL_CHANGE_CONFIRMATION',
+      data: {
+        firstName: user.firstName,
+        newEmail,
+        confirmLink,
+      },
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error sending email change confirmation:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   sendEmail,
   sendSessionInvitations,
   sendSessionReminder,
   sendPasswordResetEmail,
   sendVerificationEmail,
+  sendEmailChangeConfirmation,
   trackEmailSending,
   generateCalendarFile,
 };

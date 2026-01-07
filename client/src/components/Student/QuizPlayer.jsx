@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaClock,
+  FaQuestion,
+  FaStopwatch,
+  FaTrophy,
+  FaCheck,
+  FaTimes,
+  FaRedo,
+  FaCheckCircle
+} from 'react-icons/fa';
 import './QuizPlayer.css';
 
 const QuizPlayer = ({ lessonId, onComplete }) => {
@@ -60,7 +72,7 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
   const handleAnswer = (questionId, value, type) => {
     setAnswers(prev => {
       const current = prev[questionId] || { selectedOptionIds: [], answerText: '' };
-      
+
       if (type === 'MULTIPLE_CHOICE' || type === 'TRUE_FALSE') {
         return { ...prev, [questionId]: { ...current, selectedOptionIds: [value] } };
       } else if (type === 'MULTIPLE_SELECT') {
@@ -122,25 +134,30 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
       <div className="quiz-player-container">
         <div className="quiz-intro">
           <h2>{quiz.title}</h2>
-          <p>{quiz.instructions || 'Answer all questions to the best of your ability.'}</p>
-          
-          <div className="quiz-meta">
-            <div className="meta-item">
-              <i className="fas fa-question-circle"></i>
+          <p className="quiz-instruction">
+            {quiz.instructions || 'You are about to start a timed quiz. Make sure you are ready before proceeding.'}
+          </p>
+
+          <div className="quiz-meta-grid">
+            <div className="meta-card">
+              <div className="meta-icon"><FaQuestion /></div>
               <span>{quiz.questions.length} Questions</span>
+              <small>Total Count</small>
             </div>
-            <div className="meta-item">
-              <i className="fas fa-clock"></i>
-              <span>{quiz.timeLimitMinutes} Minutes</span>
+            <div className="meta-card">
+              <div className="meta-icon"><FaStopwatch /></div>
+              <span>{quiz.timeLimitMinutes} Min</span>
+              <small>Time Limit</small>
             </div>
-            <div className="meta-item">
-              <i className="fas fa-trophy"></i>
-              <span>Pass: {quiz.passingPercentage}%</span>
+            <div className="meta-card">
+              <div className="meta-icon"><FaTrophy /></div>
+              <span>{quiz.passingPercentage}%</span>
+              <small>To Pass</small>
             </div>
           </div>
 
-          <button className="btn-primary btn-large" onClick={startQuiz}>
-            Start Quiz
+          <button className="btn-primary-lg" onClick={startQuiz}>
+            Start Quiz Now
           </button>
         </div>
       </div>
@@ -148,31 +165,42 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
   }
 
   if (gameState === 'RESULT') {
+    const correctCount = result.gradingDetails?.filter(d => d.isCorrect).length || 0;
+    const totalQuestions = quiz.questions.length;
+
     return (
       <div className="quiz-player-container">
         <div className="quiz-result">
-          <div className={`result-icon ${result.passed ? 'pass' : 'fail'}`}>
-            <i className={`fas ${result.passed ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+          <div className={`result-badge ${result.passed ? 'pass' : 'fail'}`}>
+            {result.passed ? <FaCheck /> : <FaTimes />}
           </div>
-          
-          <h2 className="score-display">{result.scorePercentage.toFixed(0)}%</h2>
-          <p className="score-label">{result.passed ? 'You Passed!' : 'Please Try Again'}</p>
 
-          <div className="result-stats">
-            <div className="result-stat">
+          <p style={{ textTransform: 'uppercase', letterSpacing: '2px', opacity: 0.7, marginBottom: '0.5rem' }}>
+            Final Score
+          </p>
+          <h1 className="score-display">{result.scorePercentage.toFixed(0)}%</h1>
+          <p className="result-msg">{result.passed ? 'Great job! You passed the quiz.' : 'Keep studying and try again!'}</p>
+
+          <div className="result-stats-grid">
+            <div className="stat-box">
               <h4>Points Earned</h4>
-              <p>{result.pointsEarned}</p>
+              <p>{result.earnedPoints || 0}</p>
             </div>
-            <div className="result-stat">
+            <div className="stat-box">
               <h4>Correct Answers</h4>
-              <p>{result.scorePercentage >= 100 ? quiz.questions.length : '—'}</p>
+              <p>{correctCount}/{totalQuestions}</p>
             </div>
           </div>
 
-          <div className="quiz-footer" style={{justifyContent: 'center'}}>
-            <button className="btn-primary" onClick={() => window.location.reload()}>
-              {result.passed ? 'Return to Lesson' : 'Retake Quiz'}
+          <div className="quiz-footer" style={{ borderTop: 'none', justifyContent: 'center', gap: '1rem' }}>
+            <button className="btn-nav-prev" onClick={() => window.location.reload()}>
+              <FaRedo style={{ marginRight: '0.5rem' }} /> Retake
             </button>
+            {result.passed && onComplete && (
+              <button className="btn-primary" onClick={() => window.location.reload()}>
+                Return to Lesson
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -181,38 +209,48 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const currentAnswer = answers[currentQuestion.id] || { selectedOptionIds: [], answerText: '' };
+  const progressPercent = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
 
   return (
     <div className="quiz-player-container">
+      {/* Header with Progress */}
       <div className="quiz-header">
-        <span className="progress-indicator">
-          Question {currentQuestionIndex + 1} of {quiz.questions.length}
-        </span>
-        <div className={`timer ${timeLeft < 60 ? 'warning' : ''}`}>
-          <i className="fas fa-clock"></i>
-          {formatTime(timeLeft)}
+        <div className="progress-container">
+          <span>Question {currentQuestionIndex + 1} of {quiz.questions.length}</span>
+          <div className={`timer-badge ${timeLeft < 60 ? 'warning' : ''}`}>
+            <FaClock style={{ marginRight: '0.5rem' }} /> {formatTime(timeLeft)}
+          </div>
+        </div>
+        <div className="progress-bar-track">
+          <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}></div>
         </div>
       </div>
 
       <div className="question-display">
         <h3 className="question-text">{currentQuestion.questionText}</h3>
-        
+
         {currentQuestion.questionImageUrl && (
           <img src={currentQuestion.questionImageUrl} alt="Question" className="question-image" />
         )}
 
         {['MULTIPLE_CHOICE', 'TRUE_FALSE', 'MULTIPLE_SELECT'].includes(currentQuestion.questionType) && (
           <div className="answer-options">
-            {currentQuestion.answerOptions.map(option => (
-              <div 
-                key={option.id}
-                className={`answer-option-btn ${currentAnswer.selectedOptionIds.includes(option.id) ? 'selected' : ''}`}
-                onClick={() => handleAnswer(currentQuestion.id, option.id, currentQuestion.questionType)}
-              >
-                <div className="option-marker"></div>
-                <span>{option.optionText}</span>
-              </div>
-            ))}
+            {currentQuestion.answerOptions.map((option, idx) => {
+              const isSelected = currentAnswer.selectedOptionIds.includes(option.id);
+              return (
+                <div
+                  key={option.id}
+                  className={`answer-card ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleAnswer(currentQuestion.id, option.id, currentQuestion.questionType)}
+                >
+                  <div className="option-key">
+                    {String.fromCharCode(65 + idx)}
+                  </div>
+                  <div className="option-text">{option.optionText}</div>
+                  <FaCheckCircle className="check-icon" />
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -227,26 +265,27 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
       </div>
 
       <div className="quiz-footer">
-        <button 
-          className="btn-secondary"
+        <button
+          className="btn-nav-prev"
           disabled={currentQuestionIndex === 0}
           onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
         >
-          Previous
+          <FaArrowLeft style={{ marginRight: '0.5rem' }} /> Previous
         </button>
-        
+
         {currentQuestionIndex < quiz.questions.length - 1 ? (
-          <button 
-            className="btn-primary"
+          <button
+            className="btn-nav-next"
             onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
           >
-            Next
+            Next Question
           </button>
         ) : (
-          <button 
+          <button
             className="btn-primary"
             onClick={handleSubmitQuiz}
             disabled={submitting}
+            style={{ padding: '0.75rem 2rem', borderRadius: '8px', border: 'none', background: 'var(--lesson-accent)', color: 'white', fontWeight: 600, cursor: 'pointer' }}
           >
             {submitting ? 'Submitting...' : 'Submit Quiz'}
           </button>

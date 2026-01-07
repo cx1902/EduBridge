@@ -4,10 +4,19 @@ import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
 import ScheduleSessionCard from '../../components/Tutor/ScheduleSessionCard';
 import TodaySchedulePanel from '../../components/Tutor/TodaySchedulePanel';
+import TutorVerificationPending from '../../components/TutorVerificationPending';
 
 const TutorDashboard = () => {
   const { user } = useAuthStore();
   const { t } = useTranslation('dashboard');
+
+  // Check if tutor is verified
+  const isVerified = user?.tutorVerification?.status === 'APPROVED';
+
+  // If not verified, show verification pending screen
+  if (!isVerified) {
+    return <TutorVerificationPending />;
+  }
 
   return (
     <div className="container">
@@ -56,6 +65,11 @@ const TutorDashboard = () => {
           <h3>{t('tutor.sessionStatistics')}</h3>
           <p className="text-secondary">{t('tutor.sessionStatisticsDesc')}</p>
           <Link to="/tutor/reports" className="btn btn-link mt-md">{t('tutor.viewReports')}</Link>
+        </div>
+        <div className="card">
+          <h3>My Availability</h3>
+          <p className="text-secondary">Set your available hours for booking</p>
+          <Link to="/tutor/schedule" className="btn btn-link mt-md">Manage Availability &rarr;</Link>
         </div>
       </div>
 

@@ -32,12 +32,17 @@ const TutorDashboard = () => {
         axios.get(`${API_URL}/tutor/dashboard/notifications`, config),
       ]);
 
+      // Extract data correctly - the API returns data directly, not nested in a data property
+      console.log('Stats response:', statsRes.data);
+      console.log('Sessions response:', sessionsRes.data);
+
       setStats(statsRes.data);
-      setTodaysSessions(sessionsRes.data);
-      setRecentEnrollments(enrollmentsRes.data);
-      setNotifications(notificationsRes.data);
+      setTodaysSessions(Array.isArray(sessionsRes.data) ? sessionsRes.data : []);
+      setRecentEnrollments(Array.isArray(enrollmentsRes.data) ? enrollmentsRes.data : []);
+      setNotifications(Array.isArray(notificationsRes.data) ? notificationsRes.data : []);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
+      console.error('Error response:', err.response?.data);
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -58,12 +63,12 @@ const TutorDashboard = () => {
     const now = new Date();
     const start = new Date(scheduledStart);
     const diff = start - now;
-    
+
     if (diff < 0) return 'In Progress';
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) return `In ${hours}h ${minutes}m`;
     return `In ${minutes}m`;
   };

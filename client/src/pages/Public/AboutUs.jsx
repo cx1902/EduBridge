@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../store/authStore';
 import {
   FaGraduationCap,
   FaChalkboardTeacher,
@@ -28,14 +29,27 @@ import './AboutUs.css';
 const AboutUs = () => {
   const { t } = useTranslation('common');
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+
+  const handleNavigation = (path) => {
+    if (isAuthenticated && user) {
+      if (user.role === 'ADMIN') return navigate('/admin');
+      if (user.role === 'TUTOR') return navigate('/tutor');
+      if (user.role === 'STUDENT') return navigate('/student');
+    }
+    navigate(path);
+  };
+
+  const [activeTab, setActiveTab] = useState('mission');
   const [stats, setStats] = useState({
     learners: 0,
     sessions: 0,
     quizzes: 0,
     satisfaction: 0
   });
-  const [openFaq, setOpenFaq] = useState(null);
 
+  // Animation for stats
   useEffect(() => {
     const targetStats = {
       learners: 10000,
@@ -70,345 +84,214 @@ const AboutUs = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (location.hash) {
-      const el = document.querySelector(location.hash);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  }, [location]);
-
-  const toggleFaq = (index) => {
-    setOpenFaq(openFaq === index ? null : index);
-  };
-
-  const faqs = [
-    {
-      question: t('about.faq.items.0.question', 'How do I get started with EduBridge?'),
-      answer: t('about.faq.items.0.answer', "Simply sign up for a free account, browse our course catalog, and enroll in courses that interest you. You can also book live tutoring sessions with our expert tutors.")
-    },
-    {
-      question: t('about.faq.items.1.question', 'Are the courses self-paced or scheduled?'),
-      answer: t('about.faq.items.1.answer', "We offer both! Self-paced courses allow you to learn at your own speed, while live tutoring sessions are scheduled at specific times for real-time interaction with tutors.")
-    },
-    {
-      question: t('about.faq.items.2.question', 'How does the gamification system work?'),
-      answer: t('about.faq.items.2.answer', "Earn points for completing lessons, quizzes, and maintaining learning streaks. Unlock badges and climb leaderboards to stay motivated. Points can also unlock special features and recognition.")
-    },
-    {
-      question: t('about.faq.items.3.question', 'What qualifications do your tutors have?'),
-      answer: t('about.faq.items.3.answer', "All our tutors go through a rigorous screening process. They must have proven expertise in their subject area, excellent teaching reviews, and pass our quality assessment before being approved to teach on the platform.")
-    },
-    {
-      question: t('about.faq.items.4.question', 'Is there a refund policy?'),
-      answer: t('about.faq.items.4.answer', "Yes! If you're not satisfied with a paid course within the first 30 days, we offer a full refund. We're committed to ensuring quality education and student satisfaction.")
-    }
+  // Tabs Configuration
+  const tabs = [
+    { id: 'mission', label: t('about.tabs.mission', 'Our Mission'), icon: <FaLightbulb /> },
+    { id: 'journey', label: t('about.tabs.journey', 'Journey'), icon: <FaRocket /> },
+    { id: 'offerings', label: t('about.tabs.offerings', 'Offerings'), icon: <FaBookOpen /> },
+    { id: 'values', label: t('about.tabs.values', 'Values'), icon: <FaStar /> },
+    { id: 'faq', label: t('about.tabs.faq', 'FAQ'), icon: <FaCheckCircle /> }
   ];
 
+  /* --- Render Helpers for Content Sections --- */
+
+  const renderMission = () => (
+    <div className="tab-content-wrapper fade-in">
+      <div className="mission-highlight-card">
+        <div className="mission-icon-large">
+          <FaLightbulb />
+        </div>
+        <h2>{t('about.mission.title', 'Our Mission')}</h2>
+        <p className="mission-statement-large">
+          {t('about.mission.text', 'To bridge the gap between passionate learners and expert educators, creating a seamless, engaging platform where knowledge flows freely and everyone can achieve their full potential.')}
+        </p>
+      </div>
+
+      {/* Mini Impact Stats directly in Mission */}
+      <div className="mini-stats-row">
+        <div className="mini-stat">
+          <span className="stat-num">{stats.learners.toLocaleString()}+</span>
+          <span className="stat-label">Learners</span>
+        </div>
+        <div className="mini-stat">
+          <span className="stat-num">{stats.sessions.toLocaleString()}+</span>
+          <span className="stat-label">Sessions</span>
+        </div>
+        <div className="mini-stat">
+          <span className="stat-num">{stats.satisfaction}%</span>
+          <span className="stat-label">Satisfaction</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderJourney = () => (
+    <div className="tab-content-wrapper fade-in">
+      <div className="journey-grid">
+        <div className="journey-card">
+          <div className="icon-badge"><FaLightbulb /></div>
+          <h3>The Problem</h3>
+          <p>We noticed quality education was limited by geography and time. Students struggled to find experts, and educators lacked a platform.</p>
+        </div>
+        <div className="journey-connector">
+          <FaArrowRight className="connector-icon" />
+        </div>
+        <div className="journey-card highlight">
+          <div className="icon-badge"><FaRocket /></div>
+          <h3>The Solution</h3>
+          <p>EduBridge was born to democratize education, combining self-paced courses, live tutoring, and gamification.</p>
+        </div>
+        <div className="journey-connector">
+          <FaArrowRight className="connector-icon" />
+        </div>
+        <div className="journey-card">
+          <div className="icon-badge"><FaStar /></div>
+          <h3>The Impact</h3>
+          <p>Today, we connect thousands of learners with mentors, transforming lives through accessible education.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderOfferings = () => (
+    <div className="tab-content-wrapper fade-in">
+      <div className="offerings-compact-grid">
+        <div className="offering-compact-item">
+          <FaBookOpen className="offering-icon" />
+          <div className="offering-text">
+            <h4>Comprehensive Courses</h4>
+            <p>Self-paced video lessons & resources.</p>
+          </div>
+        </div>
+        <div className="offering-compact-item">
+          <FaChalkboardTeacher className="offering-icon" />
+          <div className="offering-text">
+            <h4>Live Tutoring</h4>
+            <p>1-on-1 sessions with experts.</p>
+          </div>
+        </div>
+        <div className="offering-compact-item">
+          <FaTrophy className="offering-icon" />
+          <div className="offering-text">
+            <h4>Gamification</h4>
+            <p>Earn badges, points & streaks.</p>
+          </div>
+        </div>
+        <div className="offering-compact-item">
+          <FaChartLine className="offering-icon" />
+          <div className="offering-text">
+            <h4>Analytics</h4>
+            <p>Track your progress in real-time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderValues = () => (
+    <div className="tab-content-wrapper fade-in">
+      <div className="values-mosaic">
+        <div className="value-tile">
+          <FaGlobe className="value-icon" />
+          <h3>Accessibility</h3>
+          <p>Education for everyone, everywhere.</p>
+        </div>
+        <div className="value-tile">
+          <FaHandshake className="value-icon" />
+          <h3>Trust</h3>
+          <p>Verified tutors & secure platform.</p>
+        </div>
+        <div className="value-tile">
+          <FaStar className="value-icon" />
+          <h3>Quality</h3>
+          <p>High standards for all content.</p>
+        </div>
+        <div className="value-tile">
+          <FaSeedling className="value-icon" />
+          <h3>Growth</h3>
+          <p>Continuous improvement for all.</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const [openFaq, setOpenFaq] = useState(null);
+  const toggleFaq = (idx) => setOpenFaq(openFaq === idx ? null : idx);
+
+  const renderFAQ = () => {
+    const questions = [
+      { q: "How do I get started?", a: "Sign up for free, browse courses, or book a tutor." },
+      { q: "Are courses live?", a: "We offer both self-paced courses and live tutoring sessions." },
+      { q: "How do points work?", a: "Earn points by completing lessons and quizzes to unlock badges." },
+      { q: "Is EduBridge free to use?", a: "Yes! All courses, tutoring sessions, and features are completely free. No payment or subscription required." }
+    ];
+
+    return (
+      <div className="tab-content-wrapper fade-in">
+        <div className="faq-compact-list">
+          {questions.map((item, idx) => (
+            <div key={idx} className={`faq-compact-item ${openFaq === idx ? 'open' : ''}`} onClick={() => toggleFaq(idx)}>
+              <div className="faq-head">
+                <span>{item.q}</span>
+                <FaChevronDown className="faq-chevron" />
+              </div>
+              {openFaq === idx && <div className="faq-body">{item.a}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="about-page-modern">
-      {/* Hero Section */}
-      <section className="about-hero-modern">
-        <div className="about-hero-bg"></div>
+    <div className="about-interactive-page">
+      {/* Compact Hero */}
+      <section className="about-compact-hero">
+        <div className="hero-bg-accent"></div>
+        <div className="container hero-container">
+          <h1>Empowering Learners, <span className="text-highlight">Connecting Educators</span></h1>
+          <p>The future of education is here. Join us.</p>
+        </div>
+      </section>
+
+      {/* Interactive Tabs Interface */}
+      <section className="interactive-tabs-section">
         <div className="container">
-          <div className="about-hero-content">
-            <h1 className="about-hero-title">
-              {t('about.hero.title', 'Empowering Learners,')}
-              <span className="gradient-text"> Connecting Educators</span>
-            </h1>
-            <p className="about-hero-subtitle">
-              {t('about.hero.subtitle', 'Join thousands of students and tutors building the future of education together')}
-            </p>
-            <div className="about-hero-actions">
-              <Link to="/register?role=STUDENT" className="btn-primary-large">
-                <span>{t('about.hero.joinStudent', 'Join as Student')}</span>
-                <FaArrowRight />
-              </Link>
-              <Link to="/register?role=TUTOR" className="btn-secondary-large">
-                <span>{t('about.hero.becomeTutor', 'Become a Tutor')}</span>
-                <FaArrowRight />
-              </Link>
+          <div className="tabs-nav-container">
+            <div className="tabs-nav">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <span className="tab-icon">{tab.icon}</span>
+                  <span className="tab-label">{tab.label}</span>
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="active-content-container">
+            {activeTab === 'mission' && renderMission()}
+            {activeTab === 'journey' && renderJourney()}
+            {activeTab === 'offerings' && renderOfferings()}
+            {activeTab === 'values' && renderValues()}
+            {activeTab === 'faq' && renderFAQ()}
           </div>
         </div>
       </section>
 
-      {/* Mission Section */}
-      <section className="mission-section-modern">
-        <div className="container">
-          <div className="mission-content">
-            <div className="mission-icon-wrapper">
-              <FaLightbulb className="mission-icon" />
-            </div>
-            <h2 className="mission-title">{t('about.mission.title', 'Our Mission')}</h2>
-            <p className="mission-text">
-              {t('about.mission.text', 'To bridge the gap between passionate learners and expert educators, creating a seamless, engaging platform where knowledge flows freely and everyone can achieve their full potential.')}
-            </p>
+      {/* Sticky Bottom CTA */}
+      <section className="compact-cta-bar">
+        <div className="container cta-flex">
+          <div className="cta-text">
+            <h3>Ready to start?</h3>
+            <p>Join thousands of students today.</p>
           </div>
-        </div>
-      </section>
-
-      {/* Story Section */}
-      <section className="story-section-modern">
-        <div className="container">
-          <h2 className="section-title-center">{t('about.story.title', 'Our Story')}</h2>
-          <div className="story-timeline">
-            <div className="story-item">
-              <div className="story-icon-box">
-                <FaLightbulb />
-              </div>
-              <div className="story-content">
-                <h3>{t('about.story.problem.title', 'The Problem')}</h3>
-                <p>{t('about.story.problem.text', 'We noticed that quality education was often limited by geography, time constraints, and accessibility. Students struggled to find expert tutors, and talented educators lacked a platform to reach eager learners.')}</p>
-              </div>
-            </div>
-            <div className="story-item">
-              <div className="story-icon-box">
-                <FaRocket />
-              </div>
-              <div className="story-content">
-                <h3>{t('about.story.solution.title', 'The Solution')}</h3>
-                <p>{t('about.story.solution.text', 'EduBridge was born from the vision to democratize education. We built a comprehensive platform combining self-paced courses, live tutoring, interactive quizzes, and gamification to create an engaging learning experience accessible to everyone, anywhere.')}</p>
-              </div>
-            </div>
-            <div className="story-item">
-              <div className="story-icon-box">
-                <FaStar />
-              </div>
-              <div className="story-content">
-                <h3>{t('about.story.impact.title', 'The Impact')}</h3>
-                <p>{t('about.story.impact.text', "Today, we're proud to connect thousands of students with expert tutors, creating meaningful learning experiences that transform lives and build brighter futures.")}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Offerings Section */}
-      <section id="offerings" className="offerings-section-modern">
-        <div className="container">
-          <div className="section-header-center">
-            <h2 className="section-title">{t('about.offerings.title', 'What We Offer')}</h2>
-            <p className="section-subtitle">{t('about.offerings.subtitle', 'Everything you need for a complete learning experience')}</p>
-          </div>
-          <div className="offerings-grid">
-            <div className="offering-card-modern">
-              <div className="offering-icon-wrapper">
-                <FaBookOpen />
-              </div>
-              <h3>{t('about.offerings.courses.title', 'Comprehensive Courses')}</h3>
-              <p>{t('about.offerings.courses.text', 'Access hundreds of high-quality courses across various subjects and skill levels, created by expert tutors and industry professionals.')}</p>
-              <ul className="offering-features">
-                <li><FaCheckCircle /> {t('about.offerings.courses.features.selfPaced', 'Self-paced learning')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.courses.features.videoLessons', 'Video lessons')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.courses.features.resources', 'Downloadable resources')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.courses.features.lifetimeAccess', 'Lifetime access')}</li>
-              </ul>
-            </div>
-            <div className="offering-card-modern">
-              <div className="offering-icon-wrapper">
-                <FaChalkboardTeacher />
-              </div>
-              <h3>{t('about.offerings.liveTutoring.title', 'Live Tutoring')}</h3>
-              <p>{t('about.offerings.liveTutoring.text', 'Book one-on-one or group sessions with expert tutors for personalized guidance and real-time interaction.')}</p>
-              <ul className="offering-features">
-                <li><FaCheckCircle /> {t('about.offerings.liveTutoring.features.flexibleScheduling', 'Flexible scheduling')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.liveTutoring.features.screenSharing', 'Screen sharing')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.liveTutoring.features.whiteboard', 'Interactive whiteboard')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.liveTutoring.features.recordings', 'Session recordings')}</li>
-              </ul>
-            </div>
-            <div className="offering-card-modern">
-              <div className="offering-icon-wrapper">
-                <FaChartLine />
-              </div>
-              <h3>{t('about.offerings.quizzes.title', 'Interactive Quizzes')}</h3>
-              <p>{t('about.offerings.quizzes.text', 'Test your knowledge with engaging quizzes, get instant feedback, and track your progress over time.')}</p>
-              <ul className="offering-features">
-                <li><FaCheckCircle /> {t('about.offerings.quizzes.features.multipleTypes', 'Multiple question types')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.quizzes.features.instantGrading', 'Instant grading')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.quizzes.features.explanations', 'Detailed explanations')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.quizzes.features.progressTracking', 'Progress tracking')}</li>
-              </ul>
-            </div>
-            <div className="offering-card-modern">
-              <div className="offering-icon-wrapper">
-                <FaTrophy />
-              </div>
-              <h3>{t('about.offerings.gamification.title', 'Gamification')}</h3>
-              <p>{t('about.offerings.gamification.text', 'Stay motivated with points, badges, streaks, and leaderboards that make learning fun and rewarding.')}</p>
-              <ul className="offering-features">
-                <li><FaCheckCircle /> {t('about.offerings.gamification.features.pointsRewards', 'Points & rewards')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.gamification.features.badges', 'Achievement badges')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.gamification.features.streaks', 'Learning streaks')}</li>
-                <li><FaCheckCircle /> {t('about.offerings.gamification.features.leaderboards', 'Leaderboards')}</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="how-it-works-modern">
-        <div className="container">
-          <div className="section-header-center">
-            <h2 className="section-title">{t('about.how.title', 'How EduBridge Works')}</h2>
-            <p className="section-subtitle">{t('about.how.subtitle', 'Get started in four simple steps')}</p>
-          </div>
-          <div className="steps-grid">
-            <div className="step-card-modern">
-              <div className="step-number">1</div>
-              <div className="step-icon-wrapper">
-                <FaUserGraduate />
-              </div>
-              <h3>{t('about.how.steps.signUp.title', 'Sign Up')}</h3>
-              <p>{t('about.how.steps.signUp.text', 'Create your free account in seconds. Choose to join as a student to learn or as a tutor to teach.')}</p>
-            </div>
-            <div className="step-card-modern">
-              <div className="step-number">2</div>
-              <div className="step-icon-wrapper">
-                <FaSearch />
-              </div>
-              <h3>{t('about.how.steps.choose.title', 'Choose Subject')}</h3>
-              <p>{t('about.how.steps.choose.text', 'Browse our extensive catalog of courses and tutors. Filter by subject, level, price, and ratings.')}</p>
-            </div>
-            <div className="step-card-modern">
-              <div className="step-number">3</div>
-              <div className="step-icon-wrapper">
-                <FaChalkboard />
-              </div>
-              <h3>{t('about.how.steps.learn.title', 'Learn & Practice')}</h3>
-              <p>{t('about.how.steps.learn.text', 'Engage with video lessons, complete quizzes, join live sessions, and practice your new skills.')}</p>
-            </div>
-            <div className="step-card-modern">
-              <div className="step-number">4</div>
-              <div className="step-icon-wrapper">
-                <FaChartLine />
-              </div>
-              <h3>{t('about.how.steps.track.title', 'Track Progress')}</h3>
-              <p>{t('about.how.steps.track.text', 'Monitor your learning journey with detailed analytics, earn badges, and celebrate your achievements.')}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Values Section */}
-      <section className="values-section-modern">
-        <div className="container">
-          <div className="section-header-center">
-            <h2 className="section-title">{t('about.values.title', 'Our Core Values')}</h2>
-            <p className="section-subtitle">{t('about.values.subtitle', 'The principles that guide everything we do')}</p>
-          </div>
-          <div className="values-grid">
-            <div className="value-card-modern">
-              <div className="value-icon-wrapper">
-                <FaGlobe />
-              </div>
-              <h3>{t('about.values.accessibility.title', 'Accessibility')}</h3>
-              <p>{t('about.values.accessibility.text', 'Education should be available to everyone, everywhere. We break down barriers and make learning accessible to all.')}</p>
-            </div>
-            <div className="value-card-modern">
-              <div className="value-icon-wrapper">
-                <FaHandshake />
-              </div>
-              <h3>{t('about.values.trust.title', 'Trust')}</h3>
-              <p>{t('about.values.trust.text', 'We build trust through transparency, verified tutors, secure payments, and reliable support for our community.')}</p>
-            </div>
-            <div className="value-card-modern">
-              <div className="value-icon-wrapper">
-                <FaStar />
-              </div>
-              <h3>{t('about.values.quality.title', 'Quality')}</h3>
-              <p>{t('about.values.quality.text', 'We maintain high standards through rigorous tutor screening, content review, and continuous improvement.')}</p>
-            </div>
-            <div className="value-card-modern">
-              <div className="value-icon-wrapper">
-                <FaSeedling />
-              </div>
-              <h3>{t('about.values.growth.title', 'Growth')}</h3>
-              <p>{t('about.values.growth.text', "We're committed to the continuous growth of our students, tutors, and platform through innovation and feedback.")}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Impact Stats */}
-      <section className="impact-section-modern">
-        <div className="container">
-          <div className="section-header-center">
-            <h2 className="section-title">{t('about.impact.title', 'Our Impact')}</h2>
-            <p className="section-subtitle">{t('about.impact.subtitle', 'Making a difference in education worldwide')}</p>
-          </div>
-          <div className="impact-grid">
-            <div className="impact-card-modern">
-              <div className="impact-number">{stats.learners.toLocaleString()}+</div>
-              <div className="impact-label">{t('about.impact.cards.activeLearners.label', 'Active Learners')}</div>
-              <div className="impact-description">{t('about.impact.cards.activeLearners.desc', 'Students actively learning on our platform')}</div>
-            </div>
-            <div className="impact-card-modern">
-              <div className="impact-number">{stats.sessions.toLocaleString()}+</div>
-              <div className="impact-label">{t('about.impact.cards.liveSessions.label', 'Live Sessions')}</div>
-              <div className="impact-description">{t('about.impact.cards.liveSessions.desc', 'One-on-one tutoring sessions completed')}</div>
-            </div>
-            <div className="impact-card-modern">
-              <div className="impact-number">{stats.quizzes.toLocaleString()}+</div>
-              <div className="impact-label">{t('about.impact.cards.quizCompletions.label', 'Quiz Completions')}</div>
-              <div className="impact-description">{t('about.impact.cards.quizCompletions.desc', 'Quizzes taken and knowledge tested')}</div>
-            </div>
-            <div className="impact-card-modern">
-              <div className="impact-number">{stats.satisfaction}%</div>
-              <div className="impact-label">{t('about.impact.cards.satisfaction.label', 'Satisfaction Score')}</div>
-              <div className="impact-description">{t('about.impact.cards.satisfaction.desc', 'Students who would recommend us')}</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="faq-section-modern">
-        <div className="container">
-          <div className="section-header-center">
-            <h2 className="section-title">{t('about.faq.title', 'Frequently Asked Questions')}</h2>
-            <p className="section-subtitle">{t('about.faq.subtitle', 'Everything you need to know about EduBridge')}</p>
-          </div>
-          <div className="faq-container">
-            {faqs.map((faq, index) => (
-              <div
-                key={index}
-                className={`faq-item-modern ${openFaq === index ? 'active' : ''}`}
-                onClick={() => toggleFaq(index)}
-              >
-                <div className="faq-question">
-                  <h3>{faq.question}</h3>
-                  <FaChevronDown className={`faq-icon ${openFaq === index ? 'rotated' : ''}`} />
-                </div>
-                <div className="faq-answer">
-                  <p>{faq.answer}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="final-cta-modern">
-        <div className="container">
-          <div className="final-cta-content">
-            <h2>{t('about.finalCta.title', 'Ready to Transform Your Learning Journey?')}</h2>
-            <p>{t('about.finalCta.subtitle', 'Join thousands of students and tutors already making a difference')}</p>
-            <div className="final-cta-actions">
-              <Link to="/register?role=STUDENT" className="btn-primary-large">
-                <span>{t('about.finalCta.learnCta', 'Start Learning Today')}</span>
-                <FaArrowRight />
-              </Link>
-              <Link to="/register?role=TUTOR" className="btn-secondary-large">
-                <span>{t('about.finalCta.tutorCta', 'Apply as a Tutor')}</span>
-                <FaArrowRight />
-              </Link>
-            </div>
-            <p className="cta-note">✨ {t('about.finalCta.note', 'Free to join • No credit card required • Start in minutes')}</p>
+          <div className="cta-buttons">
+            <button onClick={() => handleNavigation('/register?role=STUDENT')} className="btn-primary-sm">Start Learning</button>
+            <button onClick={() => handleNavigation('/register?role=TUTOR')} className="btn-secondary-sm">Become a Tutor</button>
           </div>
         </div>
       </section>

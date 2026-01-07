@@ -44,8 +44,8 @@ exports.getAllCourses = async (req, res) => {
     if (search) {
       andConditions.push({
         OR: [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+          { title: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
         ]
       });
     }
@@ -71,10 +71,10 @@ exports.getAllCourses = async (req, res) => {
     if (req.user && req.query.includeOwnDrafts === 'true') {
       statusOr.push({ status: 'DRAFT', tutorId: req.user.id });
     }
-    
+
     // Add debugging log
     console.log('Fetching courses with conditions:', JSON.stringify(andConditions, null, 2));
-    
+
     andConditions.push({ OR: statusOr });
 
     const where = andConditions.length ? { AND: andConditions } : {};
@@ -358,7 +358,7 @@ exports.enrollInCourse = async (req, res) => {
     });
   } catch (error) {
     console.error('Enrollment error:', error);
-    
+
     // Handle unique constraint violation (P2002) - User already enrolled
     if (error.code === 'P2002') {
       return res.status(400).json({
@@ -576,7 +576,13 @@ exports.getCourseEnrollments = async (req, res) => {
         courseId: id,
         status: 'ACTIVE'
       },
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        courseId: true,
+        enrolledAt: true,
+        status: true,
+        progressPercentage: true,
         user: {
           select: {
             id: true,

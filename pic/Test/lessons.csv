@@ -1,0 +1,96 @@
+"id","course_id","title","learning_objectives","video_url","notes_content","sequence_order","estimated_duration_minutes","created_at","updated_at","attachments","content","published","video_file_url","alt_text_provided","auto_complete_threshold","captions_enabled","content_type","example_problem","key_terms","practice_task","transcript_url","word_count","difficulty","file_name","file_size","file_url","link_url","type"
+"1ef5aea6-5c55-4eb2-9f26-be1bd1170089","dcd733e9-40b5-4ea3-b0dd-f5921c312bd7","Blockchain Basics: How Blocks, Hashing, and Consensus Build Trust","By the end of this lesson, students will be able to:
+
+Explain what a blockchain is and why it is called a “distributed ledger”.
+
+Describe how blocks, hashes, and linking make data hard to change.
+
+Compare public vs private blockchains with simple examples.
+
+Explain what consensus means and why it is needed (PoW vs PoS at a high level).",,"Lesson Summary (2–3 lines)
+
+Blockchain is a distributed ledger that stores data in blocks linked by hashes. Hashing makes changes easy to detect, and consensus helps the network agree on valid blocks. Different blockchain types (public/private) are used depending on the need for openness or control.","1","30","2026-01-05 13:43:23.249","2026-01-05 13:43:23.249","[]","1) What is Blockchain?
+
+A blockchain is a shared digital record (ledger) that is stored across many computers (nodes). Instead of one company controlling the database, the network shares the same copy. When a new record is added, the network agrees before it becomes part of the ledger. This helps create trust without needing a single central authority.
+
+2) What is Inside a Block?
+
+A blockchain is made of many “blocks” connected in order. Each block usually contains:
+
+Transactions/Data (example: user A sends coins to user B)
+
+Timestamp (when the block was created)
+
+Nonce / Validator info (depends on consensus type)
+
+Block Hash (a unique fingerprint of this block)
+
+Previous Block Hash (links to the block before it)
+
+The important part is that every block stores the previous block hash, so the chain becomes connected.
+
+3) Hashing: The “Fingerprint” of Data
+
+A hash function turns data into a fixed-length output (hash).
+Example idea: if you hash “Hello”, you get a long code like a1b2....
+Key properties (simple):
+
+Small change in input → big change in hash
+
+Hard to guess the original data from the hash
+
+Same input → same hash
+
+This matters because if someone tries to change a transaction in an old block, the hash changes, and it no longer matches the next block’s “previous hash”. The network can detect tampering quickly.
+
+4) Why is Blockchain Hard to Tamper With?
+
+If an attacker edits a past block, they must:
+
+Recalculate the hash of that block,
+
+Update every following block (because links break),
+
+And still convince the network to accept the fake chain.
+
+Because the ledger is copied across many nodes, the attacker usually cannot control enough nodes to rewrite history, especially in large public networks.
+
+5) Consensus: How the Network Agrees
+
+Consensus is the method nodes use to agree on which new block is valid.
+
+Proof of Work (PoW) (high level):
+
+Miners solve a difficult puzzle to add a block.
+
+Requires high computing power and energy.
+
+Makes attacks expensive because rewriting blocks needs huge power.
+
+Proof of Stake (PoS) (high level):
+
+Validators are chosen to add blocks based on how much they “stake” (lock up) in the system.
+
+Uses less energy than PoW.
+
+Dishonest behavior can be punished (stake can be reduced).
+
+Both methods aim to prevent cheating and ensure everyone trusts the same ledger.
+
+6) Public vs Private Blockchain
+
+Public blockchain (example: Bitcoin/Ethereum)
+
+Anyone can join and view data
+
+More decentralised
+
+Slower but open and transparent
+
+Private blockchain (example: company consortium)
+
+Only authorised members can join
+
+Faster and more controlled
+
+Useful for businesses (supply chain, internal auditing)","true",,"false","90","false","MIXED",,"[]",,,,"BEGINNER",,,,,"TEXT"

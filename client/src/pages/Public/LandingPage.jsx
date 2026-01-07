@@ -1,11 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../store/authStore';
 import { FaGraduationCap, FaChalkboardTeacher, FaRocket, FaTrophy, FaUsers, FaClock, FaStar, FaArrowRight, FaPlay } from 'react-icons/fa';
 import './LandingPage.css';
 
 const LandingPage = () => {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+
+  const handleNavigation = (defaultPath) => {
+    if (isAuthenticated && user) {
+      if (user.role === 'ADMIN') return navigate('/admin');
+      if (user.role === 'TUTOR') return navigate('/tutor');
+      if (user.role === 'STUDENT') return navigate('/student');
+    }
+    navigate(defaultPath);
+  };
+
   const [stats, setStats] = useState({
     students: 0,
     courses: 0,
@@ -111,15 +124,15 @@ const LandingPage = () => {
               <span className="gradient-text"> Expert Learning</span>
             </h1>
 
-            <p className="hero-description">
+            <p className="hero-description" style={{ marginBottom: '6rem' }}>
               {t('landing.hero.subtitle', 'Join thousands of learners mastering new skills with personalized tutoring, interactive courses, and a supportive community.')}
             </p>
 
             <div className="hero-cta-buttons">
-              <Link to="/register" className="btn-primary-large">
+              <button onClick={() => handleNavigation('/register')} className="btn-primary-large">
                 <span>{t('landing.hero.getStarted', 'Get Started Free')}</span>
                 <FaArrowRight />
-              </Link>
+              </button>
               <button className="btn-secondary-large">
                 <FaPlay />
                 <span>Watch Demo</span>
@@ -233,10 +246,10 @@ const LandingPage = () => {
           <div className="cta-content">
             <h2 className="cta-title">{t('landing.cta.title', 'Ready to Start Learning?')}</h2>
             <p className="cta-subtitle">{t('landing.cta.subtitle', 'Join our community today and unlock your potential')}</p>
-            <Link to="/register" className="btn-cta-large">
+            <button onClick={() => handleNavigation('/register')} className="btn-cta-large">
               <span>{t('landing.cta.button', 'Create Free Account')}</span>
               <FaArrowRight />
-            </Link>
+            </button>
             <p className="cta-note">✨ No credit card required • Start learning in minutes</p>
           </div>
         </div>

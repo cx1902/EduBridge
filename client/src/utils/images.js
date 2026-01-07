@@ -12,12 +12,37 @@ export const getCourseImageUrl = (url) => {
   if (url.startsWith('/')) {
     // Get API URL from env or default
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    
+
     // Remove '/api' suffix to get the base server URL
     // e.g., http://localhost:3000/api -> http://localhost:3000
     const BASE_URL = API_URL.replace(/\/api\/?$/, '');
-    
+
     return `${BASE_URL}${url}`;
+  }
+
+  return url;
+};
+
+export const getProfilePictureUrl = (url) => {
+  if (!url) return null;
+
+  // If it's already a full URL
+  if (url.startsWith('http')) {
+    return url;
+  }
+
+  // If it's a relative path (e.g., /uploads/image.jpg or uploads/image.jpg)
+  if (url.startsWith('/') || !url.startsWith('http')) {
+    // Get API URL from env or default
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+    // Remove '/api' suffix to get the base server URL
+    const BASE_URL = API_URL.replace(/\/api\/?$/, '');
+
+    // Ensure URL has a leading slash for consistency when appending
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+
+    return `${BASE_URL}${cleanUrl}`;
   }
 
   return url;

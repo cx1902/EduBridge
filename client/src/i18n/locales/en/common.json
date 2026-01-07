@@ -21,7 +21,8 @@
     "download": "Download",
     "upload": "Upload",
     "send": "Send",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "warning": "Warning"
   },
   "role": {
     "student": "Student",
@@ -193,14 +194,13 @@
       "subtitle": "Join thousands of students already transforming their education.",
       "button": "Create Free Account",
       "note": "No credit card required • Start learning in minutes"
+    },
+    "stats": {
+      "activeStudents": "Active Students",
+      "qualityCourses": "Quality Courses",
+      "expertTutors": "Expert Tutors",
+      "learningHours": "Learning Hours"
     }
-  ,
-  "stats": {
-    "activeStudents": "Active Students",
-    "qualityCourses": "Quality Courses",
-    "expertTutors": "Expert Tutors",
-    "learningHours": "Learning Hours"
-  }
   },
   "about": {
     "hero": {
@@ -363,10 +363,22 @@
       "title": "Our Impact",
       "subtitle": "Making a difference in education worldwide",
       "cards": {
-        "activeLearners": { "label": "Active Learners", "desc": "Students actively learning on our platform" },
-        "liveSessions": { "label": "Live Sessions", "desc": "One-on-one tutoring sessions completed" },
-        "quizCompletions": { "label": "Quiz Completions", "desc": "Quizzes taken and knowledge tested" },
-        "satisfaction": { "label": "Satisfaction Score", "desc": "Students who would recommend us" }
+        "activeLearners": {
+          "label": "Active Learners",
+          "desc": "Students actively learning on our platform"
+        },
+        "liveSessions": {
+          "label": "Live Sessions",
+          "desc": "One-on-one tutoring sessions completed"
+        },
+        "quizCompletions": {
+          "label": "Quiz Completions",
+          "desc": "Quizzes taken and knowledge tested"
+        },
+        "satisfaction": {
+          "label": "Satisfaction Score",
+          "desc": "Students who would recommend us"
+        }
       }
     },
     "faq": {
@@ -375,11 +387,26 @@
       "stillHaveQuestions": "Still have questions?",
       "contactUs": "Contact Us",
       "items": {
-        "0": { "question": "How do I get started with EduBridge?", "answer": "Simply sign up for a free account, browse our course catalog, and enroll in courses that interest you. You can also book live tutoring sessions with our expert tutors." },
-        "1": { "question": "Are the courses self-paced or scheduled?", "answer": "We offer both! Self-paced courses allow you to learn at your own speed, while live tutoring sessions are scheduled at specific times for real-time interaction with tutors." },
-        "2": { "question": "How does the gamification system work?", "answer": "Earn points for completing lessons, quizzes, and maintaining learning streaks. Unlock badges and climb leaderboards to stay motivated. Points can also unlock special features and recognition." },
-        "3": { "question": "What qualifications do your tutors have?", "answer": "All our tutors go through a rigorous screening process. They must have proven expertise in their subject area, excellent teaching reviews, and pass our quality assessment before being approved to teach on the platform." },
-        "4": { "question": "Is there a refund policy?", "answer": "Yes! If you're not satisfied with a paid course within the first 30 days, we offer a full refund. We're committed to ensuring quality education and student satisfaction." }
+        "0": {
+          "question": "How do I get started with EduBridge?",
+          "answer": "Simply sign up for a free account, browse our course catalog, and enroll in courses that interest you. You can also book live tutoring sessions with our expert tutors."
+        },
+        "1": {
+          "question": "Are the courses self-paced or scheduled?",
+          "answer": "We offer both! Self-paced courses allow you to learn at your own speed, while live tutoring sessions are scheduled at specific times for real-time interaction with tutors."
+        },
+        "2": {
+          "question": "How does the gamification system work?",
+          "answer": "Earn points for completing lessons, quizzes, and maintaining learning streaks. Unlock badges and climb leaderboards to stay motivated. Points can also unlock special features and recognition."
+        },
+        "3": {
+          "question": "What qualifications do your tutors have?",
+          "answer": "All our tutors go through a rigorous screening process. They must have proven expertise in their subject area, excellent teaching reviews, and pass our quality assessment before being approved to teach on the platform."
+        },
+        "4": {
+          "question": "Is there a refund policy?",
+          "answer": "Yes! If you're not satisfied with a paid course within the first 30 days, we offer a full refund. We're committed to ensuring quality education and student satisfaction."
+        }
       }
     },
     "finalCta": {
@@ -427,7 +454,7 @@
       "previous": "← Previous",
       "next": "Next →",
       "saveDraft": "Save Draft",
-      "publish": "Publish Course"
+      "publish": "Request Approval"
     },
     "basics": {
       "title": "Basic Information",
@@ -568,11 +595,20 @@
       "metaDescription": "Meta description must not exceed 160 characters."
     },
     "success": {
-      "title": "Course Created Successfully!",
-      "text": "Your course \"{{title}}\" has been created. What would you like to do next?",
-      "addLessons": { "title": "Add Lessons", "text": "Begin building your curriculum content" },
-      "quiz": { "title": "Create Quiz Bank", "text": "Set up assessment questions" },
-      "preview": { "title": "Preview as Student", "text": "View course from student perspective" },
+      "title": "Request Sent Successfully!",
+      "text": "Your request has been sent, pending approval.",
+      "addLessons": {
+        "title": "Add Lessons",
+        "text": "Begin building your curriculum content"
+      },
+      "quiz": {
+        "title": "Create Quiz Bank",
+        "text": "Set up assessment questions"
+      },
+      "preview": {
+        "title": "Preview as Student",
+        "text": "View course from student perspective"
+      },
       "back": "Back to Dashboard"
     }
   },
@@ -604,7 +640,9 @@
     "bio": "Bio",
     "bioPlaceholder": "Tell us about yourself...",
     "phonePlaceholder": "+60 12-345 6789",
-    "emailHint": "Email cannot be changed",
+    "emailChangeWarning": "Changing your email address requires confirmation via your current email. Please ensure you have access to it.",
+    "emailConfirmationSent": "A confirmation email has been sent to your CURRENT address. Please check your inbox to complete the change.",
+    "emailUpdateSuccess": "Email updated successfully!",
     "role": "Role",
     "memberSince": "Member Since",
     "totalPoints": "Total Points",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
+import { getProfilePictureUrl } from '../../utils/images'
 import './CourseStudents.css'
 
 const CourseStudents = ({ courseId }) => {
@@ -17,7 +18,7 @@ const CourseStudents = ({ courseId }) => {
     try {
       setLoading(true)
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-      
+
       const response = await axios.get(
         `${API_URL}/courses/${courseId}/enrollments`,
         {
@@ -44,6 +45,8 @@ const CourseStudents = ({ courseId }) => {
     })
   }
 
+
+
   if (loading) return <div className="cs-loading">Loading students...</div>
   if (error) return <div className="cs-error">{error}</div>
 
@@ -56,17 +59,27 @@ const CourseStudents = ({ courseId }) => {
             <div key={enrollment.id} className='participant-card'>
               <div className='participant-avatar'>
                 {enrollment.user?.profilePictureUrl ? (
-                  <img
-                    src={enrollment.user.profilePictureUrl}
-                    alt={enrollment.user.firstName}
-                    className='participant-avatar-img'
-                    style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}}
-                  />
+                  <>
+                    <img
+                      src={getProfilePictureUrl(enrollment.user.profilePictureUrl)}
+                      alt={enrollment.user.firstName}
+                      className='participant-avatar-img'
+                      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                    <div className='avatar-placeholder' style={{ display: 'none', width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 600 }}>
+                      {enrollment.user?.firstName?.[0] || 'S'}
+                      {enrollment.user?.lastName?.[0] || ''}
+                    </div>
+                  </>
                 ) : (
-                  <span>
+                  <div className='avatar-placeholder' style={{ width: '100%', height: '100%', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea, #764ba2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', fontWeight: 600 }}>
                     {enrollment.user?.firstName?.[0] || 'S'}
                     {enrollment.user?.lastName?.[0] || ''}
-                  </span>
+                  </div>
                 )}
               </div>
               <div className='participant-info'>
@@ -78,7 +91,7 @@ const CourseStudents = ({ courseId }) => {
                 </div>
               </div>
               <div className='enrollment-date'>
-                Enrolled: {formatDate(enrollment.createdAt)}
+                Enrolled: {formatDate(enrollment.enrolledAt || enrollment.createdAt)}
               </div>
             </div>
           ))

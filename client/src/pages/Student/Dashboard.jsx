@@ -32,7 +32,7 @@ const StudentDashboard = () => {
       if (!token) return;
 
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-      
+
       const headers = { Authorization: `Bearer ${token}` };
 
       // Parallel data fetching
@@ -55,7 +55,13 @@ const StudentDashboard = () => {
 
       // Handle Sessions Data
       if (sessionsRes.status === 'fulfilled' && sessionsRes.value.data.success) {
-        setSessions(sessionsRes.value.data.data || []);
+        // Map bookings to extract session details
+        const mappedSessions = (sessionsRes.value.data.data || []).map(booking => ({
+          ...booking.session,
+          bookingId: booking.id,
+          bookingStatus: booking.status
+        }));
+        setSessions(mappedSessions);
       }
 
     } catch (error) {
@@ -115,7 +121,7 @@ const StudentDashboard = () => {
             <i className="fas fa-book-open"></i>
           </div>
         </div>
-        
+
         <div className="stat-card stat-green">
           <div className="stat-content">
             <h3>Completed</h3>
@@ -164,17 +170,17 @@ const StudentDashboard = () => {
             {enrollments.length > 0 ? (
               enrollments.slice(0, 3).map(enrollment => (
                 <div key={enrollment.id} className="course-progress-card">
-                  <img 
-                    src={getCourseImageUrl(enrollment.courseThumbnail)} 
-                    alt={enrollment.courseTitle} 
+                  <img
+                    src={getCourseImageUrl(enrollment.courseThumbnail)}
+                    alt={enrollment.courseTitle}
                     className="course-thumb"
                   />
                   <div className="course-details">
                     <h3>{enrollment.courseTitle}</h3>
                     <div className="progress-container">
                       <div className="progress-bar-bg">
-                        <div 
-                          className="progress-bar-fill" 
+                        <div
+                          className="progress-bar-fill"
                           style={{ width: `${enrollment.progressPercentage}%` }}
                         ></div>
                       </div>
@@ -184,7 +190,7 @@ const StudentDashboard = () => {
                       </div>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="btn-continue"
                     onClick={() => navigate(`/student/courses/${enrollment.courseId || enrollment.course?.id}/lesson/${enrollment.lastAccessedLessonId || enrollment.nextLessonId || 'first'}`)}
                   >
@@ -196,7 +202,7 @@ const StudentDashboard = () => {
               <div className="empty-state">
                 <i className="fas fa-graduation-cap"></i>
                 <p>You haven't enrolled in any courses yet.</p>
-                <Link to="/courses" className="btn-continue" style={{marginTop: '1rem', display: 'inline-block'}}>
+                <Link to="/courses" className="btn-continue" style={{ marginTop: '1rem', display: 'inline-block' }}>
                   Browse Courses
                 </Link>
               </div>
@@ -207,8 +213,8 @@ const StudentDashboard = () => {
         {/* Sidebar Column */}
         <div className="dashboard-sidebar">
           <div className="sidebar-card">
-            <h3><i className="fas fa-calendar-alt" style={{color: '#6366f1'}}></i> Upcoming Sessions</h3>
-            
+            <h3><i className="fas fa-calendar-alt" style={{ color: '#6366f1' }}></i> Upcoming Sessions</h3>
+
             <div className="sessions-list">
               {sessions.length > 0 ? (
                 sessions.slice(0, 3).map(session => {
@@ -238,8 +244,8 @@ const StudentDashboard = () => {
           <div className="sidebar-card">
             <h3>Quick Actions</h3>
             <div className="sessions-list">
-              <Link to="/courses" className="session-item" style={{textDecoration: 'none', color: 'inherit'}}>
-                <div className="stat-icon icon-blue" style={{width: '40px', height: '40px', fontSize: '1rem'}}>
+              <Link to="/courses" className="session-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="stat-icon icon-blue" style={{ width: '40px', height: '40px', fontSize: '1rem' }}>
                   <i className="fas fa-search"></i>
                 </div>
                 <div className="session-info">
@@ -247,8 +253,8 @@ const StudentDashboard = () => {
                   <p>Find new skills to learn</p>
                 </div>
               </Link>
-              <Link to="/tutors" className="session-item" style={{textDecoration: 'none', color: 'inherit'}}>
-                <div className="stat-icon icon-purple" style={{width: '40px', height: '40px', fontSize: '1rem'}}>
+              <Link to="/student/find-tutor" className="session-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div className="stat-icon icon-purple" style={{ width: '40px', height: '40px', fontSize: '1rem' }}>
                   <i className="fas fa-chalkboard-teacher"></i>
                 </div>
                 <div className="session-info">

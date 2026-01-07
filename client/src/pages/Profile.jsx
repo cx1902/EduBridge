@@ -10,6 +10,7 @@ const Profile = () => {
   const { user, updateUser } = useAuthStore();
   const { t } = useTranslation('common');
   const [isEditing, setIsEditing] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [imagePreview, setImagePreview] = useState('');
@@ -17,11 +18,24 @@ const Profile = () => {
 
   // Initialize image preview with full URL
   useEffect(() => {
+    // Check for email update status
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status');
+    const msg = params.get('message');
+
+    if (status === 'email_updated') {
+      setMessage({ type: 'success', text: t('profile.emailUpdateSuccess') || 'Email updated successfully!' });
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (status === 'error') {
+      setMessage({ type: 'error', text: msg?.replace(/_/g, ' ') || 'An error occurred' });
+    }
+
     if (user?.profilePictureUrl) {
       // If it's already a full URL (starts with http), use it as is
       // Otherwise, prepend the base URL
-      const imageUrl = user.profilePictureUrl.startsWith('http') 
-        ? user.profilePictureUrl 
+      const imageUrl = user.profilePictureUrl.startsWith('http')
+        ? user.profilePictureUrl
         : `${BASE_URL}${user.profilePictureUrl}`;
       setImagePreview(imageUrl);
     } else {
@@ -84,7 +98,7 @@ const Profile = () => {
 
     try {
       const formDataToSend = new FormData();
-      
+
       // Add text fields
       Object.keys(formData).forEach(key => {
         // Special handling for dateOfBirth: only send if it has a value
@@ -104,6 +118,35 @@ const Profile = () => {
         formDataToSend.append('profilePicture', fileInputRef.current.files[0]);
       }
 
+      // Check if email has changed
+      if (formData.email !== user.email) {
+        try {
+          await axios.post(`${API_URL}/users/profile/email-change-request`, {
+            newEmail: formData.email
+          });
+
+          setMessage({
+            type: 'info',
+            text: t('profile.emailConfirmationSent') || 'A confirmation email has been sent to your CURRENT address. Please check your inbox to complete the change.'
+          });
+
+          // Revert email in form data to prevent UI confusion until verified? 
+          // Or keep it? Let's keep it but tell them it's pending.
+          // Actually, let's stop here if only email changed? 
+          // But maybe they changed other things too.
+          // We should proceed to update OTHER changes.
+
+        } catch (emailError) {
+          console.error('Email change error', emailError);
+          setMessage({
+            type: 'error',
+            text: emailError.response?.data?.message || 'Failed to request email change'
+          });
+          setIsLoading(false);
+          return; // Stop if email change request fails
+        }
+      }
+
       const response = await axios.put(`${API_URL}/users/profile`, formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -116,7 +159,7 @@ const Profile = () => {
         updatedUser.profilePictureUrl = `${BASE_URL}${updatedUser.profilePictureUrl}`;
       }
       updateUser(updatedUser);
-      
+
       setMessage({ type: 'success', text: t('profile.success') });
       setIsEditing(false);
     } catch (error) {
@@ -138,8 +181,8 @@ const Profile = () => {
     });
     // Reset image preview to user's current profile picture
     if (user?.profilePictureUrl) {
-      const imageUrl = user.profilePictureUrl.startsWith('http') 
-        ? user.profilePictureUrl 
+      const imageUrl = user.profilePictureUrl.startsWith('http')
+        ? user.profilePictureUrl
         : `${BASE_URL}${user.profilePictureUrl}`;
       setImagePreview(imageUrl);
     } else {
@@ -157,11 +200,54 @@ const Profile = () => {
       <div className="profile-header">
         <h1>{t('profile.title')}</h1>
         {!isEditing && (
-          <button onClick={() => setIsEditing(true)} className="btn btn-primary">
+          <button onClick={() => {
+            setIsEditing(true);
+            setShowWarningModal(true);
+          }} className="btn btn-primary">
             {t('profile.editProfile')}
           </button>
         )}
       </div>
+
+      {showWarningModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '0.75rem',
+            maxWidth: '500px',
+            width: '90%',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', color: '#1f2937' }}>
+              Important Notice
+            </h2>
+            <p style={{ color: '#4b5563', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              <strong>Warning:</strong> {t('profile.emailChangeWarning') || 'Changing your email address requires confirmation via your current email. Please ensure you have access to it.'}
+            </p>
+            <button
+              onClick={() => setShowWarningModal(false)}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
 
       {message.text && (
         <div className={`alert alert-${message.type} mt-md`}>
@@ -175,9 +261,9 @@ const Profile = () => {
           <div className="profile-picture-section">
             <div className="profile-picture-container">
               {imagePreview ? (
-                <img 
-                  src={imagePreview} 
-                  alt="Profile" 
+                <img
+                  src={imagePreview}
+                  alt="Profile"
                   className="profile-picture-large"
                 />
               ) : (
@@ -188,7 +274,7 @@ const Profile = () => {
                 </div>
               )}
             </div>
-            
+
             {isEditing && (
               <div className="profile-picture-actions">
                 <input
@@ -221,7 +307,7 @@ const Profile = () => {
           {/* Personal Information */}
           <div className="form-section">
             <h3>{t('profile.personalInfo')}</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="firstName">{t('profile.firstName')} {t('profile.required')}</label>
@@ -257,10 +343,10 @@ const Profile = () => {
                 id="email"
                 name="email"
                 value={formData.email}
-                disabled
-                className="input-disabled"
+                onChange={handleChange}
+                disabled={!isEditing}
+                className={!isEditing ? "input-disabled" : ""}
               />
-              <small className="form-hint">{t('profile.emailHint')}</small>
             </div>
 
             <div className="form-row">
@@ -307,7 +393,7 @@ const Profile = () => {
           {/* Account Information */}
           <div className="form-section">
             <h3>{t('profile.accountInfo')}</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label>{t('profile.role')}</label>

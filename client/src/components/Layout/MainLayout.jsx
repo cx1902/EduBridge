@@ -1,10 +1,10 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX, FiMail, FiMessageSquare } from 'react-icons/fi';
+import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '../LanguageSwitcher';
+
 import './MainLayout.css';
 
 const MainLayout = () => {
@@ -14,7 +14,7 @@ const MainLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useTranslation('common');
 
-  
+
 
   const handleThemeToggle = (e) => {
     const button = e.currentTarget;
@@ -31,17 +31,17 @@ const MainLayout = () => {
     ripple.style.height = '100px';
     ripple.style.marginLeft = '-50px';
     ripple.style.marginTop = '-50px';
-    
+
     document.body.appendChild(ripple);
-    
+
     // Trigger animation
     requestAnimationFrame(() => {
       ripple.classList.add('active');
     });
-    
+
     // Toggle theme
     toggleTheme();
-    
+
     // Remove ripple after animation
     setTimeout(() => {
       ripple.remove();
@@ -88,8 +88,8 @@ const MainLayout = () => {
 
             {/* Actions */}
             <div className="navbar-actions">
-              <LanguageSwitcher />
-              
+
+
               <button
                 onClick={handleThemeToggle}
                 className="icon-btn theme-toggle-btn"
@@ -100,9 +100,7 @@ const MainLayout = () => {
 
               {isAuthenticated ? (
                 <div className="user-menu">
-                  <Link to="/chat" className="icon-btn" aria-label="Chat">
-                    <FiMessageSquare />
-                  </Link>
+
                   <Link to="/profile" className="btn btn-ghost">
                     <FiUser />
                     <span>{user?.firstName}</span>
@@ -168,12 +166,17 @@ const MainLayout = () => {
               <h4>{t('footer.quickLinks')}</h4>
               <Link to="/courses">{t('footer.browseCourses')}</Link>
               <Link to="/about">{t('footer.aboutUs')}</Link>
-              <Link to="/contact">{t('footer.contact')}</Link>
             </div>
             <div className="footer-section">
               <h4>{t('footer.legal')}</h4>
-              <Link to="/privacy">{t('footer.privacyPolicy')}</Link>
-              <Link to="/terms">{t('footer.termsOfService')}</Link>
+              <Link to="/privacy-policy">{t('footer.privacyPolicy')}</Link>
+              <Link to="/terms-of-service">{t('footer.termsOfService')}</Link>
+            </div>
+            <div className="footer-section">
+              <h4>{t('footer.contact')}</h4>
+              <p><FiMail style={{ marginRight: '8px' }} /> support@edubridge.com</p>
+              <p><FiPhone style={{ marginRight: '8px' }} /> +60 3-1234 5678</p>
+              <p><FiMapPin style={{ marginRight: '8px' }} /> 123 Education Lane, KL</p>
             </div>
           </div>
           <div className="footer-bottom">

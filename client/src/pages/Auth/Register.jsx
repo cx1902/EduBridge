@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useAuthStore } from '../../store/authStore';
 import './Auth.css';
 
@@ -8,7 +9,7 @@ const Register = () => {
   const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -43,7 +44,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
     if (formData.password !== formData.confirmPassword) {
       setValidationError('Passwords do not match');
@@ -58,7 +59,7 @@ const Register = () => {
 
     const { confirmPassword, ...userData } = formData;
     const result = await register(userData);
-    
+
     if (result.success) {
       navigate(formData.role === 'STUDENT' ? '/student' : '/tutor');
     }
@@ -135,7 +136,7 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="password">{t('register.password')}</label>
-            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+            <div className="password-input-wrapper">
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
@@ -145,27 +146,15 @@ const Register = () => {
                 required
                 placeholder={t('register.passwordPlaceholder', 'Create a strong password')}
                 autoComplete="new-password"
-                style={{ paddingRight: '40px' }}
               />
               <button
                 type="button"
+                className="btn-password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--color-text-muted)',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                tabIndex="-1"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                <i className={`fas fa-eye${showPassword ? '-slash' : ''}`}></i>
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
             <small className="form-hint">
@@ -175,7 +164,7 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="confirmPassword">{t('register.confirmPassword')}</label>
-            <div className="password-input-wrapper" style={{ position: 'relative' }}>
+            <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 id="confirmPassword"
@@ -185,27 +174,15 @@ const Register = () => {
                 required
                 placeholder={t('register.confirmPasswordPlaceholder', 'Confirm your password')}
                 autoComplete="new-password"
-                style={{ paddingRight: '40px' }}
               />
               <button
                 type="button"
+                className="btn-password-toggle"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--color-text-muted)',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                tabIndex="-1"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
               >
-                <i className={`fas fa-eye${showConfirmPassword ? '-slash' : ''}`}></i>
+                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>

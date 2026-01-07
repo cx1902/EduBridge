@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { FiSun, FiMoon } from 'react-icons/fi';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '../LanguageSwitcher';
+
 import './AuthLayout.css';
 
 const AuthLayout = () => {
@@ -34,7 +34,7 @@ const AuthLayout = () => {
           <span className="logo-text">EduBridge</span>
         </Link>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <LanguageSwitcher />
+
           <button
             onClick={toggleTheme}
             className="icon-btn"

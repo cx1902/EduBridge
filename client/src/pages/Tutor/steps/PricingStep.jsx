@@ -18,7 +18,7 @@ const PricingStep = ({ formData, onChange, errors }) => {
           value={formData.slug}
           onChange={(e) => onChange('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
           placeholder={t('createCourse.pricing.placeholders.slug', 'algebra-basics')}
-          pattern="[a-z0-9-]+"
+          pattern="[a-z0-9\-]+"
         />
         <small className="form-help">
           {t('createCourse.pricing.help.slugInfo', 'Auto-generated from title if left empty. Use lowercase letters, numbers, and hyphens only.')}
@@ -66,9 +66,9 @@ const PricingStep = ({ formData, onChange, errors }) => {
 
       <div className="form-group">
         <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '8px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            required 
+          <input
+            type="checkbox"
+            required
             style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
           />
           <span style={{ fontWeight: 'normal' }}>

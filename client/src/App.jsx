@@ -1,7 +1,9 @@
+
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
+import useAxiosInterceptor from './hooks/useAxiosInterceptor'; // Import hook
 
 // Layout Components
 import MainLayout from './components/Layout/MainLayout';
@@ -12,6 +14,8 @@ import LandingPage from './pages/Public/LandingPage';
 import CourseCatalog from './pages/Public/CourseCatalog';
 import CourseDetail from './pages/Public/CourseDetail';
 import AboutUs from './pages/Public/AboutUs';
+import LegalPrivacy from './pages/Public/LegalPrivacy';
+import LegalTerms from './pages/Public/LegalTerms';
 
 // Auth Pages
 import Login from './pages/Auth/Login';
@@ -50,12 +54,17 @@ import SessionReports from './pages/Tutor/SessionReports'; // New
 import AdminDashboard from './pages/Admin/Dashboard';
 import UserManagement from './pages/Admin/UserManagement';
 import CourseApproval from './pages/Admin/CourseApproval';
+import TutorVerification from './pages/Admin/TutorVerification';
+import ContentReports from './pages/Admin/ContentReports';
+import AuditLogs from './pages/Admin/AuditLogs';
+import SystemSettings from './pages/Admin/SystemSettings';
 import PlatformAnalytics from './pages/Admin/Analytics';
+import ScheduleManagement from './pages/Tutor/ScheduleManagement'; // New
 
 // Common Pages
 import Profile from './pages/Profile';
 import Inbox from './pages/Inbox/Inbox';
-import Chat from './pages/Chat/Chat';
+
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
@@ -78,6 +87,9 @@ function App() {
   const { theme, fontSize } = useThemeStore();
   const { checkAuth } = useAuthStore();
 
+  // Initialize interceptor
+  useAxiosInterceptor();
+
   useEffect(() => {
     // Check authentication status on app load
     checkAuth();
@@ -97,6 +109,8 @@ function App() {
         <Route path="courses" element={<CourseCatalog />} />
         <Route path="courses/:id" element={<CourseDetail />} />
         <Route path="about" element={<AboutUs />} />
+        <Route path="privacy-policy" element={<LegalPrivacy />} />
+        <Route path="terms-of-service" element={<LegalTerms />} />
       </Route>
 
       {/* Auth Routes */}
@@ -114,7 +128,7 @@ function App() {
       <Route
         path="/student"
         element={
-          <ProtectedRoute allowedRoles={['STUDENT']}>
+          <ProtectedRoute allowedRoles={['STUDENT', 'TUTOR', 'ADMIN']}>
             <MainLayout />
           </ProtectedRoute>
         }
@@ -126,7 +140,7 @@ function App() {
         <Route path="sessions" element={<LiveSessions />} />
         <Route path="session-history" element={<SessionHistory />} />
         {/* <Route path="student/learning/:courseId" element={<CourseLearning />} /> */}
-        
+
         {/* Tutor Matching Routes */}
         <Route path="find-tutor" element={<FindTutor />} />
         <Route path="tutoring/request" element={<RequestTutor />} />
@@ -154,8 +168,8 @@ function App() {
         {/* <Route path="courses/new" element={<CourseBuilder />} /> */}
         {/* <Route path="courses/:id/edit" element={<CourseBuilder />} /> */}
         <Route path="courses/:courseId/lessons" element={<LessonBuilder />} />
-        <Route path="courses/:courseId/lessons/new" element={<LessonBuilder />} />
-        <Route path="lessons/:id/edit" element={<LessonBuilder />} />
+        <Route path="courses/:courseId/curriculum" element={<LessonBuilder />} />
+        <Route path="schedule" element={<ScheduleManagement />} /> {/* New */}
         <Route path="analytics" element={<TutorAnalytics />} />
         <Route path="sessions" element={<SessionManagement />} />
         <Route path="reports" element={<SessionReports />} />
@@ -176,7 +190,11 @@ function App() {
       >
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
-        <Route path="courses/approval" element={<CourseApproval />} />
+        <Route path="courses" element={<CourseApproval />} />
+        <Route path="tutor-applications" element={<TutorVerification />} />
+        <Route path="reports" element={<ContentReports />} />
+        <Route path="audit-logs" element={<AuditLogs />} />
+        <Route path="settings" element={<SystemSettings />} />
         <Route path="analytics" element={<PlatformAnalytics />} />
       </Route>
 
@@ -191,7 +209,7 @@ function App() {
       >
         <Route path="profile" element={<Profile />} />
         <Route path="inbox" element={<Inbox />} />
-        <Route path="chat" element={<Chat />} />
+
         <Route path="settings" element={<Settings />} />
       </Route>
 

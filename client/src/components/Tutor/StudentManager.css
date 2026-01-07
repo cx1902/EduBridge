@@ -1,103 +1,180 @@
 .student-manager {
-  padding: 1rem;
+  padding: 0;
+  width: 100%;
 }
 
-.students-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+.manager-header {
+  margin-bottom: 2rem;
 }
 
-.student-card {
+.manager-header h3 {
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+}
+
+.manager-header p {
+  color: var(--color-text-secondary);
+}
+
+.students-table-container {
+  overflow-x: auto;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
   border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  transition: all 0.2s;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.student-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.student-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+  /* Ensure check on mobile */
 }
 
-.student-avatar {
-  margin-bottom: 1rem;
+.student-table th {
+  text-align: left;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.student-avatar img {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--color-background);
-  box-shadow: 0 0 0 1px var(--color-border);
+.student-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  vertical-align: middle;
 }
 
-.avatar-placeholder {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: white;
+.student-table tr:last-child td {
+  border-bottom: none;
+}
+
+.student-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Avatar styling for table */
+.table-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 600;
-  border: 3px solid var(--color-background);
+  width: 40px;
+  height: 40px;
 }
 
-.student-info {
-  margin-bottom: 1.5rem;
+.table-avatar img,
+.avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.table-avatar img {
+  display: block;
+}
+
+.avatar-placeholder {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
   display: flex;
-  flex-direction: column;
+  /* flex by default, hidden by inline style if image exists */
   align-items: center;
-  gap: 0.4rem;
-}
-
-.student-info h4 {
-  margin: 0 0 0.5rem 0;
-  color: var(--color-text);
-  font-size: 1.1rem;
-  display: block;
-}
-
-.student-email {
-  margin: 0;
-  color: var(--color-text-secondary);
+  justify-content: center;
   font-size: 0.9rem;
-  display: block;
-  margin-top: 0.35rem;
+  font-weight: 600;
 }
 
-.student-meta {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.meta-item {
+/* Cell Info */
+.student-cell-info {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
-.meta-item .label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.05em;
-}
-
-.meta-item .value {
+.student-name {
   font-weight: 600;
   color: var(--color-text);
-  font-size: 0.95rem;
+}
+
+.student-email {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+/* Progress Bar */
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 200px;
+}
+
+.progress-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  width: 35px;
+  text-align: right;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-block;
+}
+
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge.inactive {
+  background: rgba(107, 114, 128, 0.1);
+  color: #9ca3af;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  opacity: 0.5;
 }

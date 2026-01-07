@@ -29,9 +29,9 @@ const TutorProfileView = () => {
     <div className="tutor-profile-view">
       <div className="profile-header-card">
         <div className="profile-main-info">
-          <img 
-            src={user.profilePictureUrl || '/default-avatar.png'} 
-            alt={`${user.firstName} ${user.lastName}`} 
+          <img
+            src={user.profilePictureUrl || '/default-avatar.png'}
+            alt={`${user.firstName} ${user.lastName}`}
             className="profile-avatar"
           />
           <div className="profile-names">
@@ -58,12 +58,7 @@ const TutorProfileView = () => {
           <button className="btn-book-now" onClick={handleBookNow}>
             Book a Session
           </button>
-          <button 
-            className="btn-message"
-            onClick={() => navigate(`/chat?userId=${user.id}`)}
-          >
-            <i className="fas fa-envelope"></i> Message
-          </button>
+
         </div>
       </div>
 

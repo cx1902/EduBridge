@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
-import './TutorDashboard.css';
+import { FaVideo, FaCheckCircle, FaStar, FaHistory, FaUserFriends, FaCalendarAlt } from 'react-icons/fa';
+import './SessionReports.css';
 
 const SessionReports = () => {
   const { token } = useAuthStore();
@@ -32,7 +33,7 @@ const SessionReports = () => {
 
   if (loading) {
     return (
-      <div className="tutor-dashboard">
+      <div className="reports-dashboard">
         <div className="loading">Loading reports...</div>
       </div>
     );
@@ -40,108 +41,96 @@ const SessionReports = () => {
 
   if (error) {
     return (
-      <div className="tutor-dashboard">
+      <div className="reports-dashboard">
         <div className="error-message">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="tutor-dashboard">
-      <div className="dashboard-header">
+    <div className="reports-dashboard">
+      <div className="reports-header">
         <h1>Session Statistics</h1>
-        <p className="dashboard-subtitle">Overview of your tutoring performance and earnings</p>
+        <p className="reports-subtitle">Overview of your tutoring performance</p>
       </div>
 
-      {/* Overview Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon sessions">
-            <i className="fas fa-video"></i>
+      {/* Overview Cards - 3 Column Grid (No Earnings) */}
+      <div className="reports-grid">
+        <div className="report-card">
+          <div className="report-icon sessions">
+            <FaVideo />
           </div>
-          <div className="stat-info">
+          <div className="report-info">
             <h3>{stats?.overview?.totalSessions || 0}</h3>
             <p>Total Sessions</p>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--success-light)', color: 'var(--success-color)' }}>
-            <i className="fas fa-check-circle"></i>
+        <div className="report-card">
+          <div className="report-icon completion">
+            <FaCheckCircle />
           </div>
-          <div className="stat-info">
+          <div className="report-info">
             <h3>{stats?.overview?.completionRate || '0%'}</h3>
             <p>Completion Rate</p>
           </div>
         </div>
 
-        <div className="stat-card">
-          <div className="stat-icon rating">
-            <i className="fas fa-star"></i>
+        <div className="report-card">
+          <div className="report-icon rating">
+            <FaStar />
           </div>
-          <div className="stat-info">
+          <div className="report-info">
             <h3>{stats?.overview?.averageRating || '0.0'}</h3>
             <p>Average Rating</p>
           </div>
         </div>
-
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--info-light)', color: 'var(--info-color)' }}>
-            <i className="fas fa-dollar-sign"></i>
-          </div>
-          <div className="stat-info">
-            <h3>${stats?.overview?.totalEarnings || '0.00'}</h3>
-            <p>Total Earnings</p>
-          </div>
-        </div>
       </div>
 
-      <div className="dashboard-content">
-        {/* Recent Session History */}
-        <div className="dashboard-section" style={{ gridColumn: '1 / -1' }}>
-          <div className="section-header">
-            <h2>Recent Completed Sessions</h2>
-          </div>
-
-          {stats?.recentHistory?.length === 0 ? (
-            <div className="empty-state">
-              <i className="fas fa-history"></i>
-              <p>No completed sessions yet.</p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '2px solid var(--color-border)', textAlign: 'left' }}>
-                    <th style={{ padding: '1rem' }}>Topic</th>
-                    <th style={{ padding: '1rem' }}>Date Completed</th>
-                    <th style={{ padding: '1rem' }}>Attendees</th>
-                    <th style={{ padding: '1rem' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats?.recentHistory?.map(session => (
-                    <tr key={session.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                      <td style={{ padding: '1rem', fontWeight: 500 }}>{session.topic}</td>
-                      <td style={{ padding: '1rem', color: 'var(--color-text-secondary)' }}>
-                        {new Date(session.date).toLocaleString()}
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <i className="fas fa-user-friends" style={{ marginRight: '0.5rem', color: 'var(--color-text-muted)' }}></i>
-                        {session.attendees}
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span className="badge" style={{ background: 'var(--success-light)', color: 'var(--success-color)' }}>
-                          Completed
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <div className="reports-content">
+        <div className="section-header">
+          <h2>Recent Completed Sessions</h2>
         </div>
+
+        {stats?.recentHistory?.length === 0 ? (
+          <div className="empty-state">
+            <FaHistory />
+            <p>No completed sessions yet.</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th>Topic</th>
+                  <th>Date Completed</th>
+                  <th>Attendees</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats?.recentHistory?.map(session => (
+                  <tr key={session.id}>
+                    <td className="topic-cell">{session.topic}</td>
+                    <td className="date-cell">
+                      <FaCalendarAlt style={{ marginRight: '0.5rem', opacity: 0.7 }} />
+                      {new Date(session.date).toLocaleString()}
+                    </td>
+                    <td className="attendees-cell">
+                      <FaUserFriends />
+                      {session.attendees}
+                    </td>
+                    <td>
+                      <span className="status-badge">
+                        Completed
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

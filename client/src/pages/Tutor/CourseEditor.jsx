@@ -338,7 +338,7 @@ const CourseEditor = () => {
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       )
-      alert('Course published successfully')
+      alert('Course submitted for review! It will be live once approved.')
       fetchCourse()
     } catch (error) {
       console.error('Error publishing course:', error)
@@ -767,7 +767,7 @@ const CourseEditor = () => {
           className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          Overview
+          <i className="fas fa-info-circle"></i> Overview
         </button>
         <button
           type='button'
@@ -775,7 +775,7 @@ const CourseEditor = () => {
           onClick={() => setActiveTab('curriculum')}
           disabled={courseId === 'new'}
         >
-          Curriculum
+          <i className="fas fa-book"></i> Curriculum
         </button>
         <button
           type='button'
@@ -783,7 +783,7 @@ const CourseEditor = () => {
           onClick={() => setActiveTab('quizzes')}
           disabled={courseId === 'new'}
         >
-          Quizzes
+          <i className="fas fa-question-circle"></i> Quizzes
         </button>
         <button
           type='button'
@@ -791,7 +791,7 @@ const CourseEditor = () => {
           onClick={() => setActiveTab('students')}
           disabled={courseId === 'new'}
         >
-          Students
+          <i className="fas fa-users"></i> Students
         </button>
       </div>
 
@@ -810,7 +810,7 @@ const CourseEditor = () => {
                 onClick={handlePublish}
                 disabled={loading}
               >
-                Publish Course
+                {course?.status === 'PENDING_APPROVAL' ? 'Withdraw Submission' : 'Submit for Review'}
               </button>
             )}
           </div>
@@ -822,13 +822,13 @@ const CourseEditor = () => {
               <LessonBuilder embedded={true} />
             </div>
           )}
-          
+
           {activeTab === 'quizzes' && (
             <div className='tab-content full-width'>
               <QuizManager />
             </div>
           )}
-          
+
           {activeTab === 'students' && (
             <div className='tab-content full-width'>
               <StudentManager />

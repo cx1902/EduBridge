@@ -6,6 +6,8 @@ const fs = require('fs').promises;
 const bcrypt = require('bcrypt');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 const prisma = require('../utils/prisma');
+const jwt = require('jsonwebtoken');
+const { sendEmailChangeConfirmation } = require('../utils/emailService');
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -184,7 +186,7 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    
+
     // Delete uploaded file if update failed
     if (req.file) {
       try {
@@ -198,6 +200,101 @@ router.put('/profile', authenticate, upload.single('profilePicture'), async (req
       success: false,
       message: error.message || 'Failed to update profile'
     });
+  }
+});
+
+// Request email change
+router.post('/profile/email-change-request', authenticate, async (req, res) => {
+  try {
+    const { newEmail } = req.body;
+    const userId = req.user.id;
+    const currentEmail = req.user.email;
+
+    if (!newEmail) {
+      return res.status(400).json({ success: false, message: 'New email is required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ success: false, message: 'Invalid email format' });
+    }
+
+    if (newEmail === currentEmail) {
+      return res.status(400).json({ success: false, message: 'New email must be different from current email' });
+    }
+
+    // Check if email already in use
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'Email is already in use' });
+    }
+
+    // Generate verification token
+    const token = jwt.sign(
+      { userId, newEmail, type: 'EMAIL_CHANGE' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    // Send confirmation email to CURRENT email
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    await sendEmailChangeConfirmation(user, newEmail, token);
+
+    res.json({
+      success: true,
+      message: 'Confirmation email sent to your current address'
+    });
+  } catch (error) {
+    console.error('Email change request error:', error);
+    res.status(500).json({ success: false, message: 'Failed to process request' });
+  }
+});
+
+// Verify email change
+router.get('/profile/verify-email-change', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Invalid_token`);
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.type !== 'EMAIL_CHANGE') {
+      return res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Invalid_token_type`);
+    }
+
+    const { userId, newEmail } = decoded;
+
+    // Check if new email is still available
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail }
+    });
+
+    if (existingUser) {
+      return res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Email_already_taken`);
+    }
+
+    // Update user email
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        email: newEmail,
+        emailVerified: false
+      }
+    });
+
+    // Redirect to profile with success
+    res.redirect(`${process.env.CLIENT_URL}/student/profile?status=email_updated`);
+  } catch (error) {
+    console.error('Email change verification error:', error);
+    res.redirect(`${process.env.CLIENT_URL}/student/profile?status=error&message=Invalid_or_expired_token`);
   }
 });
 
@@ -403,7 +500,7 @@ router.post('/profile/picture', authenticate, upload.single('profilePicture'), a
     });
   } catch (error) {
     console.error('Upload profile picture error:', error);
-    
+
     // Delete uploaded file if update failed
     if (req.file) {
       try {

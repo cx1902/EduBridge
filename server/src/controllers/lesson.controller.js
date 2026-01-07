@@ -4,7 +4,7 @@ const prisma = require('../utils/prisma');
 exports.getFirstLesson = async (req, res) => {
   try {
     const { courseId } = req.params;
-    
+
     const lesson = await prisma.lesson.findFirst({
       where: { courseId },
       orderBy: { sequenceOrder: 'asc' }
@@ -240,10 +240,19 @@ exports.createLesson = async (req, res) => {
       courseId,
       title,
       learningObjectives,
+      content,
+      type,
       videoUrl,
+      videoFileUrl,
+      fileUrl,
+      fileName,
+      fileSize,
+      linkUrl,
+      difficulty,
       notesContent,
       sequenceOrder,
-      estimatedDuration
+      estimatedDuration,
+      published
     } = req.body;
 
     const tutorId = req.user.userId;
@@ -278,12 +287,28 @@ exports.createLesson = async (req, res) => {
         courseId,
         title,
         learningObjectives,
-        videoUrl,
+        content, // Add content
+        type, // Add type
+        videoUrl, // Keep generic videoUrl (maybe needed for Link type too?)
+        videoFileUrl,
+        fileUrl,
+        fileName,
+        fileSize,
+        linkUrl,
+        difficulty, // Add difficulty
         notesContent,
         sequenceOrder: parseInt(sequenceOrder),
-        estimatedDuration: parseInt(estimatedDuration)
+        estimatedDuration: parseInt(estimatedDuration),
+        published: true // Default to true or req.body.published? Let's use body if present
       }
     });
+
+    if (req.body.published !== undefined) {
+      await prisma.lesson.update({
+        where: { id: lesson.id },
+        data: { published: req.body.published }
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -409,6 +434,181 @@ exports.deleteLesson = async (req, res) => {
       error: {
         code: 'DELETE_LESSON_ERROR',
         message: 'Failed to delete lesson',
+        details: error.message
+      }
+    });
+  }
+};
+
+// Complete lesson and award XP/Badges
+exports.completeLesson = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    // 1. Verify existence
+    const lesson = await prisma.lesson.findUnique({
+      where: { id },
+      include: { course: true }
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    // 2. Check enrollment
+    const enrollment = await prisma.enrollment.findFirst({
+      where: { userId, courseId: lesson.courseId }
+    });
+
+    if (!enrollment) {
+      return res.status(403).json({ success: false, message: 'Not enrolled in this course' });
+    }
+
+    // 3. Transaction: Update Progress, Add XP, Check Badges
+    const result = await prisma.$transaction(async (tx) => {
+      // A. Update/Create Progress
+      // "Progress" model has unique([enrollmentId, lessonId])
+      // We want to set 'completed = true'
+
+      let progress = await tx.progress.findUnique({
+        where: {
+          enrollmentId_lessonId: {
+            enrollmentId: enrollment.id,
+            lessonId: id
+          }
+        }
+      });
+
+      let alreadyCompleted = false;
+      if (progress) {
+        if (progress.completed) alreadyCompleted = true;
+        // If not completed, update it
+        if (!progress.completed) {
+          progress = await tx.progress.update({
+            where: { id: progress.id },
+            data: { completed: true, completedAt: new Date() }
+          });
+        }
+      } else {
+        // Create new progress entry
+        progress = await tx.progress.create({
+          data: {
+            enrollmentId: enrollment.id,
+            lessonId: id,
+            userId, // Required by schema
+            completed: true,
+            completedAt: new Date()
+          }
+        });
+      }
+
+      // If already completed, return early (Idempotent)
+      if (alreadyCompleted) {
+        return {
+          xpGained: 0,
+          newBadges: [],
+          alreadyCompleted: true
+        };
+      }
+
+      // B. Award XP
+      const XP_AMOUNT = 10;
+      await tx.user.update({
+        where: { id: userId },
+        data: { totalPoints: { increment: XP_AMOUNT } }
+      });
+
+      // Log Transaction
+      await tx.pointsTransaction.create({
+        data: {
+          userId,
+          pointsAmount: XP_AMOUNT,
+          activityType: 'LESSON_COMPLETION',
+          description: `Completed lesson: ${lesson.title}`
+        }
+      });
+
+      // C. Check Badges
+      const newBadges = [];
+
+      // 1. FIRST_STEP (1 Lesson)
+      const completedCount = await tx.progress.count({
+        where: { userId, completed: true }
+      });
+
+      if (completedCount === 1) {
+        const badge = await tx.badge.findUnique({ where: { name: 'FIRST_STEP' } });
+        if (badge) {
+          // Check if already has
+          const hasBadge = await tx.userBadge.findUnique({
+            where: { userId_badgeId: { userId, badgeId: badge.id } }
+          });
+          if (!hasBadge) {
+            await tx.userBadge.create({ data: { userId, badgeId: badge.id } });
+            newBadges.push(badge);
+          }
+        }
+      }
+
+      // 2. CONSISTENT_LEARNER (5 Lessons)
+      if (completedCount === 5) {
+        const badge = await tx.badge.findUnique({ where: { name: 'CONSISTENT_LEARNER' } });
+        if (badge) {
+          const hasBadge = await tx.userBadge.findUnique({
+            where: { userId_badgeId: { userId, badgeId: badge.id } }
+          });
+          if (!hasBadge) {
+            await tx.userBadge.create({ data: { userId, badgeId: badge.id } });
+            newBadges.push(badge);
+          }
+        }
+      }
+
+      // 3. COURSE_FINISHER (All lessons in this course)
+      // Count total published lessons in course
+      const totalLessons = await tx.lesson.count({
+        where: { courseId: lesson.courseId, published: true }
+      });
+
+      // Count completed lessons for this course (via progress -> enrollment)
+      // enrollment.id is for this course
+      const courseCompletedCount = await tx.progress.count({
+        where: { enrollmentId: enrollment.id, completed: true }
+      });
+
+      if (courseCompletedCount >= totalLessons && totalLessons > 0) {
+        const badge = await tx.badge.findUnique({ where: { name: 'COURSE_FINISHER' } });
+        if (badge) {
+          const hasBadge = await tx.userBadge.findUnique({
+            where: { userId_badgeId: { userId, badgeId: badge.id } }
+          });
+          if (!hasBadge) {
+            await tx.userBadge.create({ data: { userId, badgeId: badge.id } });
+            newBadges.push(badge);
+          }
+        }
+      }
+
+      return {
+        xpGained: XP_AMOUNT,
+        newBadges,
+        alreadyCompleted: false
+      };
+    });
+
+    res.json({
+      success: true,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Complete lesson error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'COMPLETE_LESSON_ERROR',
+        message: 'Failed to complete lesson',
         details: error.message
       }
     });

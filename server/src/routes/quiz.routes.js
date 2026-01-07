@@ -13,7 +13,7 @@ router.put('/:id', authenticate, authorize('TUTOR', 'ADMIN'), quizController.upd
 router.delete('/:id', authenticate, authorize('TUTOR', 'ADMIN'), quizController.deleteQuiz);
 
 // Get quiz by lesson ID
-router.get('/:lessonId', authenticate, quizController.getQuizByLesson);
+router.get('/lesson/:lessonId', authenticate, quizController.getQuizByLesson);
 
 // Submit quiz attempt
 router.post('/:quizId/attempt', authenticate, quizController.submitQuizAttempt);

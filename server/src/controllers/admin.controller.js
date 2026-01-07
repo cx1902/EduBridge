@@ -31,14 +31,38 @@ exports.getUsers = async (req, res) => {
 
     const where = {};
 
-    // Search filter
+    // Search filter - handle both single words and full names
     if (search) {
-      where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { id: { contains: search } },
-      ];
+      const searchTerms = search.trim().split(/\s+/); // Split by whitespace
+
+      if (searchTerms.length === 1) {
+        // Single word - search in all fields
+        where.OR = [
+          { email: { contains: search, mode: 'insensitive' } },
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { id: { contains: search } },
+        ];
+      } else {
+        // Multiple words - assume first name + last name
+        where.OR = [
+          { email: { contains: search, mode: 'insensitive' } },
+          { id: { contains: search } },
+          {
+            AND: [
+              { firstName: { contains: searchTerms[0], mode: 'insensitive' } },
+              { lastName: { contains: searchTerms[searchTerms.length - 1], mode: 'insensitive' } },
+            ],
+          },
+          // Also try reversed (last name first)
+          {
+            AND: [
+              { firstName: { contains: searchTerms[searchTerms.length - 1], mode: 'insensitive' } },
+              { lastName: { contains: searchTerms[0], mode: 'insensitive' } },
+            ],
+          },
+        ];
+      }
     }
 
     // Role filter
@@ -156,7 +180,7 @@ exports.getUsers = async (req, res) => {
 
     // Format statistics
     const [totalUsers, byRole, byStatus, byLanguage, emailVerifiedCount, withWarningsCount] = statistics;
-    
+
     const formattedStatistics = {
       totalUsers,
       byRole: byRole.reduce((acc, item) => ({ ...acc, [item.role]: item._count }), {}),
@@ -256,7 +280,7 @@ exports.getUserDetails = async (req, res) => {
         dateOfBirth: true,
         phoneNumber: true,
         bio: true,
-        
+
         // Account Status
         role: true,
         status: true,
@@ -265,13 +289,13 @@ exports.getUserDetails = async (req, res) => {
         lastLogin: true,
         createdAt: true,
         updatedAt: true,
-        
+
         // Preferences
         preferredLanguage: true,
         themePreference: true,
         fontSize: true,
         timezone: true,
-        
+
         // Gamification
         totalPoints: true,
         currentStreak: true,
@@ -279,7 +303,7 @@ exports.getUserDetails = async (req, res) => {
         lastActivityDate: true,
         streakFreezesAvailable: true,
         streakFreezesUsed: true,
-        
+
         // Counts
         _count: {
           select: {
@@ -805,6 +829,177 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+// ==================== TUTOR VERIFICATION ====================
+
+/**
+ * Get tutor verification applications
+ * GET /api/admin/tutor-applications
+ */
+exports.getTutorApplications = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 50 } = req.query;
+
+    const where = {};
+    if (status) {
+      where.status = status === 'REJECTED' ? 'DECLINED' : status;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    console.log('--- DEBUG TUTOR APPS REQUEST ---');
+    console.log('Query:', req.query);
+    console.log('Computed Where:', JSON.stringify(where, null, 2));
+
+    const [applications, total] = await Promise.all([
+      prisma.tutorVerificationApplication.findMany({
+        where,
+        include: {
+          applicant: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              profilePictureUrl: true,
+              createdAt: true,
+            },
+          },
+          reviewer: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        orderBy: { submittedAt: 'desc' },
+        skip,
+        take: parseInt(limit),
+      }),
+      prisma.tutorVerificationApplication.count({ where }),
+    ]);
+
+    console.log('Found:', applications.length);
+    console.log('Total:', total);
+    if (applications.length > 0) {
+      console.log('First App:', JSON.stringify(applications[0], null, 2));
+    }
+
+    const mappedApplications = applications.map(app => ({
+      ...app,
+      tutor: app.applicant,
+    }));
+
+    res.json({
+      success: true,
+      applications: mappedApplications,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching tutor applications:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch applications' });
+  }
+};
+
+/**
+ * Review tutor application
+ * PUT /api/admin/tutor-applications/:id/review
+ */
+exports.reviewTutorApplication = async (req, res) => {
+  console.log('--- REVIEW REQUEST RECEIVED ---');
+  console.log('Params:', req.params);
+  console.log('Body:', req.body);
+  try {
+    const { id } = req.params;
+    let { decision, notes } = req.body;
+    const adminId = req.user.id;
+
+    // Map REJECTED to DECLINED for schema compatibility
+    if (decision === 'REJECTED') decision = 'DECLINED';
+
+    if (!['APPROVED', 'DECLINED'].includes(decision)) {
+      console.warn(`Invalid decision received: ${decision}`);
+      return res.status(400).json({ success: false, message: 'Invalid decision' });
+    }
+
+    const application = await prisma.tutorVerificationApplication.findUnique({
+      where: { id },
+      include: { applicant: true },
+    });
+
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    // Update application status
+    const updatedApplication = await prisma.tutorVerificationApplication.update({
+      where: { id },
+      data: {
+        status: decision,
+        reviewedAt: new Date(),
+        reviewerId: adminId,
+        reviewNotes: notes,
+      },
+      include: { applicant: true }
+    });
+
+    // Log action
+    await logAction({
+      adminId,
+      actionType: decision === 'APPROVED' ? ACTION_TYPES.VERIFY_TUTOR : ACTION_TYPES.REJECT_TUTOR,
+      targetResourceType: RESOURCE_TYPES.USER,
+      targetResourceId: application.userId,
+      reason: notes || `Application ${decision}`,
+      newState: { verificationStatus: decision },
+      ipAddress: req.ip || req.connection.remoteAddress,
+    });
+
+    // Send email notification (only if applicant exists)
+    if (application.applicant) {
+      try {
+        if (decision === 'APPROVED') {
+          await emailService.sendEmail({
+            to: application.applicant.email,
+            subject: 'Tutor Application Approved',
+            text: `Congratulations! Your tutor application has been approved.`,
+            html: `<p>Congratulations! Your application to become a tutor has been approved.</p>`
+          });
+        } else {
+          await emailService.sendEmail({
+            to: application.applicant.email,
+            subject: 'Tutor Application Update',
+            text: `Your tutor application was declined. Reason: ${notes}`,
+            html: `<p>Your tutor application was declined.</p><p><strong>Reason:</strong> ${notes}</p>`
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't fail the request if email fails
+      }
+    } else {
+      console.warn('Skipping email notification: Applicant not found (deleted user)');
+    }
+
+    res.json({
+      success: true,
+      message: `Application ${decision.toLowerCase()} successfully`,
+      application: {
+        ...updatedApplication,
+        tutor: updatedApplication.applicant,
+      },
+    });
+  } catch (error) {
+    console.error('Error reviewing tutor application:', error);
+    res.status(500).json({ success: false, message: 'Failed to review application' });
+  }
+};
+
+
+
 /**
  * Get user role change history
  * GET /api/admin/users/:id/role-history
@@ -860,7 +1055,12 @@ exports.getAuditLogs = async (req, res) => {
     const where = {};
 
     if (adminId) where.adminId = adminId;
-    if (actionType) where.actionType = actionType;
+    if (actionType) {
+      where.actionType = {
+        contains: actionType,
+        mode: 'insensitive',
+      };
+    }
     if (targetResourceType) where.targetResourceType = targetResourceType;
 
     if (startDate || endDate) {
@@ -1034,188 +1234,7 @@ exports.getAuditStats = async (req, res) => {
 
 // ==================== TUTOR VERIFICATION ====================
 
-/**
- * Get all tutor verification applications
- * GET /api/admin/tutor-applications
- */
-exports.getTutorApplications = async (req, res) => {
-  try {
-    const { status, page = 1, limit = 50, sortBy = 'submittedAt', sortOrder = 'asc' } = req.query;
 
-    const where = {};
-    if (status && ['PENDING', 'UNDER_REVIEW', 'APPROVED', 'DECLINED', 'CHANGES_REQUESTED'].includes(status)) {
-      where.status = status;
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [applications, total] = await Promise.all([
-      prisma.tutorVerificationApplication.findMany({
-        where,
-        include: {
-          applicant: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              bio: true,
-              profilePictureUrl: true,
-            },
-          },
-          reviewer: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-        },
-        orderBy: { [sortBy]: sortOrder },
-        skip,
-        take: parseInt(limit),
-      }),
-      prisma.tutorVerificationApplication.count({ where }),
-    ]);
-
-    res.json({
-      success: true,
-      applications,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(total / parseInt(limit)),
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching tutor applications:', error);
-    res.status(500).json({ success: false, message: 'Failed to fetch tutor applications' });
-  }
-};
-
-/**
- * Review tutor application (approve, decline, request changes)
- * PUT /api/admin/tutor-applications/:id/review
- */
-exports.reviewTutorApplication = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { action, reviewNotes } = req.body;
-    const adminId = req.user.id;
-
-    if (!['APPROVE', 'DECLINE', 'REQUEST_CHANGES'].includes(action)) {
-      return res.status(400).json({ success: false, message: 'Invalid action' });
-    }
-
-    const application = await prisma.tutorVerificationApplication.findUnique({
-      where: { id },
-      include: { applicant: true },
-    });
-
-    if (!application) {
-      return res.status(404).json({ success: false, message: 'Application not found' });
-    }
-
-    let newStatus;
-    let userRoleUpdate = null;
-
-    switch (action) {
-      case 'APPROVE':
-        newStatus = 'APPROVED';
-        userRoleUpdate = 'TUTOR';
-        break;
-      case 'DECLINE':
-        newStatus = 'DECLINED';
-        break;
-      case 'REQUEST_CHANGES':
-        newStatus = 'CHANGES_REQUESTED';
-        break;
-    }
-
-    // Update application
-    const updatedApplication = await prisma.tutorVerificationApplication.update({
-      where: { id },
-      data: {
-        status: newStatus,
-        reviewerId: adminId,
-        reviewNotes,
-        reviewedAt: new Date(),
-      },
-    });
-
-    // If approved, update user role to TUTOR
-    if (userRoleUpdate) {
-      await prisma.user.update({
-        where: { id: application.userId },
-        data: { role: userRoleUpdate },
-      });
-    }
-
-    // Create audit log
-    const actionTypeMap = {
-      APPROVE: ACTION_TYPES.TUTOR_APPLICATION_APPROVE,
-      DECLINE: ACTION_TYPES.TUTOR_APPLICATION_DECLINE,
-      REQUEST_CHANGES: ACTION_TYPES.TUTOR_APPLICATION_REQUEST_CHANGES,
-    };
-
-    await logAction({
-      adminId,
-      actionType: actionTypeMap[action],
-      targetResourceType: RESOURCE_TYPES.TUTOR_APPLICATION,
-      targetResourceId: id,
-      previousState: { status: application.status },
-      newState: { status: newStatus, roleUpdate: userRoleUpdate },
-      reason: reviewNotes,
-      ipAddress: req.ip || req.connection.remoteAddress,
-    });
-
-    // Send email notification
-    const emailSubjects = {
-      APPROVE: 'Tutor Application Approved!',
-      DECLINE: 'Tutor Application Update',
-      REQUEST_CHANGES: 'Changes Requested for Your Tutor Application',
-    };
-
-    const emailMessages = {
-      APPROVE: `Congratulations! Your tutor application has been approved. You can now create courses and schedule sessions.\n\nReview Notes: ${reviewNotes || 'None'}`,
-      DECLINE: `Your tutor application has been declined.
-
-Reason: ${reviewNotes}
-
-You may reapply after addressing the concerns mentioned above.`,
-      REQUEST_CHANGES: `Your tutor application requires some changes before approval.
-
-Required Changes: ${reviewNotes}
-
-Please update your application and resubmit.`,
-    };
-
-    try {
-      await emailService.sendEmail({
-        to: application.applicant.email,
-        subject: emailSubjects[action],
-        text: `Dear ${application.applicant.firstName},
-
-${emailMessages[action]}
-
-Best regards,
-EduBridge Team`,
-      });
-    } catch (emailError) {
-      console.error('Failed to send review email:', emailError);
-    }
-
-    res.json({
-      success: true,
-      message: `Application ${newStatus.toLowerCase()}`,
-      application: updatedApplication,
-    });
-  } catch (error) {
-    console.error('Error reviewing tutor application:', error);
-    res.status(500).json({ success: false, message: 'Failed to review application' });
-  }
-};
 
 // ==================== CONTENT REPORTS ====================
 
@@ -1655,7 +1674,8 @@ exports.getCourses = async (req, res) => {
       status,
       tutorId,
       subjectCategory,
-      hasFlagsPage = 1,
+      hasFlags,
+      page = 1,
       limit = 50,
       sortBy = 'updatedAt',
       sortOrder = 'desc',
@@ -1716,13 +1736,91 @@ exports.publishCourse = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    const updatedCourse = await prisma.course.update({
-      where: { id },
-      data: {
-        status: 'PUBLISHED',
-        publishedAt: new Date(),
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const updatedCourse = await tx.course.update({
+        where: { id },
+        data: {
+          status: 'PUBLISHED',
+          publishedAt: new Date(),
+        },
+      });
+
+      // --- GAMIFICATION LOGIC (Migrated from Tutor Controller) ---
+
+      // Check if this is the tutor's first published course
+      const publishedCoursesCount = await tx.course.count({
+        where: {
+          tutorId: course.tutorId,
+          status: 'PUBLISHED',
+        },
+      });
+
+      const isFirstPublish = publishedCoursesCount === 1;
+
+      // Award points for publishing course
+      await tx.pointsTransaction.create({
+        data: {
+          userId: course.tutorId,
+          pointsAmount: 20,
+          activityType: 'COURSE_PUBLISHED',
+          referenceId: id,
+          description: `Published course: ${course.title}`,
+        },
+      });
+
+      // Update user's total points
+      await tx.user.update({
+        where: { id: course.tutorId },
+        data: {
+          totalPoints: {
+            increment: 20,
+          },
+        },
+      });
+
+      // Award "First Course Published" badge if this is first course
+      if (isFirstPublish) {
+        let badge = await tx.badge.findFirst({
+          where: { name: 'First Course Published' },
+        });
+
+        if (!badge) {
+          badge = await tx.badge.create({
+            data: {
+              name: 'First Course Published',
+              description: 'Awarded for publishing your first course on the platform',
+              iconUrl: '/uploads/badges/first-course.png',
+              criteriaType: 'COURSE_MILESTONE',
+              criteriaDetails: 'Publish your first course',
+              rarity: 'COMMON',
+            },
+          });
+        }
+
+        // Award badge to tutor
+        await tx.userBadge.create({
+          data: {
+            userId: course.tutorId,
+            badgeId: badge.id,
+          },
+        });
+      }
+
+      // Notify Tutor
+      await tx.notification.create({
+        data: {
+          userId: course.tutorId,
+          type: 'COURSE_APPROVED',
+          title: 'Course Approved!',
+          message: `Your course "${course.title}" has been approved and is now live.`,
+          link: `/tutor/courses/${id}`,
+        },
+      });
+
+      return updatedCourse;
     });
+
+    const updatedCourse = result;
 
     // Create version snapshot
     await prisma.courseVersion.create({
@@ -2285,9 +2383,9 @@ exports.manualEnrollUser = async (req, res) => {
     });
   } catch (error) {
     console.error('Manual enrollment error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to enroll user in course' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to enroll user in course'
     });
   }
 };
@@ -2416,9 +2514,9 @@ exports.bulkEnrollUsers = async (req, res) => {
     });
   } catch (error) {
     console.error('Bulk enrollment error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to perform bulk enrollment' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to perform bulk enrollment'
     });
   }
 };
@@ -2494,9 +2592,9 @@ exports.removeEnrollment = async (req, res) => {
     });
   } catch (error) {
     console.error('Remove enrollment error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to remove enrollment' 
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove enrollment'
     });
   }
 };
@@ -2531,7 +2629,7 @@ exports.getPlatformStats = async (req, res) => {
       // Check if Transaction model exists and has records
       prisma.transaction ? prisma.transaction.aggregate({
         _sum: { amount: true },
-        where: { status: 'COMPLETED' } 
+        where: { status: 'COMPLETED' }
       }).catch(() => ({ _sum: { amount: 0 } })) : { _sum: { amount: 0 } }
     ]);
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import api from '../../api/axios';
 
 const AdminDashboard = () => {
   const { user } = useAuthStore();
@@ -23,15 +23,16 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
+      // Use configured api client to ensure Authorization headers are sent
       const [usersRes, coursesRes, applicationsRes, reportsRes, auditRes] = await Promise.all([
-        axios.get('/api/admin/users', { params: { limit: 1 } }),
-        axios.get('/api/admin/courses', { params: { limit: 1 } }),
-        axios.get('/api/admin/tutor-applications', { params: { status: 'PENDING', limit: 1 } }),
-        axios.get('/api/admin/reports', { params: { status: 'NEW', limit: 1 } }),
-        axios.get('/api/admin/audit-logs', { params: { limit: 10 } }),
+        api.get('/admin/users', { params: { limit: 1 } }),
+        api.get('/admin/courses', { params: { limit: 1 } }),
+        api.get('/admin/tutor-applications', { params: { status: 'PENDING', limit: 1 } }),
+        api.get('/admin/reports', { params: { status: 'NEW', limit: 1 } }),
+        api.get('/admin/audit-logs', { params: { limit: 10 } }),
       ]);
 
-      const activeUsersRes = await axios.get('/api/admin/users', {
+      const activeUsersRes = await api.get('/admin/users', {
         params: { status: 'ACTIVE', limit: 1 },
       });
 
@@ -51,9 +52,9 @@ const AdminDashboard = () => {
   };
 
   const quickActions = [
-    { title: t('admin.actions.createCourse'), path: '/tutor/courses/create', icon: '➕', description: t('admin.actions.createCourseDesc') },
+    { title: 'Manage Courses', path: '/admin/courses', icon: '📚', description: 'View, edit, and manage all courses' },
     { title: t('admin.actions.userManagement'), path: '/admin/users', icon: '👥', description: t('admin.actions.userManagementDesc') },
-    { title: t('admin.actions.courseApproval'), path: '/admin/courses', icon: '📚', description: t('admin.actions.courseApprovalDesc') },
+
     { title: t('admin.actions.tutorVerification'), path: '/admin/tutor-applications', icon: '✅', description: t('admin.actions.tutorVerificationDesc') },
     { title: t('admin.actions.contentReports'), path: '/admin/reports', icon: '⚠️', description: t('admin.actions.contentReportsDesc') },
     { title: t('admin.actions.systemSettings'), path: '/admin/settings', icon: '⚙️', description: t('admin.actions.systemSettingsDesc') },
@@ -98,21 +99,21 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-3 mt-lg" style={{ gap: '1rem' }}>
         <div className="card" style={{ textAlign: 'center' }}>
           <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#ec4899' }}>
-            {loading ? '...' : stats.totalSessions}
+            {loading ? '...' : stats.pendingApplications}
           </h3>
-          <p className="text-secondary" style={{ margin: 0 }}>Total Sessions</p>
+          <p className="text-secondary" style={{ margin: 0 }}>Pending Applications</p>
         </div>
         <div className="card" style={{ textAlign: 'center' }}>
-          <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#6366f1' }}>
-            {loading ? '...' : stats.totalFiles}
+          <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#f59e0b' }}>
+            {loading ? '...' : stats.activeReports}
           </h3>
-          <p className="text-secondary" style={{ margin: 0 }}>Uploaded Files</p>
+          <p className="text-secondary" style={{ margin: 0 }}>Active Reports</p>
         </div>
         <div className="card" style={{ textAlign: 'center' }}>
           <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#14b8a6' }}>
-            {loading ? '...' : `$${stats.totalRevenue}`}
+            {loading ? '...' : '0'}
           </h3>
-          <p className="text-secondary" style={{ margin: 0 }}>Total Revenue</p>
+          <p className="text-secondary" style={{ margin: 0 }}>Total Enrollments</p>
         </div>
       </div>
 

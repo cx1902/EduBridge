@@ -150,7 +150,8 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  padding: 3rem; /* Further increased padding */
+  padding: 3rem;
+  /* Further increased padding */
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -197,6 +198,10 @@
   width: 100%;
 }
 
+.form-row.three-col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -214,10 +219,12 @@
 .form-group input,
 .form-group select,
 .form-group textarea {
-  padding: 1.25rem; /* Even larger padding for inputs */
+  padding: 1.25rem;
+  /* Even larger padding for inputs */
   border: 1px solid var(--color-border);
   border-radius: 8px;
-  font-size: 1.1rem; /* Slightly larger font */
+  font-size: 1.1rem;
+  /* Slightly larger font */
   font-family: inherit;
   transition: all 0.2s;
   background: var(--color-background);
@@ -375,7 +382,7 @@
   display: grid;
   grid-template-columns: 50px 1fr 120px 100px 120px 140px;
   gap: 1.5rem;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1rem;
   background: var(--color-background);
   border-bottom: 1px solid var(--color-border);
   font-weight: 600;
@@ -397,7 +404,7 @@
   display: grid;
   grid-template-columns: 50px 1fr 120px 100px 120px 140px;
   gap: 1.5rem;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1rem;
   border-radius: 8px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -503,7 +510,8 @@
 .btn-icon {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--color-text-secondary);
+  color: #e5e7eb;
+  /* Lighter color for better visibility on dark bg */
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 6px;
@@ -522,10 +530,18 @@
   border-color: rgba(99, 102, 241, 0.2);
 }
 
-.btn-icon.btn-delete:hover {
-  background: rgba(239, 68, 68, 0.1);
+.btn-icon.btn-delete {
+  background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  opacity: 1;
+}
+
+.btn-icon.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.5);
+  opacity: 1;
 }
 
 /* Empty State */

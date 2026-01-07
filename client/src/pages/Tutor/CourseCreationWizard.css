@@ -205,6 +205,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -737,6 +738,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -758,7 +760,8 @@
   border: 3px solid rgba(34, 197, 94, 0.4);
 }
 
-.success-modal .icon-container i {
+.success-modal .icon-container i,
+.success-modal .icon-container svg {
   font-size: 3.5rem;
   color: #22c55e;
   filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.5));
@@ -807,17 +810,19 @@
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
 }
 
-.next-step-btn i {
+.next-step-btn i,
+.next-step-btn svg {
   font-size: 1.75rem;
   color: #3b82f6;
   background: rgba(59, 130, 246, 0.15);
   width: 50px;
   height: 50px;
   border-radius: 10px;
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(59, 130, 246, 0.3);
+  flex-shrink: 0;
 }
 
 .next-step-btn .step-content {
@@ -984,6 +989,7 @@ textarea:focus-visible {
 
 /* Print Styles */
 @media print {
+
   .wizard-actions,
   .step-indicator,
   .btn-remove,

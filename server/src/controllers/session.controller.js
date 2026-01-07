@@ -663,7 +663,7 @@ const getAvailableSessions = async (req, res) => {
 const bookSession = async (req, res) => {
   try {
     const { id: sessionId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Get session details
     const session = await prisma.tutoringSession.findUnique({
@@ -796,7 +796,7 @@ const bookSession = async (req, res) => {
  */
 const getMyBookings = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { status } = req.query;
 
     const where = { studentId: userId };
@@ -849,7 +849,7 @@ const getMyBookings = async (req, res) => {
 const cancelBooking = async (req, res) => {
   try {
     const { id: bookingId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Get booking
     const booking = await prisma.sessionBooking.findUnique({
@@ -1051,9 +1051,9 @@ const getTutorSessions = async (req, res) => {
     if (status) where.status = status;
     if (startDate) where.scheduledStart = { gte: new Date(startDate) };
     if (endDate) {
-      where.scheduledStart = { 
+      where.scheduledStart = {
         ...where.scheduledStart,
-        lte: new Date(endDate) 
+        lte: new Date(endDate)
       };
     }
 
@@ -1078,11 +1078,11 @@ const getTutorSessions = async (req, res) => {
             include: {
               student: {
                 select: {
-                    id: true,
-                    firstName: true,
-                    lastName: true,
-                    profilePictureUrl: true,
-                    email: true
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  email: true
                 }
               }
             }
@@ -1162,7 +1162,7 @@ const updateSessionStatus = async (req, res) => {
       const bookings = await prisma.sessionBooking.findMany({
         where: { sessionId: id }
       });
-      
+
       await prisma.notification.createMany({
         data: bookings.map(b => ({
           userId: b.studentId,

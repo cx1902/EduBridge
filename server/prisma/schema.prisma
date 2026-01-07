@@ -50,6 +50,8 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+
+  
   // Relations
   createdCourses       Course[]                       @relation("TutorCourses")
   enrollments          Enrollment[]
@@ -93,6 +95,10 @@ model User {
 
   availabilitySlots AvailabilitySlot[]
   tutorReviews      Review[]           @relation("TutorReviews")
+
+  // Booking Requests
+  studentBookingRequests BookingRequest[] @relation("StudentBookingRequests")
+  tutorBookingRequests   BookingRequest[] @relation("TutorBookingRequests")
 
   @@map("users")
 }
@@ -171,9 +177,15 @@ model Lesson {
   title              String
   learningObjectives String       @map("learning_objectives") @db.Text
   content            String?      @db.Text
+  type               LessonType   @default(TEXT)
   contentType        ContentType? @default(MIXED) @map("content_type")
   videoUrl           String?      @map("video_url")
   videoFileUrl       String?      @map("video_file_url")
+  fileUrl            String?      @map("file_url")
+  fileName           String?      @map("file_name")
+  fileSize           String?      @map("file_size")
+  linkUrl            String?      @map("link_url")
+  difficulty         Difficulty   @default(BEGINNER)
   notesContent       String?      @map("notes_content") @db.Text
   attachments        Json?        @default("[]")
   sequenceOrder      Int          @map("sequence_order")
@@ -542,6 +554,13 @@ enum Difficulty {
   ADVANCED
 }
 
+enum LessonType {
+  TEXT
+  FILE
+  VIDEO_LINK
+  LIVE_INFO
+}
+
 enum CourseStatus {
   DRAFT
   PENDING_APPROVAL
@@ -585,6 +604,9 @@ enum SessionStatus {
 }
 
 enum BookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
   CONFIRMED
   CANCELLED
   COMPLETED
@@ -1420,3 +1442,34 @@ model AvailabilitySlot {
   @@index([startTime])
   @@map("availability_slots")
 }
+
+// Booking Request Model for 1-on-1 Tutor Sessions
+model BookingRequest {
+  id            String        @id @default(uuid())
+  studentId     String        @map("student_id")
+  tutorId       String        @map("tutor_id")
+  subject       String
+  preferredDate DateTime      @map("preferred_date")
+  preferredTime String        @map("preferred_time")
+  duration      Int           // minutes
+  message       String?       @db.Text
+  status        BookingStatus @default(PENDING)
+  declineReason String?       @map("decline_reason") @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
+  respondedAt   DateTime?     @map("responded_at")
+
+  // Relations
+  student User @relation("StudentBookingRequests", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User @relation("TutorBookingRequests", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([tutorId])
+  @@index([status])
+  @@map("booking_requests")
+}
+
+
+
+
+
+

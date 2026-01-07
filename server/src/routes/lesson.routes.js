@@ -12,6 +12,9 @@ router.get('/:id', authenticate, lessonController.getLessonById);
 // Get all lessons for a course
 router.get('/course/:courseId', authenticate, lessonController.getCourseLessons);
 
+// Complete lesson
+router.post('/:id/complete', authenticate, authorize('STUDENT'), lessonController.completeLesson);
+
 // Tutor routes
 router.post('/', authenticate, authorize('TUTOR', 'ADMIN'), lessonController.createLesson);
 router.put('/:id', authenticate, authorize('TUTOR', 'ADMIN'), lessonController.updateLesson);

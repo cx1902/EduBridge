@@ -246,7 +246,7 @@ exports.deleteQuiz = async (req, res) => {
 exports.getQuizByLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -375,7 +375,7 @@ exports.submitQuizAttempt = async (req, res) => {
   try {
     const { quizId } = req.params;
     const { answers } = req.body; // Array of { questionId, selectedOptionIds (array for multi-select), answerText }
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Get quiz with questions and correct answers
     const quiz = await prisma.quiz.findUnique({
@@ -446,7 +446,7 @@ exports.submitQuizAttempt = async (req, res) => {
 
     // Grade the quiz
     const gradingResult = gradeQuiz(quiz.questions, answers);
-    
+
     const totalPoints = quiz.questions.reduce((sum, q) => sum + q.points, 0);
     const scorePercentage = (gradingResult.earnedPoints / totalPoints) * 100;
     const passed = scorePercentage >= quiz.passingPercentage;
@@ -492,7 +492,7 @@ exports.submitQuizAttempt = async (req, res) => {
 
         const today = new Date().toISOString().split('T')[0];
         const lastActivity = user.lastActivityDate ? user.lastActivityDate.toISOString().split('T')[0] : null;
-        
+
         let newStreak = user.currentStreak;
         let newLongestStreak = user.longestStreak;
 
@@ -588,7 +588,7 @@ exports.submitQuizAttempt = async (req, res) => {
 exports.getAttemptHistory = async (req, res) => {
   try {
     const { quizId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const attempts = await prisma.quizAttempt.findMany({
       where: {
@@ -620,7 +620,7 @@ exports.getAttemptHistory = async (req, res) => {
 // Get all user's quiz attempts
 exports.getMyQuizAttempts = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { limit = 20, offset = 0 } = req.query;
 
     const attempts = await prisma.quizAttempt.findMany({

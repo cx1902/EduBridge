@@ -200,6 +200,7 @@ const createCourse = async (req, res) => {
       tags,
       slug,
       metaDescription,
+      status: initialStatus,
     } = req.body;
 
     // Validation - Title must be 3-80 characters per design spec
@@ -290,7 +291,7 @@ const createCourse = async (req, res) => {
         educationLevel,
         difficulty,
         prerequisites: prerequisites || null,
-        estimatedHours: estimatedHours || 0,
+        estimatedHours: estimatedHours ? parseInt(estimatedHours) : 0,
         language: language || 'en',
         thumbnailUrl: thumbnailUrl || '/uploads/default-course.png',
         thumbnailAltText: thumbnailAltText || null,
@@ -305,7 +306,7 @@ const createCourse = async (req, res) => {
           timestamp: new Date().toISOString(),
           description: 'Course created',
         }]),
-        status: 'DRAFT',
+        status: (initialStatus === 'PUBLISHED' || initialStatus === 'PENDING_APPROVAL') ? 'PENDING_APPROVAL' : 'DRAFT',
       },
       include: {
         tutor: {
@@ -390,7 +391,7 @@ const getTutorCourseDetails = async (req, res) => {
     const course = await prisma.course.findFirst({
       where: {
         id,
-        tutorId,
+        ...(req.user.role !== 'ADMIN' ? { tutorId } : {}),
       },
       include: {
         lessons: {
@@ -457,12 +458,17 @@ const updateCourse = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    // Prevent status updates via this endpoint
+    delete updateData.status;
+
     // Check ownership
+    const where = { id };
+    if (req.user.role !== 'ADMIN') {
+      where.tutorId = tutorId;
+    }
+
     const course = await prisma.course.findFirst({
-      where: {
-        id,
-        tutorId,
-      },
+      where,
     });
 
     if (!course) {
@@ -509,11 +515,13 @@ const deleteCourse = async (req, res) => {
     const { id } = req.params;
 
     // Check ownership
+    const where = { id };
+    if (req.user.role !== 'ADMIN') {
+      where.tutorId = tutorId;
+    }
+
     const course = await prisma.course.findFirst({
-      where: {
-        id,
-        tutorId,
-      },
+      where,
       include: {
         _count: {
           select: {
@@ -590,7 +598,11 @@ const togglePublishCourse = async (req, res) => {
       }
     }
 
-    const newStatus = course.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    const newStatus =
+      (course.status === 'PUBLISHED' || course.status === 'PENDING_APPROVAL')
+        ? 'DRAFT'
+        : 'PENDING_APPROVAL';
+
     const publishedAt = newStatus === 'PUBLISHED' ? new Date() : course.publishedAt;
 
     // Start transaction for publishing with gamification
@@ -600,82 +612,28 @@ const togglePublishCourse = async (req, res) => {
         where: { id },
         data: {
           status: newStatus,
-          publishedAt,
+          // Only set publishedAt if actually published (which happens via Admin now)
+          // But we keep this logic if we ever allow auto-publish based on settings
         },
       });
 
+      /* GAMIFICATION MOVED TO ADMIN CONTROLLER (PENDING)
+         Tutors should not get points just for submitting.
       // If publishing for the first time, handle gamification
       if (newStatus === 'PUBLISHED' && !course.publishedAt) {
-        // Check if this is the tutor's first published course
-        const publishedCoursesCount = await tx.course.count({
-          where: {
-            tutorId,
-            status: 'PUBLISHED',
-          },
-        });
-
-        const isFirstPublish = publishedCoursesCount === 1;
-
-        // Award points for publishing course
-        await tx.pointsTransaction.create({
-          data: {
-            userId: tutorId,
-            pointsAmount: 20,
-            activityType: 'COURSE_PUBLISHED',
-            referenceId: id,
-            description: `Published course: ${course.title}`,
-          },
-        });
-
-        // Update user's total points
-        await tx.user.update({
-          where: { id: tutorId },
-          data: {
-            totalPoints: {
-              increment: 20,
-            },
-          },
-        });
-
-        // Award "First Course Published" badge if this is first course
-        if (isFirstPublish) {
-          // Find or create the badge
-          let badge = await tx.badge.findFirst({
-            where: { name: 'First Course Published' },
-          });
-
-          if (!badge) {
-            badge = await tx.badge.create({
-              data: {
-                name: 'First Course Published',
-                description: 'Awarded for publishing your first course on the platform',
-                iconUrl: '/uploads/badges/first-course.png',
-                criteriaType: 'COURSE_MILESTONE',
-                criteriaDetails: 'Publish your first course',
-                rarity: 'COMMON',
-              },
-            });
-          }
-
-          // Award badge to tutor
-          await tx.userBadge.create({
-            data: {
-              userId: tutorId,
-              badgeId: badge.id,
-            },
-          });
-        }
+         ...
       }
+      */
 
       // Create notification
-      await tx.notification.create({
+      await prisma.notification.create({
         data: {
           userId: tutorId,
-          type: newStatus === 'PUBLISHED' ? 'COURSE_APPROVED' : 'SYSTEM_ANNOUNCEMENT',
-          title: newStatus === 'PUBLISHED' ? 'Course Published' : 'Course Unpublished',
+          type: 'SYSTEM_ANNOUNCEMENT', // Changed from COURSE_APPROVED
+          title: newStatus === 'PENDING_APPROVAL' ? 'Course Submitted' : 'Course Unpublished',
           message:
-            newStatus === 'PUBLISHED'
-              ? `Your course "${course.title}" is now live and available to students.`
+            newStatus === 'PENDING_APPROVAL'
+              ? `Your course "${course.title}" has been submitted for approval.`
               : `Your course "${course.title}" has been unpublished.`,
           link: `/tutor/courses/${id}`,
         },
@@ -756,7 +714,7 @@ const createLesson = async (req, res) => {
         videoFileUrl: videoFileUrl || null,
         notesContent: notesContent || null,
         attachments: attachments || [],
-        estimatedDuration: estimatedDuration || 30,
+        estimatedDuration: estimatedDuration ? parseInt(estimatedDuration) : 30,
         sequenceOrder,
         published: published !== undefined ? published : true,
       },
@@ -1283,10 +1241,10 @@ const addQuestion = async (req, res) => {
         answerOptions: {
           create: answerOptions
             ? answerOptions.map((option, index) => ({
-                optionText: option.optionText,
-                isCorrect: option.isCorrect || false,
-                sequenceOrder: index + 1,
-              }))
+              optionText: option.optionText,
+              isCorrect: option.isCorrect || false,
+              sequenceOrder: index + 1,
+            }))
             : [],
         },
       },
@@ -1549,7 +1507,7 @@ const getStudentEngagement = async (req, res) => {
     // Process data
     const studentData = enrollments.map(enrollment => {
       // Find quiz attempts for this student in this specific course
-      const studentAttempts = quizAttempts.filter(qa => 
+      const studentAttempts = quizAttempts.filter(qa =>
         qa.userId === enrollment.userId && qa.quiz.courseId === enrollment.courseId
       );
 
@@ -1923,7 +1881,7 @@ const searchTutors = async (req, res) => {
         has: level
       };
     }
-    
+
     // Filter by Subject (via TutorSubject relation)
     if (subject) {
       where.user = {
@@ -1948,10 +1906,10 @@ const searchTutors = async (req, res) => {
             lastName: true,
             profilePictureUrl: true,
             tutorSubjects: {
-                include: { subject: true }
+              include: { subject: true }
             },
             tutorReviews: {
-                select: { rating: true }
+              select: { rating: true }
             }
           }
         }
@@ -1961,20 +1919,20 @@ const searchTutors = async (req, res) => {
 
     // Post-processing for rating filter (since it's computed)
     let results = tutors.map(tutor => {
-        const ratings = tutor.user.tutorReviews || [];
-        const avgRating = ratings.length > 0 
-            ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length 
-            : 0;
-        
-        return {
-            ...tutor,
-            averageRating: avgRating,
-            reviewCount: ratings.length
-        };
+      const ratings = tutor.user.tutorReviews || [];
+      const avgRating = ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+        : 0;
+
+      return {
+        ...tutor,
+        averageRating: avgRating,
+        reviewCount: ratings.length
+      };
     });
 
     if (rating) {
-        results = results.filter(t => t.averageRating >= parseFloat(rating));
+      results = results.filter(t => t.averageRating >= parseFloat(rating));
     }
 
     res.json({ success: true, data: results });
@@ -2001,14 +1959,14 @@ const getTutorPublicProfile = async (req, res) => {
             profilePictureUrl: true,
             bio: true, // User bio might differ from Tutor bio? Schema has both.
             tutorSubjects: {
-                include: { subject: true }
+              include: { subject: true }
             },
             tutorReviews: {
-                include: {
-                    // Include review details if needed, or just aggregate
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 5
+              include: {
+                // Include review details if needed, or just aggregate
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 5
             }
           }
         }
@@ -2016,27 +1974,27 @@ const getTutorPublicProfile = async (req, res) => {
     });
 
     if (!profile) {
-        return res.status(404).json({ error: 'Tutor not found' });
+      return res.status(404).json({ error: 'Tutor not found' });
     }
 
     // Get stats
     const totalStudents = await prisma.enrollment.count({
-        where: { course: { tutorId: id }, status: 'ACTIVE' }
+      where: { course: { tutorId: id }, status: 'ACTIVE' }
     });
-    
+
     const courseCount = await prisma.course.count({
-        where: { tutorId: id, status: 'PUBLISHED' }
+      where: { tutorId: id, status: 'PUBLISHED' }
     });
 
     res.json({
-        success: true,
-        data: {
-            ...profile,
-            stats: {
-                totalStudents,
-                courseCount
-            }
+      success: true,
+      data: {
+        ...profile,
+        stats: {
+          totalStudents,
+          courseCount
         }
+      }
     });
 
   } catch (error) {

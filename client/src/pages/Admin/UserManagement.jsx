@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import UserDetailModal from '../../components/Admin/UserDetailModal';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
 const UserManagement = () => {
   const { t } = useTranslation(['admin', 'common']);
   const [users, setUsers] = useState([]);
@@ -31,7 +33,18 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/admin/users', {
+      const token = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+      let authToken = null;
+      if (token) {
+        try {
+          const parsed = JSON.parse(token);
+          authToken = parsed.state?.token || parsed.token;
+        } catch (e) {
+          console.error('Failed to parse auth token');
+        }
+      }
+
+      const response = await axios.get(`${API_URL}/admin/users`, {
         params: {
           page,
           limit: 20,
@@ -41,16 +54,24 @@ const UserManagement = () => {
           language: languageFilter,
           emailVerified: emailVerifiedFilter,
         },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
       if (response.data.success) {
+        console.log('✅ API Response:', response.data);
+        console.log('📊 Users returned:', response.data.users.length);
+        console.log('📊 Total in DB:', response.data.pagination.total);
+        console.log('🔍 Search params used:', { search, roleFilter, statusFilter, languageFilter, emailVerifiedFilter });
         setUsers(response.data.users);
         setPagination(response.data.pagination);
         setStatistics(response.data.statistics);
+      } else {
+        console.error('❌ API returned success: false');
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      alert('Failed to fetch users');
+      console.error('Error details:', error.response?.data);
+      alert('Failed to fetch users: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -84,9 +105,17 @@ const UserManagement = () => {
     }
 
     try {
-      const response = await axios.put(`/api/admin/users/${selectedUser.id}/role`, {
+      const token = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+      let authToken = null;
+      if (token) {
+        const parsed = JSON.parse(token);
+        authToken = parsed.state?.token || parsed.token;
+      }
+      const response = await axios.put(`${API_URL}/admin/users/${selectedUser.id}/role`, {
         newRole,
         reason,
+      }, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
       if (response.data.success) {
@@ -107,9 +136,17 @@ const UserManagement = () => {
     }
 
     try {
-      const response = await axios.put(`/api/admin/users/${selectedUser.id}/status`, {
+      const token = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+      let authToken = null;
+      if (token) {
+        const parsed = JSON.parse(token);
+        authToken = parsed.state?.token || parsed.token;
+      }
+      const response = await axios.put(`${API_URL}/admin/users/${selectedUser.id}/status`, {
         status: newStatus,
         reason,
+      }, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
       if (response.data.success) {
@@ -127,7 +164,15 @@ const UserManagement = () => {
     if (!confirm(`Send password reset email to ${user.email}?`)) return;
 
     try {
-      const response = await axios.post(`/api/admin/users/${user.id}/reset-password`);
+      const token = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+      let authToken = null;
+      if (token) {
+        const parsed = JSON.parse(token);
+        authToken = parsed.state?.token || parsed.token;
+      }
+      const response = await axios.post(`${API_URL}/admin/users/${user.id}/reset-password`, {}, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
       if (response.data.success) {
         alert('Password reset email sent successfully');
       }
@@ -144,8 +189,15 @@ const UserManagement = () => {
     }
 
     try {
-      const response = await axios.delete(`/api/admin/users/${selectedUser.id}`, {
+      const token = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+      let authToken = null;
+      if (token) {
+        const parsed = JSON.parse(token);
+        authToken = parsed.state?.token || parsed.token;
+      }
+      const response = await axios.delete(`${API_URL}/admin/users/${selectedUser.id}`, {
         data: { reason },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
       });
 
       if (response.data.success) {
@@ -229,19 +281,40 @@ const UserManagement = () => {
 
         {/* Statistics */}
         {statistics && (
-          <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8f9fa', borderRadius: '4px' }}>
-            <strong>{t('admin:userManagement.statistics.totalUsers')}: {statistics.totalUsers}</strong>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+          <div style={{
+            marginTop: '1rem',
+            padding: '1rem',
+            background: 'var(--color-surface)',
+            borderRadius: '8px',
+            border: '1px solid var(--color-border)'
+          }}>
+            <strong style={{ color: 'var(--color-text)', fontSize: '1.1rem' }}>
+              {t('admin:userManagement.statistics.totalUsers')}: {statistics.totalUsers}
+            </strong>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '0.5rem',
+              marginTop: '0.5rem',
+              fontSize: '0.9rem',
+              color: 'var(--color-text-secondary)'
+            }}>
               {statistics.byLanguage && Object.keys(statistics.byLanguage).length > 0 && (
                 <div>
-                  <strong>{t('admin:userManagement.statistics.byLanguage')}:</strong>
+                  <strong style={{ color: 'var(--color-text)' }}>
+                    {t('admin:userManagement.statistics.byLanguage')}:
+                  </strong>
                   {Object.entries(statistics.byLanguage).map(([lang, count]) => (
-                    <div key={lang}>{t(`common:language.${lang}`)}: {count}</div>
+                    <div key={lang} style={{ color: 'var(--color-text-secondary)' }}>
+                      {t(`common:language.${lang}`)}: {count}
+                    </div>
                   ))}
                 </div>
               )}
               {statistics.emailVerified !== undefined && (
-                <div>{t('admin:userManagement.statistics.emailVerified')}: {statistics.emailVerified}</div>
+                <div style={{ color: 'var(--color-text-secondary)' }}>
+                  {t('admin:userManagement.statistics.emailVerified')}: {statistics.emailVerified}
+                </div>
               )}
             </div>
           </div>
@@ -251,7 +324,24 @@ const UserManagement = () => {
       {/* User Table */}
       <div className="card mt-lg">
         {loading ? (
-          <p>Loading users...</p>
+          <div style={{
+            padding: '3rem',
+            textAlign: 'center',
+            color: 'var(--color-text-secondary)'
+          }}>
+            <div style={{ marginBottom: '1rem' }}>Loading users...</div>
+          </div>
+        ) : users.length === 0 ? (
+          <div style={{
+            padding: '3rem',
+            textAlign: 'center',
+            color: 'var(--color-text-secondary)'
+          }}>
+            <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--color-text)' }}>
+              No users found
+            </div>
+            <div>Try adjusting your search filters</div>
+          </div>
         ) : (
           <>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>

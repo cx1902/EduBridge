@@ -66,7 +66,7 @@
   width: 100%;
   height: 100%;
   background: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 20%),
-              radial-gradient(circle at 90% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 20%);
+    radial-gradient(circle at 90% 50%, rgba(139, 92, 246, 0.15) 0%, transparent 20%);
   pointer-events: none;
 }
 
@@ -261,7 +261,7 @@
     grid-template-columns: 1fr;
     gap: 3rem;
   }
-  
+
   .course-title {
     font-size: 2.5rem;
   }
@@ -309,13 +309,16 @@
 .course-tabs {
   background: var(--color-surface, #151a24);
   border-bottom: 1px solid var(--color-border, #2a3344);
-  padding: 0 2rem;
+  display: block;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.course-tabs-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 3.5rem;
   display: flex;
   gap: 2rem;
-  /* position: sticky; */ /* Removed sticky to prevent overlap */
-  /* top: 0; */
-  /* z-index: 100; */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .tab {

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import QuizBuilder from '../../components/Tutor/QuizBuilder';
+import { FaTrash, FaEdit, FaQuestionCircle, FaGripVertical, FaVideo, FaTimes, FaPlus, FaArrowLeft, FaInfoCircle, FaBook, FaCog, FaBookOpen } from 'react-icons/fa';
 import './LessonBuilder.css';
 
 const LessonBuilder = ({ embedded = false }) => {
@@ -25,11 +26,17 @@ const LessonBuilder = ({ embedded = false }) => {
   const [existingQuiz, setExistingQuiz] = useState(null);
 
   const [formData, setFormData] = useState({
+    type: 'TEXT',
     title: '',
     content: '',
     learningObjectives: '',
     videoUrl: '',
     videoFileUrl: '',
+    fileUrl: '',
+    fileName: '',
+    fileSize: '',
+    linkUrl: '',
+    difficulty: 'BEGINNER',
     notesContent: '',
     attachments: [],
     estimatedDuration: 30,
@@ -132,11 +139,17 @@ const LessonBuilder = ({ embedded = false }) => {
   const handleEdit = (lesson) => {
     setEditingLesson(lesson);
     setFormData({
+      type: lesson.type || 'TEXT',
       title: lesson.title,
       content: lesson.content || '',
       learningObjectives: lesson.learningObjectives || '',
       videoUrl: lesson.videoUrl || '',
       videoFileUrl: lesson.videoFileUrl || '',
+      fileUrl: lesson.fileUrl || '',
+      fileName: lesson.fileName || '',
+      fileSize: lesson.fileSize || '',
+      linkUrl: lesson.linkUrl || '',
+      difficulty: lesson.difficulty || 'BEGINNER',
       notesContent: lesson.notesContent || '',
       attachments: lesson.attachments || [],
       estimatedDuration: lesson.estimatedDuration,
@@ -216,21 +229,23 @@ const LessonBuilder = ({ embedded = false }) => {
     setExistingQuiz(null); // Reset first
 
     // Check if lesson already has a quiz (based on count or fetch)
-    // We'll try to fetch it to get full details
-    try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-      const response = await axios.get(
-        `${API_URL}/quizzes/lesson/${lesson.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    // Optimization: Only fetch if we know a quiz exists to prevent 404 console errors
+    if (lesson._count?.quizzes > 0) {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+        const response = await axios.get(
+          `${API_URL}/quizzes/lesson/${lesson.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      if (response.data.success && response.data.data.quiz) {
-        setExistingQuiz(response.data.data.quiz);
-      }
-    } catch (error) {
-      // If 404, it just means no quiz exists yet, which is fine
-      if (error.response && error.response.status !== 404) {
-        console.error('Error fetching quiz:', error);
+        if (response.data.success && response.data.data.quiz) {
+          setExistingQuiz(response.data.data.quiz);
+        }
+      } catch (error) {
+        // If 404, it just means no quiz exists yet, which is fine
+        if (error.response && error.response.status !== 404) {
+          console.error('Error fetching quiz:', error);
+        }
       }
     }
 
@@ -239,11 +254,17 @@ const LessonBuilder = ({ embedded = false }) => {
 
   const resetForm = () => {
     setFormData({
+      type: 'TEXT',
       title: '',
       content: '',
       learningObjectives: '',
       videoUrl: '',
       videoFileUrl: '',
+      fileUrl: '',
+      fileName: '',
+      fileSize: '',
+      linkUrl: '',
+      difficulty: 'BEGINNER',
       notesContent: '',
       attachments: [],
       estimatedDuration: 30,
@@ -259,14 +280,14 @@ const LessonBuilder = ({ embedded = false }) => {
         <div className="builder-header">
           <div>
             <button className="btn-back" onClick={() => navigate('/tutor')}>
-              <i className="fas fa-arrow-left"></i> Back to Courses
+              <FaArrowLeft /> Back to Courses
             </button>
             <h1>{course?.title || 'Loading...'}</h1>
             <p className="course-subtitle">Manage course lessons</p>
           </div>
           {!showForm && (
             <button className="btn-primary" onClick={() => setShowForm(true)}>
-              <i className="fas fa-plus"></i> Add Lesson
+              <FaPlus /> Add Lesson
             </button>
           )}
         </div>
@@ -276,7 +297,7 @@ const LessonBuilder = ({ embedded = false }) => {
         <div className="curriculum-header">
           <h2 className="curriculum-title">Course Lessons</h2>
           <button className="btn-primary" onClick={() => setShowForm(true)}>
-            <i className="fas fa-plus"></i> Add Lesson
+            <FaPlus /> Add Lesson
           </button>
         </div>
       )}
@@ -286,7 +307,7 @@ const LessonBuilder = ({ embedded = false }) => {
           <div className="form-header">
             <h2>{editingLesson ? 'Edit Lesson' : 'Create New Lesson'}</h2>
             <button className="btn-close" onClick={resetForm}>
-              <i className="fas fa-times"></i>
+              <FaTimes />
             </button>
           </div>
 
@@ -294,7 +315,7 @@ const LessonBuilder = ({ embedded = false }) => {
             {/* Basic Information Section */}
             <div className="form-section">
               <h3 className="section-title">
-                <i className="fas fa-info-circle"></i>
+                <FaInfoCircle />
                 Basic Information
               </h3>
 
@@ -314,17 +335,48 @@ const LessonBuilder = ({ embedded = false }) => {
                 <small>{formData.title.length}/150 characters</small>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="estimatedDuration">Duration (minutes) *</label>
-                <input
-                  type="number"
-                  id="estimatedDuration"
-                  name="estimatedDuration"
-                  value={formData.estimatedDuration}
-                  onChange={handleInputChange}
-                  min={1}
-                  required
-                />
+              <div className="form-row three-col">
+                <div className="form-group">
+                  <label htmlFor="type">Lesson Type</label>
+                  <select
+                    id="type"
+                    name="type"
+                    value={formData.type}
+                    onChange={handleInputChange}
+                  >
+                    <option value="TEXT">Text / Article</option>
+                    <option value="VIDEO_LINK">Video Link</option>
+                    <option value="FILE">File / Download</option>
+                    <option value="LIVE_INFO">Live Lecture Info</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="difficulty">Difficulty</label>
+                  <select
+                    id="difficulty"
+                    name="difficulty"
+                    value={formData.difficulty}
+                    onChange={handleInputChange}
+                  >
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="INTERMEDIATE">Intermediate</option>
+                    <option value="ADVANCED">Advanced</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="estimatedDuration">Duration (minutes) *</label>
+                  <input
+                    type="number"
+                    id="estimatedDuration"
+                    name="estimatedDuration"
+                    value={formData.estimatedDuration}
+                    onChange={handleInputChange}
+                    min={1}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -335,7 +387,7 @@ const LessonBuilder = ({ embedded = false }) => {
                   value={formData.learningObjectives}
                   onChange={handleInputChange}
                   rows={3}
-                  placeholder="What will students learn in this lesson?"
+                  placeholder="What will students learn in this lesson? (e.g. Determine the usage of...)"
                 />
               </div>
             </div>
@@ -343,36 +395,94 @@ const LessonBuilder = ({ embedded = false }) => {
             {/* Content Section */}
             <div className="form-section">
               <h3 className="section-title">
-                <i className="fas fa-book"></i>
+                <FaBook />
                 Lesson Content
               </h3>
 
-              <div className="form-group">
-                <label htmlFor="content">Main Content</label>
-                <textarea
-                  id="content"
-                  name="content"
-                  value={formData.content}
-                  onChange={handleInputChange}
-                  rows={10}
-                  placeholder="Enter the main lesson content here..."
-                  className="content-editor"
-                />
-                <small>Tip: You can use Markdown formatting</small>
-              </div>
+              {formData.type === 'TEXT' && (
+                <div className="form-group">
+                  <label htmlFor="content">Main Content</label>
+                  <textarea
+                    id="content"
+                    name="content"
+                    value={formData.content}
+                    onChange={handleInputChange}
+                    rows={12}
+                    placeholder="Enter the main lesson content here..."
+                    className="content-editor"
+                  />
+                  <small>Tip: You can use Markdown formatting for rich text.</small>
+                </div>
+              )}
 
-              <div className="form-group">
-                <label htmlFor="videoUrl">Video URL</label>
-                <input
-                  type="url"
-                  id="videoUrl"
-                  name="videoUrl"
-                  value={formData.videoUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://youtube.com/watch?v=..."
-                />
-                <small>YouTube, Vimeo, or direct video link</small>
-              </div>
+              {formData.type === 'LIVE_INFO' && (
+                <div className="form-group">
+                  <label htmlFor="content">Live Session Details</label>
+                  <textarea
+                    id="content"
+                    name="content"
+                    value={formData.content}
+                    onChange={handleInputChange}
+                    rows={5}
+                    placeholder="Enter meeting link, time, and instructions..."
+                    className="content-editor"
+                  />
+                </div>
+              )}
+
+              {(formData.type === 'VIDEO_LINK' || formData.type === 'LIVE_INFO') && (
+                <div className="form-group">
+                  <label htmlFor="linkUrl">Link URL {formData.type === 'VIDEO_LINK' && '*'}</label>
+                  <input
+                    type="url"
+                    id={formData.type === 'VIDEO_LINK' ? "videoUrl" : "linkUrl"}
+                    name={formData.type === 'VIDEO_LINK' ? "videoUrl" : "linkUrl"}
+                    value={formData.type === 'VIDEO_LINK' ? formData.videoUrl : formData.linkUrl}
+                    onChange={handleInputChange}
+                    placeholder={formData.type === 'VIDEO_LINK' ? "https://youtube.com/..." : "https://zoom.us/..."}
+                    required={formData.type === 'VIDEO_LINK'}
+                  />
+                </div>
+              )}
+
+              {formData.type === 'FILE' && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="fileUrl">File URL *</label>
+                    <input
+                      type="url"
+                      id="fileUrl"
+                      name="fileUrl"
+                      value={formData.fileUrl}
+                      onChange={handleInputChange}
+                      placeholder="https://..."
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="fileName">File Name</label>
+                    <input
+                      type="text"
+                      id="fileName"
+                      name="fileName"
+                      value={formData.fileName}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Lecture_Slides.pdf"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="fileSize">File Size</label>
+                    <input
+                      type="text"
+                      id="fileSize"
+                      name="fileSize"
+                      value={formData.fileSize}
+                      onChange={handleInputChange}
+                      placeholder="e.g. 5 MB"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="form-group">
                 <label htmlFor="notesContent">Additional Notes</label>
@@ -387,26 +497,7 @@ const LessonBuilder = ({ embedded = false }) => {
               </div>
             </div>
 
-            {/* Settings Section */}
-            <div className="form-section">
-              <h3 className="section-title">
-                <i className="fas fa-cog"></i>
-                Settings
-              </h3>
 
-              <div className="form-group">
-                <label className="checkbox-label" htmlFor="published">
-                  <input
-                    type="checkbox"
-                    id="published"
-                    name="published"
-                    checked={formData.published}
-                    onChange={handleInputChange}
-                  />
-                  <span>Publish this lesson immediately</span>
-                </label>
-              </div>
-            </div>
 
             <div className="form-actions">
               <button type="button" className="btn-secondary" onClick={resetForm}>
@@ -424,7 +515,7 @@ const LessonBuilder = ({ embedded = false }) => {
             <div className="loading">Loading lessons...</div>
           ) : lessons.length === 0 ? (
             <div className="empty-state">
-              <i className="fas fa-book-open"></i>
+              <FaBookOpen />
               <h3>No Lessons Yet</h3>
               <p>Create your first lesson to start building your course</p>
             </div>
@@ -448,12 +539,12 @@ const LessonBuilder = ({ embedded = false }) => {
                   onDrop={(e) => handleDrop(e, lesson)}
                 >
                   <span className="col-order">
-                    <i className="fas fa-grip-vertical drag-handle"></i>
+                    <FaGripVertical className="drag-handle" />
                     {lesson.sequenceOrder}
                   </span>
                   <span className="col-title">
                     <strong>{lesson.title}</strong>
-                    {lesson.videoUrl && <i className="fas fa-video video-icon"></i>}
+                    {lesson.videoUrl && <FaVideo className="video-icon" />}
                   </span>
                   <span className="col-duration">{lesson.estimatedDuration} min</span>
                   <span className="col-quizzes">{lesson._count?.quizzes || 0}</span>
@@ -469,21 +560,21 @@ const LessonBuilder = ({ embedded = false }) => {
                       title="Manage Quiz"
                       style={{ color: '#6366f1' }}
                     >
-                      <i className="fas fa-question-circle"></i>
+                      <FaQuestionCircle />
                     </button>
                     <button
                       className="btn-icon"
                       onClick={() => handleEdit(lesson)}
                       title="Edit"
                     >
-                      <i className="fas fa-edit"></i>
+                      <FaEdit />
                     </button>
                     <button
                       className="btn-icon btn-delete"
                       onClick={() => handleDelete(lesson.id)}
                       title="Delete"
                     >
-                      <i className="fas fa-trash"></i>
+                      <FaTrash />
                     </button>
                   </span>
                 </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
+import { getProfilePictureUrl } from '../../utils/images';
 import './StudentManager.css';
 
 const StudentManager = () => {
@@ -24,8 +25,10 @@ const StudentManager = () => {
         `${API_URL}/courses/${courseId}/enrollments`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.success) {
+        // One-time log of the data structure for debugging
+        console.log('Fetched students (stringified):', JSON.stringify(response.data.data, null, 2));
         setStudents(response.data.data);
       }
     } catch (error) {
@@ -43,6 +46,13 @@ const StudentManager = () => {
     });
   };
 
+  const getAvatarUrl = (user) => {
+    if (user?.profilePictureUrl) {
+      return getProfilePictureUrl(user.profilePictureUrl);
+    }
+    return null;
+  };
+
   return (
     <div className="student-manager">
       <div className="manager-header">
@@ -58,39 +68,70 @@ const StudentManager = () => {
           <p>No students enrolled yet.</p>
         </div>
       ) : (
-        <div className="students-list">
-          {students.map((enrollment) => (
-            <div key={enrollment.id} className="student-card">
-              <div className="student-avatar">
-                {enrollment.user?.profilePictureUrl ? (
-                  <img
-                    src={enrollment.user.profilePictureUrl}
-                    alt={enrollment.user.firstName}
-                  />
-                ) : (
-                  <div className="avatar-placeholder">
-                    {enrollment.user?.firstName?.[0] || 'S'}
-                    {enrollment.user?.lastName?.[0] || ''}
-                  </div>
-                )}
-              </div>
-              <div className="student-info">
-                <h4>{enrollment.user?.firstName} {enrollment.user?.lastName}</h4>
-                <br />
-                <p className="student-email">{enrollment.user?.email}</p>
-              </div>
-              <div className="student-meta">
-                <div className="meta-item">
-                  <span className="label">Enrolled</span>
-                  <span className="value">{formatDate(enrollment.createdAt)}</span>
-                </div>
-                <div className="meta-item">
-                  <span className="label">Progress</span>
-                  <span className="value">{enrollment.progressPercentage}%</span>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="students-table-container">
+          <table className="student-table">
+            <thead>
+              <tr>
+                <th style={{ width: '60px' }}></th>
+                <th>Student</th>
+                <th>Enrolled Date</th>
+                <th>Progress</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((enrollment) => (
+                <tr key={enrollment.id}>
+                  <td>
+                    <div className="table-avatar">
+                      {enrollment.user?.profilePictureUrl ? (
+                        <img
+                          src={getProfilePictureUrl(enrollment.user.profilePictureUrl)}
+                          alt={enrollment.user?.firstName}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const placeholder = e.target.parentElement.querySelector('.avatar-placeholder');
+                            if (placeholder) placeholder.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+
+                      <div
+                        className="avatar-placeholder"
+                        style={{ display: enrollment.user?.profilePictureUrl ? 'none' : 'flex' }}
+                      >
+                        {enrollment.user?.firstName?.[0] || 'S'}
+                        {enrollment.user?.lastName?.[0] || ''}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="student-cell-info">
+                      <span className="student-name">{enrollment.user?.firstName} {enrollment.user?.lastName}</span>
+                      <span className="student-email">{enrollment.user?.email}</span>
+                    </div>
+                  </td>
+                  <td>{formatDate(enrollment.enrolledAt || enrollment.createdAt)}</td>
+                  <td>
+                    <div className="progress-cell">
+                      <div className="progress-bar-bg">
+                        <div
+                          className="progress-bar-fill"
+                          style={{ width: `${enrollment.progressPercentage}%` }}
+                        ></div>
+                      </div>
+                      <span className="progress-text">{enrollment.progressPercentage}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${enrollment.status.toLowerCase()}`}>
+                      {enrollment.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

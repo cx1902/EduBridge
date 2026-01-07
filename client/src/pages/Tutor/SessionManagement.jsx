@@ -106,24 +106,8 @@ const SessionManagement = () => {
                     </div>
                   </td>
                   <td>
-                    <div className="student-cell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div className="student-cell">
                       <span>{getStudentName(session)}</span>
-                      {getStudentInfo(session) && (
-                        <button
-                          className="btn-icon"
-                          onClick={() => navigate(`/chat?userId=${getStudentInfo(session).id}`)}
-                          title="Message Student"
-                          style={{ 
-                            background: 'none', 
-                            border: 'none', 
-                            cursor: 'pointer', 
-                            color: '#3b82f6',
-                            marginLeft: '8px'
-                          }}
-                        >
-                          <i className="fas fa-envelope"></i>
-                        </button>
-                      )}
                     </div>
                   </td>
                   <td>
@@ -136,7 +120,7 @@ const SessionManagement = () => {
                       {(session.status === 'SCHEDULED' || session.status === 'CONFIRMED') && (
                         <>
                           {session.status === 'SCHEDULED' && (
-                            <button 
+                            <button
                               className="btn-action confirm"
                               onClick={() => handleStatusUpdate(session.id, 'CONFIRMED')}
                               disabled={statusMutation.isPending}
@@ -144,14 +128,14 @@ const SessionManagement = () => {
                               Confirm
                             </button>
                           )}
-                          <button 
+                          <button
                             className="btn-action complete"
                             onClick={() => handleStatusUpdate(session.id, 'COMPLETED')}
                             disabled={statusMutation.isPending}
                           >
                             Complete
                           </button>
-                          <button 
+                          <button
                             className="btn-action cancel"
                             onClick={() => handleStatusUpdate(session.id, 'CANCELLED')}
                             disabled={statusMutation.isPending}

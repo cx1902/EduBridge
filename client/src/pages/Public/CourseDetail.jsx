@@ -44,8 +44,7 @@ const CourseDetail = () => {
       }
 
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
         }/courses/${id}`,
         { headers }
       )
@@ -75,8 +74,7 @@ const CourseDetail = () => {
       }
 
       const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
         }/courses/${id}/components`,
         { headers }
       )
@@ -101,9 +99,25 @@ const CourseDetail = () => {
 
     try {
       setEnrolling(true)
-      const token = useAuthStore.getState().token || localStorage.getItem('token') || sessionStorage.getItem('token')
+
+      // Get token from zustand store
+      let token = useAuthStore.getState().token;
+
+      // Fallback to storage if not in state
+      if (!token) {
+        const stored = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            token = parsed.token;
+          } catch (e) {
+            console.error('Failed to parse auth storage');
+          }
+        }
+      }
+
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-      
+
       const response = await axios.post(
         `${API_URL}/courses/${id}/enroll`,
         {},
@@ -338,26 +352,28 @@ const CourseDetail = () => {
 
       {/* Tab Navigation */}
       <div className='course-tabs'>
-        <button
-          className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          <i className='fas fa-info-circle'></i> Overview
-        </button>
-        <button
-          className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
-          onClick={() => setActiveTab('resources')}
-        >
-          <i className='fas fa-folder-open'></i> Course Resources
-        </button>
-        {canManage && (
+        <div className='course-tabs-container'>
           <button
-            className={`tab ${activeTab === 'participants' ? 'active' : ''}`}
-            onClick={() => setActiveTab('participants')}
+            className={`tab ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
           >
-            <i className='fas fa-users'></i> Participants
+            <i className='fas fa-info-circle'></i> Overview
           </button>
-        )}
+          <button
+            className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
+            onClick={() => setActiveTab('resources')}
+          >
+            <i className='fas fa-folder-open'></i> Course Resources
+          </button>
+          {canManage && (
+            <button
+              className={`tab ${activeTab === 'participants' ? 'active' : ''}`}
+              onClick={() => setActiveTab('participants')}
+            >
+              <i className='fas fa-users'></i> Participants
+            </button>
+          )}
+        </div>
       </div>
 
       <div className='course-content-wrapper'>

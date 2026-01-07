@@ -85,7 +85,7 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
     setQuizData(prev => {
       const newQuestions = [...prev.questions];
       newQuestions[index] = { ...newQuestions[index], [field]: value };
-      
+
       // Reset options if type changes to T/F
       if (field === 'questionType' && value === 'TRUE_FALSE') {
         newQuestions[index].answerOptions = [
@@ -119,7 +119,7 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
     setQuizData(prev => {
       const newQuestions = [...prev.questions];
       const question = newQuestions[qIndex];
-      
+
       if (field === 'isCorrect') {
         if (question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE') {
           // Uncheck others for single select
@@ -133,7 +133,7 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
       } else {
         question.answerOptions[oIndex][field] = value;
       }
-      
+
       return { ...prev, questions: newQuestions };
     });
   };
@@ -184,7 +184,7 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
         alert(`Question ${i + 1} is missing text`);
         return;
       }
-      
+
       if (['MULTIPLE_CHOICE', 'TRUE_FALSE', 'MULTIPLE_SELECT'].includes(q.questionType)) {
         if (q.answerOptions.length < 2) {
           alert(`Question ${i + 1} needs at least 2 options`);
@@ -201,7 +201,23 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
     try {
       setLoading(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      let authToken = token;
+      if (!authToken) {
+        // Fallback to local storage if store is empty (e.g. after refresh)
+        const stored = localStorage.getItem('auth-storage') || sessionStorage.getItem('auth-storage');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          authToken = parsed.token;
+        }
+      }
+
+      if (!authToken) {
+        alert('Authentication lost. Please login again.');
+        return;
+      }
+
+      const config = { headers: { Authorization: `Bearer ${authToken}` } };
 
       let response;
       if (existingQuiz) {
@@ -244,8 +260,8 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
                 placeholder="e.g., Chapter 1 Assessment"
               />
             </div>
-            
-            <div className="form-group" style={{marginTop: '1rem'}}>
+
+            <div className="form-group" style={{ marginTop: '1rem' }}>
               <label>Instructions</label>
               <textarea
                 name="instructions"
@@ -315,7 +331,7 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
                   </div>
                 </div>
 
-                <div className="settings-grid" style={{marginBottom: '1rem'}}>
+                <div className="settings-grid" style={{ marginBottom: '1rem' }}>
                   <div className="form-group">
                     <label>Type</label>
                     <select
@@ -348,12 +364,12 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
                 </div>
 
                 {/* Image Upload */}
-                <div className="form-group" style={{marginTop: '1rem'}}>
+                <div className="form-group" style={{ marginTop: '1rem' }}>
                   <label>Question Image (Optional)</label>
                   {question.questionImageUrl ? (
                     <div className="image-preview-container">
                       <img src={question.questionImageUrl} alt="Question" className="image-preview" />
-                      <button 
+                      <button
                         className="btn-remove-image"
                         onClick={() => updateQuestion(qIndex, 'questionImageUrl', '')}
                       >
@@ -366,10 +382,10 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
                         {uploading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-image"></i>}
                         Upload Image
                       </button>
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => handleImageUpload(e.target.files[0], qIndex)} 
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(e.target.files[0], qIndex)}
                         disabled={uploading}
                       />
                     </div>
@@ -410,33 +426,33 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
                     )}
                   </div>
                 )}
-                
+
                 {question.questionType === 'SHORT_ANSWER' && (
-                   <div className="options-list">
-                      <label>Correct Answer (Exact match)</label>
-                      {question.answerOptions.length > 0 ? (
-                        <div className="option-item">
-                          <input
-                            type="text"
-                            value={question.answerOptions[0].optionText}
-                            onChange={(e) => updateOption(qIndex, 0, 'optionText', e.target.value)}
-                            placeholder="Enter the correct answer..."
-                          />
-                          {/* Ensure isCorrect is true for short answer reference */}
-                          {/* We do this implicitly on save or init, but good to be explicit */}
-                        </div>
-                      ) : (
-                        <button className="btn-add-option" onClick={() => {
-                          updateQuestion(qIndex, 'answerOptions', [{ optionText: '', isCorrect: true }]);
-                        }}>
-                          Set Correct Answer
-                        </button>
-                      )}
-                   </div>
+                  <div className="options-list">
+                    <label>Correct Answer (Exact match)</label>
+                    {question.answerOptions.length > 0 ? (
+                      <div className="option-item">
+                        <input
+                          type="text"
+                          value={question.answerOptions[0].optionText}
+                          onChange={(e) => updateOption(qIndex, 0, 'optionText', e.target.value)}
+                          placeholder="Enter the correct answer..."
+                        />
+                        {/* Ensure isCorrect is true for short answer reference */}
+                        {/* We do this implicitly on save or init, but good to be explicit */}
+                      </div>
+                    ) : (
+                      <button className="btn-add-option" onClick={() => {
+                        updateQuestion(qIndex, 'answerOptions', [{ optionText: '', isCorrect: true }]);
+                      }}>
+                        Set Correct Answer
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
-            
+
             {/* Add Question Button at Bottom */}
             <div className="add-question-bottom">
               <button className="btn-add-question-block" onClick={addQuestion}>

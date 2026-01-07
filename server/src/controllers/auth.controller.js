@@ -75,9 +75,31 @@ exports.register = async (req, res) => {
       },
     });
 
+    // If registering as TUTOR, create verification application
+    if (role === 'TUTOR') {
+      try {
+        if (prisma.tutorVerificationApplication) {
+          await prisma.tutorVerificationApplication.create({
+            data: {
+              userId: user.id,
+              status: 'PENDING',
+              qualifications: 'Pending Submission',
+              submittedAt: new Date(),
+            },
+          });
+          console.log(`✅ Tutor verification application created for: ${email}`);
+        } else {
+          console.warn('⚠️ TutorVerificationApplication model missing - Application record skipped');
+        }
+      } catch (appError) {
+        console.error('❌ Failed to create tutor verification application:', appError);
+        // Do not fail the registration; just log the error
+      }
+    }
+
     // Generate verification token (in production, send email)
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    
+
     // TODO: Send verification email
     console.log(`Verification token for ${email}: ${verificationToken}`);
 
@@ -184,7 +206,7 @@ exports.login = async (req, res) => {
     // Update streak (if applicable)
     const today = new Date().toISOString().split('T')[0];
     const lastActivityDate = user.lastActivityDate?.toISOString().split('T')[0];
-    
+
     let streakUpdate = {};
     if (!lastActivityDate || lastActivityDate !== today) {
       const yesterday = new Date();
@@ -239,6 +261,43 @@ exports.login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // If user is a TUTOR, fetching verification status
+    let tutorVerification = null;
+    if (user.role === 'TUTOR') {
+      try {
+        // Fetch ALL applications to find the best status
+        const allVerifications = await prisma.tutorVerificationApplication.findMany({
+          where: { userId: user.id },
+          select: {
+            status: true,
+            submittedAt: true,
+            reviewedAt: true,
+            reviewNotes: true,
+          },
+        });
+
+        // Prioritize APPROVED > PENDING > Others
+        tutorVerification = allVerifications.find(v => v.status === 'APPROVED')
+          || allVerifications.find(v => v.status === 'PENDING')
+          || allVerifications[0];
+
+        // Self-healing: if role is TUTOR but no app exists, create PENDING
+        if (!tutorVerification && prisma.tutorVerificationApplication) {
+          tutorVerification = await prisma.tutorVerificationApplication.create({
+            data: {
+              userId: user.id,
+              status: 'PENDING',
+              qualifications: 'Pending Submission',
+              submittedAt: new Date(),
+            },
+            select: { status: true, submittedAt: true }
+          });
+        }
+      } catch (verError) {
+        console.warn('Failed to fetch tutor verification in login:', verError);
+      }
+    }
+
     // Return user data without password
     const userData = {
       id: user.id,
@@ -252,6 +311,8 @@ exports.login = async (req, res) => {
       fontSize: user.fontSize,
       totalPoints: user.totalPoints + (streakUpdate.currentStreak ? 5 : 0),
       currentStreak: streakUpdate.currentStreak || user.currentStreak,
+      tutorVerification,
+      createdAt: user.createdAt,
     };
 
     res.json({
@@ -370,7 +431,7 @@ exports.forgotPassword = async (req, res) => {
     // Send password reset email
     try {
       const emailResult = await sendPasswordResetEmail(email, resetToken);
-      
+
       if (!emailResult.success) {
         console.error('Failed to send password reset email:', emailResult.error);
       } else {
@@ -511,9 +572,58 @@ exports.getCurrentUser = async (req, res) => {
       },
     });
 
+    // If user is a TUTOR, include verification status
+    let tutorVerification = null;
+    if (user.role === 'TUTOR') {
+      try {
+        if (prisma.tutorVerificationApplication) {
+          const allVerifications = await prisma.tutorVerificationApplication.findMany({
+            where: { userId: user.id },
+            select: {
+              status: true,
+              submittedAt: true,
+              reviewedAt: true,
+              reviewNotes: true,
+            },
+          });
+
+          // Prioritize APPROVED > PENDING > Others
+          tutorVerification = allVerifications.find(v => v.status === 'APPROVED')
+            || allVerifications.find(v => v.status === 'PENDING')
+            || allVerifications[0];
+
+          // Self-healing: If application is missing, create it
+          if (!tutorVerification) {
+            console.log(`ℹ️ Missing verification application for tutor ${user.email}. Creating one...`);
+            tutorVerification = await prisma.tutorVerificationApplication.create({
+              data: {
+                userId: user.id,
+                status: 'PENDING',
+                qualifications: 'Pending Submission',
+                submittedAt: new Date(),
+              },
+              select: {
+                status: true,
+                submittedAt: true,
+                reviewedAt: true,
+                reviewNotes: true,
+              },
+            });
+          }
+        }
+      } catch (verError) {
+        console.error('Error fetching/creating tutor verification status:', verError);
+      }
+    }
+
     res.json({
       success: true,
-      data: { user },
+      data: {
+        user: {
+          ...user,
+          tutorVerification,
+        }
+      },
     });
   } catch (error) {
     console.error('Get current user error:', error);
