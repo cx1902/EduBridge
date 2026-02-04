@@ -92,12 +92,31 @@ const TutorDashboard = () => {
   return (
     <div className="tutor-dashboard">
       <div className="dashboard-header">
-        <h1>Welcome back, {user?.firstName}!</h1>
-        <p className="dashboard-subtitle">Here's what's happening with your courses today</p>
+        <div className="header-content">
+          <div>
+            <h1>Tutor Dashboard</h1>
+            <p className="dashboard-subtitle">Welcome back, {user?.firstName}!</p>
+          </div>
+          <Link to="/tutor/courses/new" className="btn-create-course-float">
+            <i className="fas fa-plus"></i>
+            Create Course
+          </Link>
+        </div>
       </div>
 
       {/* Statistics Cards */}
       <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon active-courses">
+            <i className="fas fa-book"></i>
+          </div>
+          <div className="stat-info">
+            <h3>{stats?.publishedCourses || 0}</h3>
+            <p>Active Courses</p>
+            <span className="stat-label">Published courses</span>
+          </div>
+        </div>
+
         <div className="stat-card">
           <div className="stat-icon students">
             <i className="fas fa-users"></i>
@@ -105,57 +124,78 @@ const TutorDashboard = () => {
           <div className="stat-info">
             <h3>{stats?.totalStudents || 0}</h3>
             <p>Total Students</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon courses">
-            <i className="fas fa-book"></i>
-          </div>
-          <div className="stat-info">
-            <h3>{stats?.publishedCourses || 0}</h3>
-            <p>Published Courses</p>
+            <span className="stat-label">Across all courses</span>
           </div>
         </div>
 
         <div className="stat-card">
           <div className="stat-icon sessions">
-            <i className="fas fa-video"></i>
+            <i className="fas fa-calendar-day"></i>
           </div>
           <div className="stat-info">
             <h3>{stats?.upcomingSessions || 0}</h3>
-            <p>Upcoming Sessions</p>
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <div className="stat-icon rating">
-            <i className="fas fa-star"></i>
-          </div>
-          <div className="stat-info">
-            <h3>{stats?.averageRating || '0.00'}</h3>
-            <p>Average Rating</p>
+            <p>Today's Sessions</p>
+            <span className="stat-label">Scheduled for today</span>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <h2>Quick Actions</h2>
-        <div className="action-buttons">
-          <Link to="/tutor/courses/new" className="action-btn primary">
-            <i className="fas fa-plus"></i>
-            Create Course
-          </Link>
-          <Link to="/tutor/courses" className="action-btn secondary">
-            <i className="fas fa-list"></i>
-            View All Courses
-          </Link>
-          <Link to="/tutor/sessions" className="action-btn secondary">
+      {/* Quick Access Cards */}
+      <div className="quick-access-grid">
+        <Link to="/tutor/courses" className="quick-access-card">
+          <div className="card-icon">
+            <i className="fas fa-book-open"></i>
+          </div>
+          <div className="card-content">
+            <h3>My Courses</h3>
+            <p>Manage and edit your courses</p>
+          </div>
+          <div className="card-action">
+            <span>View All Courses →</span>
+          </div>
+        </Link>
+
+        <Link to="/tutor/sessions" className="quick-access-card">
+          <div className="card-icon">
+            <i className="fas fa-video"></i>
+          </div>
+          <div className="card-content">
+            <h3>Session Management</h3>
+            <p>Manage your upcoming and past sessions</p>
+          </div>
+          <div className="card-action">
+            <span>Manage Sessions →</span>
+          </div>
+        </Link>
+
+        <Link to="/tutor/reports" className="quick-access-card">
+          <div className="card-icon">
+            <i className="fas fa-chart-line"></i>
+          </div>
+          <div className="card-content">
+            <h3>Session Statistics</h3>
+            <p>Session completion & ratings</p>
+          </div>
+          <div className="card-action">
+            <span>View Reports →</span>
+          </div>
+        </Link>
+      </div>
+
+      {/* Availability Card */}
+      <div className="availability-card">
+        <div className="availability-header">
+          <div className="availability-icon">
             <i className="fas fa-calendar-alt"></i>
-            Session Management
-          </Link>
+          </div>
+          <div className="availability-content">
+            <h3>My Availability</h3>
+            <p>Set your available hours for booking</p>
+          </div>
         </div>
+        <Link to="/tutor/availability" className="availability-link">
+          Manage Availability →
+        </Link>
       </div>
 
       <div className="dashboard-content">

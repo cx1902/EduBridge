@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
+import './TutorVerification.css';
 
 const TutorVerification = () => {
     const [applications, setApplications] = useState([]);
@@ -80,7 +81,7 @@ const TutorVerification = () => {
 
             {/* Filters */}
             <div className="card" style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div className="verification-filters">
                     {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map(status => (
                         <button
                             key={status}
@@ -134,7 +135,7 @@ const TutorVerification = () => {
                             )}
 
                             {app.status === 'PENDING' && (
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                <div className="application-actions">
                                     <button
                                         className="btn btn-success"
                                         onClick={() => setSelectedApp({ ...app, decision: 'APPROVED' })}
@@ -186,7 +187,7 @@ const TutorVerification = () => {
                             placeholder="Add notes (optional for approval, required for rejection)..."
                             style={{ marginBottom: '1rem' }}
                         />
-                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        <div className="modal-actions">
                             <button
                                 className="btn btn-outline"
                                 onClick={() => {

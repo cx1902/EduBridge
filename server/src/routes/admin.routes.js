@@ -76,5 +76,6 @@ router.post('/courses/:id/reject', (req, res) => {
 
 router.get('/stats', adminController.getPlatformStats);
 router.get('/analytics', adminController.getPlatformStats);
+router.get('/detailed-analytics', adminController.getDetailedAnalytics);
 
 module.exports = router;

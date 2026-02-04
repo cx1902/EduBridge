@@ -46,7 +46,7 @@ const RequestTutor = () => {
     try {
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/tutoring/requests`, formData);
       const requestId = res.data.data.id;
-      
+
       if (preSelectedTutorId) {
         // Direct booking flow
         navigate(`/student/tutoring/book/${requestId}?tutorId=${preSelectedTutorId}`);
@@ -68,13 +68,13 @@ const RequestTutor = () => {
       <h1 className="text-3xl font-bold mb-6">
         {preSelectedTutorId ? 'Book a Session' : 'Find a Tutor'}
       </h1>
-      
+
       {preSelectedTutorId && (
         <div className="bg-blue-50 text-blue-800 p-4 rounded-md mb-6">
           <p>Please provide some details about your request to proceed with booking.</p>
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-6">
         {error && <div className="bg-red-100 text-red-700 p-3 rounded">{error}</div>}
 
@@ -102,9 +102,13 @@ const RequestTutor = () => {
             onChange={handleChange}
             className="w-full p-2 border rounded-md"
           >
-            <option value="PRIMARY">Primary</option>
-            <option value="SECONDARY">Secondary</option>
-            <option value="UNIVERSITY">University</option>
+            <option value="PRIMARY">Primary School</option>
+            <option value="SECONDARY">Secondary School</option>
+            <option value="PRE_UNIVERSITY">Pre-University / A-Level</option>
+            <option value="DIPLOMA">Diploma</option>
+            <option value="UNDERGRADUATE">Undergraduate</option>
+            <option value="POSTGRADUATE">Postgraduate</option>
+            <option value="PROFESSIONAL">Professional / Continuing Education</option>
           </select>
         </div>
 

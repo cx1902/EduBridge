@@ -39,7 +39,7 @@ const newPasswordValidation = [
 // Routes
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
-router.post('/logout', authenticate, authController.logout);
+router.post('/logout', authController.logout);
 router.post('/refresh-token', authController.refreshToken);
 router.post('/forgot-password', resetPasswordValidation, authController.forgotPassword);
 router.post('/reset-password', newPasswordValidation, authController.resetPassword);

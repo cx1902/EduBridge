@@ -16,4 +16,9 @@ router.delete('/:id', authenticate, authorize('TUTOR', 'ADMIN'), courseControlle
 // Enrollment routes
 router.post('/:id/enroll', authenticate, courseController.enrollInCourse);
 
+// Review routes
+router.post('/:id/reviews', authenticate, courseController.createReview);
+router.put('/:id/reviews', authenticate, courseController.updateReview);
+router.get('/:id/reviews', optionalAuth, courseController.getCourseReviews);
+
 module.exports = router;

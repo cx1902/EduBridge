@@ -1,9 +1,11 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import NotificationBell from '../Common/NotificationBell';
+import ReportModal from '../Common/ReportModal';
+import { FiSun, FiMoon, FiUser, FiLogOut, FiMenu, FiX, FiMail, FiPhone, FiMapPin, FiFlag } from 'react-icons/fi';
 
 import './MainLayout.css';
 
@@ -12,6 +14,7 @@ const MainLayout = () => {
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const { t } = useTranslation('common');
 
 
@@ -88,7 +91,8 @@ const MainLayout = () => {
 
             {/* Actions */}
             <div className="navbar-actions">
-
+              {/* Notification Bell - Only for authenticated users */}
+              {isAuthenticated && <NotificationBell />}
 
               <button
                 onClick={handleThemeToggle}
@@ -97,6 +101,18 @@ const MainLayout = () => {
               >
                 {theme === 'dark' ? <FiSun /> : <FiMoon />}
               </button>
+
+              {/* Error Reporting Button - Only for authenticated users */}
+              {isAuthenticated && (
+                <button
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="icon-btn report-btn"
+                  aria-label="Report an issue"
+                  title="Report an issue"
+                >
+                  <FiFlag />
+                </button>
+              )}
 
               {isAuthenticated ? (
                 <div className="user-menu">
@@ -184,6 +200,12 @@ const MainLayout = () => {
           </div>
         </div>
       </footer>
+
+      {/* Global Report Modal */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 };

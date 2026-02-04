@@ -1,0 +1,265 @@
+/* MyProgress.css - Updated 2026-02-04 - v2.0 */
+/* CACHE BUSTER: Forces browser to reload this file */
+.progress-container {
+    display: block !important;
+    width: 100%;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: #f3f4f6;
+}
+
+.progress-header {
+    margin-bottom: 2rem;
+}
+
+.progress-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, #fff, #9ca3af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.progress-header p {
+    color: #9ca3af;
+}
+
+/* Stats Overview Grid */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.stat-card-progress {
+    background: rgba(31, 41, 55, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    transition: transform 0.2s, border-color 0.2s;
+    backdrop-filter: blur(10px);
+    min-height: 120px;
+}
+
+.stat-card-progress:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.stat-icon-wrapper {
+    width: 72px;
+    height: 72px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-info h3 {
+    font-size: 1rem;
+    color: #9ca3af;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.stat-info .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Color Variants */
+.stat-xp .stat-icon-wrapper {
+    color: #fbbf24;
+    /* Amber */
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.stat-streak .stat-icon-wrapper {
+    color: #ef4444;
+    /* Red */
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.stat-rank .stat-icon-wrapper {
+    color: #8b5cf6;
+    /* Violet */
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.stat-level .stat-icon-wrapper {
+    color: #10b981;
+    /* Emerald */
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* Badges Section */
+.badges-section {
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.badge-card {
+    background: rgba(31, 41, 55, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.badge-card:hover {
+    background: rgba(31, 41, 55, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-4px);
+}
+
+.badge-card.earned {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: linear-gradient(145deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.8));
+}
+
+.badge-card.earned:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+}
+
+.badge-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    transition: all 0.3s;
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.3));
+}
+
+.badge-card.locked .badge-icon {
+    filter: grayscale(100%) opacity(0.4);
+}
+
+.badge-card.earned .badge-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.4));
+}
+
+.badge-name {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.badge-card.locked .badge-name {
+    color: #9ca3af;
+}
+
+.badge-desc {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    line-height: 1.4;
+    margin-bottom: 1rem;
+}
+
+.badge-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.badge-card.earned .badge-status {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.badge-card.locked .badge-status {
+    color: #9ca3af;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Progress Bar for Locked Badges */
+.badge-progress {
+    margin-top: 0.75rem;
+    width: 100%;
+    text-align: center;
+}
+
+.progress-track {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    width: 100%;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-primary, #6366f1);
+    border-radius: 2px;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-align: center !important;
+    margin-top: 0.5rem;
+    display: block;
+    width: 100%;
+}
+
+/* Loading State */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    color: #9ca3af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .progress-container {
+        padding: 1rem;
+    }
+
+    .stats-overview {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .badges-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+}

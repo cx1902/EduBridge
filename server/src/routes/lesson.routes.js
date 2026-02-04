@@ -20,4 +20,8 @@ router.post('/', authenticate, authorize('TUTOR', 'ADMIN'), lessonController.cre
 router.put('/:id', authenticate, authorize('TUTOR', 'ADMIN'), lessonController.updateLesson);
 router.delete('/:id', authenticate, authorize('TUTOR', 'ADMIN'), lessonController.deleteLesson);
 
+// Session tracking routes
+router.post('/:id/session/start', authenticate, lessonController.startLessonSession);
+router.post('/:id/session/end', authenticate, lessonController.endLessonSession);
+
 module.exports = router;

@@ -249,7 +249,9 @@ const AboutUs = () => {
       <section className="about-compact-hero">
         <div className="hero-bg-accent"></div>
         <div className="container hero-container">
-          <h1>Empowering Learners, <span className="text-highlight">Connecting Educators</span></h1>
+          <h1>
+            Empowering Learners, <span className="text-highlight">Connecting Educators</span>
+          </h1>
           <p>The future of education is here. Join us.</p>
         </div>
       </section>

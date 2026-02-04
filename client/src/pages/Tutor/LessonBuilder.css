@@ -58,18 +58,28 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 0;
-  border-bottom: none;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-border);
   background: transparent;
+  width: 100%;
 }
 
 .curriculum-title {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--color-text);
   margin: 0;
 }
+
+.curriculum-header .btn-primary {
+  width: auto !important;
+  flex: none !important;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 
 /* Lesson Form */
 .lesson-form-container {
@@ -687,3 +697,76 @@
 }
 
 /* Force reload */
+
+/* React Quill Overrides for Dark Mode */
+.quill-wrapper {
+  background: var(--color-background) !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ql-container.ql-snow {
+  border: none !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  min-height: 300px;
+}
+
+.ql-editor {
+  min-height: 300px;
+  color: var(--color-text);
+}
+
+.ql-editor.ql-blank::before {
+  color: var(--color-text-secondary) !important;
+  font-style: normal;
+}
+
+/* Toolbar icons color - force white/light gray */
+.ql-snow .ql-stroke {
+  stroke: #9ca3af !important;
+}
+
+.ql-snow .ql-fill,
+.ql-snow .ql-stroke.ql-fill {
+  fill: #9ca3af !important;
+}
+
+.ql-snow .ql-picker {
+  color: #9ca3af !important;
+}
+
+/* Dropdowns in toolbar */
+.ql-snow .ql-picker-options {
+  background-color: #1f2937 !important;
+  /* Dark bg */
+  border-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Hover/Active states */
+.ql-snow .ql-picker-label:hover,
+.ql-snow .ql-picker-item:hover {
+  color: var(--color-primary) !important;
+}
+
+.ql-snow .ql-picker-label:hover .ql-stroke,
+.ql-snow .ql-picker-item:hover .ql-stroke {
+  stroke: var(--color-primary) !important;
+}
+
+/* Active button state */
+.ql-snow .ql-active .ql-stroke {
+  stroke: var(--color-primary) !important;
+}
+
+.ql-snow .ql-active .ql-fill {
+  fill: var(--color-primary) !important;
+}

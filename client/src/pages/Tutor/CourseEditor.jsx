@@ -401,9 +401,13 @@ const CourseEditor = () => {
               value={formData.educationLevel}
               onChange={handleInputChange}
             >
-              <option value='PRIMARY'>Primary</option>
-              <option value='SECONDARY'>Secondary</option>
-              <option value='UNIVERSITY'>University</option>
+              <option value='PRIMARY'>Primary School</option>
+              <option value='SECONDARY'>Secondary School</option>
+              <option value='PRE_UNIVERSITY'>Pre-University / A-Level</option>
+              <option value='DIPLOMA'>Diploma</option>
+              <option value='UNDERGRADUATE'>Undergraduate</option>
+              <option value='POSTGRADUATE'>Postgraduate</option>
+              <option value='PROFESSIONAL'>Professional / Continuing Education</option>
             </select>
           </div>
 
@@ -621,18 +625,7 @@ const CourseEditor = () => {
           </div>
         </div>
 
-        <div className='form-group'>
-          <label htmlFor='introVideoUrl'>Intro Video URL (optional)</label>
-          <input
-            type='text'
-            id='introVideoUrl'
-            name='introVideoUrl'
-            value={formData.introVideoUrl}
-            onChange={handleInputChange}
-            placeholder='https://youtube.com/watch?v=...'
-          />
-          <span className='field-hint'>30-60 second course trailer</span>
-        </div>
+
       </section>
 
       <section className='form-section'>

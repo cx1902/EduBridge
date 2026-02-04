@@ -21,6 +21,7 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
   const [submitting, setUploading] = useState(false);
   const [quiz, setQuiz] = useState(null);
   const [gameState, setGameState] = useState('INTRO'); // INTRO, PLAYING, RESULT
+  const [attemptsRemaining, setAttemptsRemaining] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({}); // { questionId: { selectedOptionIds: [], answerText: '' } }
   const [timeLeft, setTimeLeft] = useState(0);
@@ -44,6 +45,7 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
 
       if (response.data.success) {
         setQuiz(response.data.data.quiz);
+        setAttemptsRemaining(response.data.data.attemptsRemaining);
         setTimeLeft(response.data.data.quiz.timeLimitMinutes * 60);
       }
     } catch (error) {
@@ -156,9 +158,16 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
             </div>
           </div>
 
-          <button className="btn-primary-lg" onClick={startQuiz}>
-            Start Quiz Now
-          </button>
+          {attemptsRemaining === 0 ? (
+            <div className="attempts-reached-msg">
+              <FaTimes style={{ marginRight: '0.5rem' }} />
+              You have reached the maximum number of attempts for this quiz.
+            </div>
+          ) : (
+            <button className="btn-primary-lg" onClick={startQuiz}>
+              Start Quiz Now
+            </button>
+          )}
         </div>
       </div>
     );
@@ -197,7 +206,11 @@ const QuizPlayer = ({ lessonId, onComplete }) => {
               <FaRedo style={{ marginRight: '0.5rem' }} /> Retake
             </button>
             {result.passed && onComplete && (
-              <button className="btn-primary" onClick={() => window.location.reload()}>
+              <button
+                className="btn-nav-prev"
+                onClick={() => window.location.reload()}
+                style={{ background: 'var(--lesson-accent)', color: 'white', borderColor: 'transparent' }}
+              >
                 Return to Lesson
               </button>
             )}

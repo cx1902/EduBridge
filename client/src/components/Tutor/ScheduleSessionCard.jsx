@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from 'react-i18next';
+import { format, addMinutes, parseISO } from 'date-fns';
 import './ScheduleSessionCard.css';
 
-const ScheduleSessionCard = () => {
+const ScheduleSessionCard = ({ onSessionCreated }) => {
   const { user } = useAuthStore();
   const { t } = useTranslation('tutor');
   const [enrolledStudents, setEnrolledStudents] = useState([]);
@@ -21,6 +22,7 @@ const ScheduleSessionCard = () => {
     topic: '',
     objectives: '',
     videoRoomId: '',
+    sessionNotes: '',
     sendImmediately: true,
   });
 
@@ -42,9 +44,9 @@ const ScheduleSessionCard = () => {
         });
 
         if (response.status === 401) {
-           console.error('Unauthorized: Invalid token');
-           // Optionally redirect to login or show a warning
-           return;
+          console.error('Unauthorized: Invalid token');
+          // Optionally redirect to login or show a warning
+          return;
         }
 
         const data = await response.json();
@@ -97,12 +99,12 @@ const ScheduleSessionCard = () => {
     if (name === 'scheduledStart' || name === 'duration') {
       const start = name === 'scheduledStart' ? new Date(value) : new Date(formData.scheduledStart);
       const duration = name === 'duration' ? parseInt(value) : formData.duration;
-      
+
       if (start && duration) {
-        const end = new Date(start.getTime() + duration * 60000);
+        const end = addMinutes(start, duration);
         setFormData(prev => ({
           ...prev,
-          scheduledEnd: end.toISOString().slice(0, 16),
+          scheduledEnd: format(end, "yyyy-MM-dd'T'HH:mm"),
         }));
       }
     }
@@ -113,6 +115,10 @@ const ScheduleSessionCard = () => {
       if (prev.includes(studentId)) {
         return prev.filter(id => id !== studentId);
       } else {
+        // For ONE_ON_ONE sessions, only allow 1 student
+        if (formData.sessionType === 'ONE_ON_ONE') {
+          return [studentId];
+        }
         return [...prev, studentId];
       }
     });
@@ -128,7 +134,7 @@ const ScheduleSessionCard = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (selectedStudents.length === 0) {
       alert(t('scheduleSession.selectAtLeastOne'));
       return;
@@ -139,7 +145,7 @@ const ScheduleSessionCard = () => {
     try {
       // Create session
       const token = useAuthStore.getState().token || localStorage.getItem('token') || sessionStorage.getItem('token');
-      
+
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const sessionResponse = await fetch(`${API_URL}/sessions`, {
         method: 'POST',
@@ -150,8 +156,8 @@ const ScheduleSessionCard = () => {
         body: JSON.stringify({
           subject: formData.topic || formData.subject,
           educationLevel: formData.educationLevel,
-          scheduledStart: formData.scheduledStart,
-          scheduledEnd: formData.scheduledEnd,
+          scheduledStart: new Date(formData.scheduledStart).toISOString(),
+          scheduledEnd: new Date(formData.scheduledEnd).toISOString(),
           maxParticipants: selectedStudents.length,
           pricePerStudent: 0,
           sessionType: formData.sessionType,
@@ -171,13 +177,14 @@ const ScheduleSessionCard = () => {
           },
           body: JSON.stringify({
             studentIds: selectedStudents,
+            sendEmail: formData.sendImmediately,
           }),
         });
 
         const inviteData = await inviteResponse.json();
 
         if (inviteData.success) {
-          alert(t('scheduleSession.sessionCreated', { count: inviteData.data.sent }));
+          alert(t('scheduleSession.sessionCreated', { count: selectedStudents.length }));
           // Reset form
           setFormData({
             courseId: '',
@@ -190,9 +197,14 @@ const ScheduleSessionCard = () => {
             topic: '',
             objectives: '',
             videoRoomId: '',
+            sessionNotes: '',
             sendImmediately: true,
           });
           setSelectedStudents([]);
+          // Notify parent to refresh
+          if (onSessionCreated) {
+            onSessionCreated();
+          }
         } else {
           alert(t('scheduleSession.sessionCreatedInviteFailed') + ': ' + inviteData.message);
         }
@@ -313,14 +325,19 @@ const ScheduleSessionCard = () => {
         {formData.courseId && (
           <div className="student-selection">
             <div className="student-selection-header">
-              <h4>{t('scheduleSession.selectStudents')} ({selectedStudents.length}/{enrolledStudents.length})</h4>
-              <button
-                type="button"
-                className="btn-link"
-                onClick={handleSelectAll}
-              >
-                {selectedStudents.length === enrolledStudents.length ? t('scheduleSession.deselectAll') : t('scheduleSession.selectAll')}
-              </button>
+              <h4>
+                {t('scheduleSession.selectStudents')} ({selectedStudents.length}/{formData.sessionType === 'ONE_ON_ONE' ? 1 : enrolledStudents.length})
+                {formData.sessionType === 'ONE_ON_ONE' && <small style={{ marginLeft: '8px', fontWeight: 'normal', color: '#6c757d' }}>- One student only</small>}
+              </h4>
+              {formData.sessionType !== 'ONE_ON_ONE' && (
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={handleSelectAll}
+                >
+                  {selectedStudents.length === enrolledStudents.length ? t('scheduleSession.deselectAll') : t('scheduleSession.selectAll')}
+                </button>
+              )}
             </div>
 
             <div className="student-list">
@@ -363,6 +380,41 @@ const ScheduleSessionCard = () => {
           <small className="text-muted">
             {t('scheduleSession.emailNote')}
           </small>
+        </div>
+
+        {/* Meeting Link */}
+        <div className="form-group">
+          <label htmlFor="videoRoomId">
+            {t('scheduleSession.meetingLink')}
+            {formData.sessionType === 'ONE_ON_ONE' ? ' *' : ' (Optional)'}
+          </label>
+          <input
+            type="text"
+            id="videoRoomId"
+            name="videoRoomId"
+            value={formData.videoRoomId}
+            onChange={handleInputChange}
+            placeholder="e.g. Google Meet or Teams Link"
+            required={formData.sessionType === 'ONE_ON_ONE'}
+          />
+          <small className="text-muted" style={{ display: 'block', marginTop: '0.25rem' }}>
+            {formData.sessionType === 'ONE_ON_ONE'
+              ? 'Required for One-on-One sessions'
+              : 'Leave blank to auto-generate a room ID'}
+          </small>
+        </div>
+
+        {/* Session Notes */}
+        <div className="form-group">
+          <label htmlFor="sessionNotes">{t('scheduleSession.meetingDetails')}</label>
+          <textarea
+            id="sessionNotes"
+            name="sessionNotes"
+            value={formData.sessionNotes}
+            onChange={handleInputChange}
+            placeholder={t('scheduleSession.meetingDetailsPlaceholder')}
+            rows="2"
+          />
         </div>
 
         {/* Submit Button */}

@@ -149,7 +149,9 @@ exports.getCourseById = async (req, res) => {
             firstName: true,
             lastName: true,
             profilePictureUrl: true,
-            bio: true
+            bio: true,
+            email: true,
+            phoneNumber: true
           }
         },
         lessons: {
@@ -163,7 +165,8 @@ exports.getCourseById = async (req, res) => {
             estimatedDuration: true,
             _count: {
               select: {
-                quizzes: true
+                quizzes: true,
+                comprehensionQuestions: true
               }
             }
           }
@@ -570,7 +573,7 @@ exports.getCourseEnrollments = async (req, res) => {
       });
     }
 
-    // Get enrollments with student info
+    // Get enrollments with student info and quiz attempts
     const enrollments = await prisma.enrollment.findMany({
       where: {
         courseId: id,
@@ -589,7 +592,33 @@ exports.getCourseEnrollments = async (req, res) => {
             firstName: true,
             lastName: true,
             email: true,
-            profilePictureUrl: true
+            profilePictureUrl: true,
+            quizAttempts: {
+              where: {
+                quiz: {
+                  lesson: {
+                    courseId: id
+                  }
+                }
+              },
+              select: {
+                id: true,
+                scorePercentage: true,
+                passed: true,
+                completedAt: true,
+                responses: true,
+                quiz: {
+                  select: {
+                    id: true,
+                    title: true,
+                    maxAttempts: true
+                  }
+                }
+              },
+              orderBy: {
+                completedAt: 'asc'
+              }
+            }
           }
         }
       },
@@ -612,5 +641,240 @@ exports.getCourseEnrollments = async (req, res) => {
         details: error.message
       }
     });
+  }
+};
+
+// ==================== REVIEWS ====================
+
+// Create review
+exports.createReview = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id: courseId } = req.params;
+    const { rating, comment } = req.body;
+
+    // Validate input
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+
+    if (!comment || comment.length < 5) {
+      return res.status(400).json({ error: 'Comment must be at least 5 characters' });
+    }
+
+    // Check enrollment
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId
+        }
+      }
+    });
+
+    if (!enrollment || enrollment.status !== 'ACTIVE') {
+      return res.status(403).json({ error: 'You must be enrolled in this course to leave a review' });
+    }
+
+    // Check if already reviewed
+    const existingReview = await prisma.courseReview.findUnique({
+      where: {
+        courseId_userId: {
+          courseId,
+          userId
+        }
+      }
+    });
+
+    if (existingReview) {
+      return res.status(400).json({ error: 'You have already reviewed this course' });
+    }
+
+    // Transaction: Create review and update course rating
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create review
+      const review = await tx.courseReview.create({
+        data: {
+          courseId,
+          userId,
+          rating,
+          comment
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true
+            }
+          }
+        }
+      });
+
+      // 2. Fetch all reviews to calculate new average
+      const aggregations = await tx.courseReview.aggregate({
+        where: { courseId },
+        _avg: { rating: true },
+        _count: { rating: true }
+      });
+
+      const averageRating = aggregations._avg.rating || 0;
+      const reviewCount = aggregations._count.rating || 0;
+
+      // 3. Update course stats
+      await tx.course.update({
+        where: { id: courseId },
+        data: {
+          averageRating,
+          reviewCount
+        }
+      });
+
+      return review;
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: 'Review submitted successfully'
+    });
+  } catch (error) {
+    console.error('Error creating review:', error);
+    res.status(500).json({ error: 'Failed to submit review' });
+  }
+};
+
+// Update review
+exports.updateReview = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id: courseId } = req.params;
+    const { rating, comment } = req.body;
+
+    // Validate input
+    if (rating && (rating < 1 || rating > 5)) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+
+    if (comment && comment.length < 5) {
+      return res.status(400).json({ error: 'Comment must be at least 5 characters' });
+    }
+
+    // Find existing review
+    const existingReview = await prisma.courseReview.findUnique({
+      where: {
+        courseId_userId: {
+          courseId,
+          userId
+        }
+      }
+    });
+
+    if (!existingReview) {
+      return res.status(404).json({ error: 'Review not found' });
+    }
+
+    // Transaction: Update review and recalculate stats
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update review
+      const review = await tx.courseReview.update({
+        where: {
+          courseId_userId: {
+            courseId,
+            userId
+          }
+        },
+        data: {
+          rating: rating || existingReview.rating,
+          comment: comment || existingReview.comment
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true
+            }
+          }
+        }
+      });
+
+      // 2. Recalculate stats
+      const aggregations = await tx.courseReview.aggregate({
+        where: { courseId },
+        _avg: { rating: true },
+        _count: { rating: true }
+      });
+
+      const averageRating = aggregations._avg.rating || 0;
+      const reviewCount = aggregations._count.rating || 0;
+
+      // 3. Update course
+      await tx.course.update({
+        where: { id: courseId },
+        data: {
+          averageRating,
+          reviewCount
+        }
+      });
+
+      return review;
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Review updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating review:', error);
+    res.status(500).json({ error: 'Failed to update review' });
+  }
+};
+
+// Get course reviews
+exports.getCourseReviews = async (req, res) => {
+  try {
+    const { id: courseId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [reviews, totalCount] = await Promise.all([
+      prisma.courseReview.findMany({
+        where: { courseId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              profilePictureUrl: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.courseReview.count({ where: { courseId } })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        reviews,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalCount,
+          totalPages: Math.ceil(totalCount / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch reviews' });
   }
 };

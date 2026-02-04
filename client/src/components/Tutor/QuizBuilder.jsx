@@ -6,7 +6,6 @@ import './QuizBuilder.css';
 const QUESTION_TYPES = {
   MULTIPLE_CHOICE: 'Multiple Choice',
   SHORT_ANSWER: 'Short Answer',
-  LONG_ANSWER: 'Long Answer', // Note: Backend logic for grading long answer might need manual review later, but we support adding it.
   TRUE_FALSE: 'True/False',
   MULTIPLE_SELECT: 'Multiple Select'
 };
@@ -300,12 +299,22 @@ const QuizBuilder = ({ lessonId, onClose, existingQuiz, onSave }) => {
                 />
               </div>
               <div className="form-group">
-                <label>Points on Pass</label>
+                <label>Total Quiz Points</label>
+                <input
+                  type="text"
+                  value={quizData.questions.reduce((sum, q) => sum + (parseInt(q.points) || 0), 0)}
+                  disabled
+                  className="input-disabled"
+                />
+              </div>
+              <div className="form-group">
+                <label>XP Reward</label>
                 <input
                   type="number"
                   name="pointsOnPass"
                   value={quizData.pointsOnPass}
                   onChange={handleQuizChange}
+                  title="Points awarded to student for passing/gamification"
                 />
               </div>
             </div>

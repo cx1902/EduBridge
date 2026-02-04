@@ -2,23 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './TodaySchedulePanel.css';
 
-const TodaySchedulePanel = () => {
+const MySchedulePanel = () => {
   const { t } = useTranslation('tutor');
   const [sessions, setSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('TODAY'); // 'TODAY' | 'UPCOMING'
   const [expandedSession, setExpandedSession] = useState(null);
 
   useEffect(() => {
-    fetchTodaySessions();
-  }, []);
+    fetchSessions(activeTab);
+  }, [activeTab]);
 
-  const fetchTodaySessions = async () => {
+  const fetchSessions = async (tab) => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (!token) return;
 
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-      const response = await fetch(`${API_URL}/tutor/dashboard/sessions/today`, {
+
+      let query = '';
+      const now = new Date();
+
+      if (tab === 'TODAY') {
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(now);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = `?startDate=${startOfDay.toISOString()}&endDate=${endOfDay.toISOString()}`;
+      } else {
+        // UPCOMING: Wide range for debugging/visibility
+        // Start from way back to catch everything
+        const startOfRange = new Date('2025-01-01');
+        startOfRange.setHours(0, 0, 0, 0);
+
+        // Fetch long into future
+        const futureDate = new Date(now);
+        futureDate.setDate(futureDate.getDate() + 90); // 3 months
+
+        query = `?startDate=${startOfRange.toISOString()}&endDate=${futureDate.toISOString()}`;
+      }
+
+      // We use the same 'today' endpoint which now supports ranges, effectively becoming a 'getSessionsByRange' endpoint
+      const response = await fetch(`${API_URL}/tutor/dashboard/sessions/today${query}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -27,15 +53,40 @@ const TodaySchedulePanel = () => {
       if (data.success) {
         setSessions(data.data);
       } else if (Array.isArray(data)) {
-        // Handle case where API returns array directly (legacy)
         setSessions(data);
+      } else {
+        setSessions([]);
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);
+      setSessions([]);
     } finally {
       setLoading(false);
     }
   };
+
+  // ... (helper functions status icons)
+
+  const renderParticipants = (session) => {
+    if (!session.bookings || session.bookings.length === 0) {
+      return <span className="text-muted text-sm">No students yet</span>;
+    }
+    return (
+      <div className="mini-participant-list">
+        {session.bookings.map(booking => (
+          <div key={booking.id} className="mini-participant-item">
+            <span className="name">{booking.student.firstName} {booking.student.lastName}</span>
+            <span className={`status-pill ${booking.status.toLowerCase()}`}>
+              {booking.status === 'CONFIRMED' ? 'Accepted' : booking.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // ... inside render:
+  // In the session-info div:
 
   const getEmailStatusIcon = (status) => {
     const icons = {
@@ -69,7 +120,7 @@ const TodaySchedulePanel = () => {
       const data = await response.json();
       if (data.success) {
         alert('Invitation resent successfully');
-        fetchTodaySessions();
+        fetchSessions(activeTab);
       }
     } catch (error) {
       console.error('Error resending invitation:', error);
@@ -113,173 +164,116 @@ const TodaySchedulePanel = () => {
     setExpandedSession(expandedSession === sessionId ? null : sessionId);
   };
 
-  if (loading) {
-    return (
-      <div className="today-schedule-panel card">
-        <h3>📅 {t('todaySchedule.title')}</h3>
-        <div className="loading-state">Loading sessions...</div>
-      </div>
-    );
-  }
+  const formatDate = (dateString, tab) => {
+    const date = new Date(dateString);
+    if (tab === 'TODAY') {
+      // For Today, we might just want the time? Or "Today, 10:00 AM"
+      // Design shows "10:35 AM - 11:35 AM"
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      // For Upcoming: "09 Feb 2026"
+      return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+  };
 
-  if (sessions.length === 0) {
-    return (
-      <div className="today-schedule-panel card">
-        <h3>📅 {t('todaySchedule.title')}</h3>
-        <div className="empty-state">
-          <p>{t('todaySchedule.noSessions')}</p>
-        </div>
-      </div>
-    );
-  }
+  const getBorderColorClass = (session) => {
+    // Map session types/status to border colors
+    if (session.sessionType === 'EXAM') return 'border-red'; // Example
+    if (session.status === 'CONFIRMED') return 'border-yellow';
+    return 'border-primary';
+  };
 
   return (
-    <div className="today-schedule-panel card">
-      <h3>📅 {t('todaySchedule.title')}</h3>
-      <p className="text-secondary">{sessions.length} session(s) scheduled</p>
+    <div className="my-schedule-panel">
+      <div className="panel-header">
+        <h3>My Schedule</h3>
+        <div className="schedule-tabs">
+          <button
+            className={`schedule-tab-btn ${activeTab === 'TODAY' ? 'active' : ''}`}
+            onClick={() => setActiveTab('TODAY')}
+          >
+            TODAY
+          </button>
+          <button
+            className={`schedule-tab-btn ${activeTab === 'UPCOMING' ? 'active' : ''}`}
+            onClick={() => setActiveTab('UPCOMING')}
+          >
+            UPCOMING
+          </button>
+        </div>
+      </div>
 
-      <div className="sessions-list">
-        {sessions.map((session) => {
-          const isExpanded = expandedSession === session.id;
-          const confirmedCount = session.emailTracking?.filter(
-            t => t.responseStatus === 'CONFIRMED'
-          ).length || 0;
-          const totalInvited = session.emailTracking?.length || 0;
+      {/* Sub-filters (optional, static for now as per design) */}
+      <div className="sub-filters">
+        <span className="filter-chip active">All</span>
+        <span className="filter-chip">One-on-One</span>
+        <span className="filter-chip">Group</span>
+      </div>
 
-          return (
-            <div key={session.id} className={`session-card ${session.status.toLowerCase()}`}>
-              {/* Session Header */}
-              <div className="session-header" onClick={() => toggleSessionDetails(session.id)}>
-                <div className="session-time">
-                  <span className="time-badge">
-                    {formatTime(session.scheduledStart)}
-                  </span>
-                  <span className="duration">{formatDuration(session.scheduledStart, session.scheduledEnd)}</span>
-                </div>
-                
-                <div className="session-info">
-                  <h4>{session.subject}</h4>
-                  <div className="session-meta">
-                    <span className="session-type">{session.sessionType.replace('_', ' ')}</span>
-                    <span className="participant-count">
-                      {confirmedCount}/{totalInvited} confirmed
+      <div className="schedule-list-container">
+        {loading ? (
+          <div className="schedule-loading-state">Loading...</div>
+        ) : sessions.length === 0 ? (
+          <div className="schedule-empty-state">
+            <p>No sessions scheduled for {activeTab.toLowerCase()}</p>
+          </div>
+        ) : (
+          <div className="schedule-list">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className={`schedule-item ${getBorderColorClass(session)}`}
+                onClick={() => toggleSessionDetails(session.id)}
+              >
+                <div className="item-main">
+                  <div className="item-header">
+                    <span className="item-type">{session.sessionType?.replace('_', ' ') || 'Session'}</span>
+                    <span className={`date-display ${activeTab === 'UPCOMING' ? 'highlight' : ''}`}>
+                      {activeTab === 'TODAY'
+                        ? `${formatTime(session.scheduledStart)} - ${formatTime(session.scheduledEnd)}`
+                        : formatDate(session.scheduledStart, 'UPCOMING')
+                      }
                     </span>
                   </div>
+                  <h4 className="item-title">{session.subject}</h4>
+
+                  <div className="item-details">
+                    <div className="detail-row">
+                      <i className="fas fa-map-marker-alt"></i>
+                      <span>{session.videoRoomId ? 'Online Meeting' : 'Physical Location'}</span>
+                    </div>
+                    {activeTab === 'UPCOMING' && (
+                      <div className="detail-row">
+                        <i className="fas fa-clock"></i>
+                        <span>{formatTime(session.scheduledStart)} - {formatTime(session.scheduledEnd)}</span>
+                      </div>
+                    )}
+                    {/* Mini Participants (Requested Feature) */}
+                    <div className="detail-row participants-row">
+                      <i className="fas fa-users"></i>
+                      {renderParticipants(session)}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="session-status">
-                  <span className={`status-badge ${session.status.toLowerCase()}`}>
-                    {session.status}
-                  </span>
-                  <button className="expand-btn">
-                    {isExpanded ? '▼' : '▶'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Expanded Details */}
-              {isExpanded && (
-                <div className="session-details">
-                  <div className="session-actions">
+                {/* Reuse existing expanded details logic if needed, or keep it simple */}
+                {expandedSession === session.id && (
+                  <div className="item-expanded-actions">
                     <button
                       className="btn btn-sm btn-primary"
-                      onClick={() => window.open(session.videoRoomId, '_blank')}
-                      disabled={session.status !== 'SCHEDULED'}
+                      onClick={(e) => { e.stopPropagation(); window.open(session.videoRoomId, '_blank'); }}
                     >
-                      🎥 Join Session
-                    </button>
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => handleSendReminder(session.id)}
-                    >
-                      🔔 Send Reminder
+                      Join
                     </button>
                   </div>
-
-                  {/* Participant List */}
-                  <div className="participants-section">
-                    <h5>Participants ({totalInvited})</h5>
-                    <div className="participants-list">
-                      {session.emailTracking?.map((tracking) => {
-                        const responseIcon = getEmailStatusIcon(tracking.responseStatus);
-                        const deliveryIcon = getEmailDeliveryIcon(tracking);
-
-                        return (
-                          <div key={tracking.id} className="participant-item">
-                            <div className="participant-info">
-                              <div className="participant-name">
-                                {tracking.student.firstName} {tracking.student.lastName}
-                              </div>
-                              <div className="participant-email">
-                                {tracking.student.email}
-                              </div>
-                            </div>
-
-                            <div className="tracking-indicators">
-                              <span
-                                className="status-indicator"
-                                style={{ color: deliveryIcon.color }}
-                                title={deliveryIcon.label}
-                              >
-                                {deliveryIcon.icon}
-                              </span>
-                              <span
-                                className="status-indicator"
-                                style={{ color: responseIcon.color }}
-                                title={responseIcon.label}
-                              >
-                                {responseIcon.icon}
-                              </span>
-                            </div>
-
-                            <div className="participant-actions">
-                              {tracking.responseStatus === 'PENDING' && (
-                                <button
-                                  className="btn-icon"
-                                  onClick={() => handleResendInvitation(session.id, tracking.studentId)}
-                                  title="Resend invitation"
-                                >
-                                  📧
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Email Statistics */}
-                  <div className="email-stats">
-                    <div className="stat-item">
-                      <span className="stat-label">Sent:</span>
-                      <span className="stat-value">{totalInvited}</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">Opened:</span>
-                      <span className="stat-value">
-                        {session.emailTracking?.filter(t => t.openedAt).length || 0}
-                      </span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">Clicked:</span>
-                      <span className="stat-value">
-                        {session.emailTracking?.filter(t => t.clickedAt).length || 0}
-                      </span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-label">Confirmed:</span>
-                      <span className="stat-value">{confirmedCount}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default TodaySchedulePanel;
+export default MySchedulePanel;

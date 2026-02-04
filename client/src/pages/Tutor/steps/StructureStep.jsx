@@ -228,30 +228,7 @@ const StructureStep = ({ formData, onChange, errors }) => {
         </div>
       )}
 
-      <div className='form-group'>
-        <label htmlFor='introVideoUrl'>
-          {t(
-            'createCourse.structure.fields.introUrl',
-            'Intro/Trailer Video URL'
-          )}
-        </label>
-        <input
-          type='url'
-          id='introVideoUrl'
-          value={formData.introVideoUrl}
-          onChange={e => onChange('introVideoUrl', e.target.value)}
-          placeholder={t(
-            'createCourse.structure.placeholders.introUrl',
-            'https://youtube.com/watch?v=...'
-          )}
-        />
-        <small className='form-help examples'>
-          {t(
-            'createCourse.structure.help.introTip',
-            'Tip: "30–60 seconds, say who it\'s for, what they\'ll learn, and results."'
-          )}
-        </small>
-      </div>
+
     </div>
   )
 }

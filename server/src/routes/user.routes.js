@@ -594,7 +594,7 @@ router.post('/report', authenticate, async (req, res) => {
 
     // Auto-assign priority based on category
     let priority = 'NORMAL';
-    if (['HARASSMENT', 'OFFENSIVE'].includes(category)) {
+    if (['HARASSMENT', 'OFFENSIVE', 'TECHNICAL_ERROR'].includes(category)) {
       priority = 'HIGH';
     } else if (category === 'SPAM') {
       priority = 'LOW';

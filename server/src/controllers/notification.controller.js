@@ -3,13 +3,29 @@ const prisma = require('../utils/prisma');
 // Get user notifications
 exports.getNotifications = async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const { limit = 20, offset = 0, unreadOnly = false } = req.query;
+    const userId = req.user.id;
+    const { limit = 20, offset = 0, unreadOnly = false, role } = req.query;
 
     const where = { userId };
     if (unreadOnly === 'true') {
       where.read = false;
     }
+
+    // Role-based filtering
+    if (role) {
+      if (role.toUpperCase() === 'STUDENT') {
+        where.OR = [
+          { link: { contains: '/student/' } },
+          { link: null } // Include generic notifications with no link
+        ];
+      } else if (role.toUpperCase() === 'TUTOR') {
+        where.OR = [
+          { link: { contains: '/tutor/' } },
+          { link: null }
+        ];
+      }
+    }
+
 
     const [notifications, totalCount, unreadCount] = await Promise.all([
       prisma.notification.findMany({
@@ -23,7 +39,7 @@ exports.getNotifications = async (req, res) => {
       prisma.notification.count({ where }),
       prisma.notification.count({
         where: {
-          userId,
+          ...where,
           read: false
         }
       })
@@ -54,11 +70,49 @@ exports.getNotifications = async (req, res) => {
   }
 };
 
+// Get unread notifications count
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { role } = req.query;
+
+    const where = { userId, read: false };
+
+    // Role-based filtering
+    if (role) {
+      if (role.toUpperCase() === 'STUDENT') {
+        where.OR = [
+          { link: { contains: '/student/' } },
+          { link: null }
+        ];
+      } else if (role.toUpperCase() === 'TUTOR') {
+        where.OR = [
+          { link: { contains: '/tutor/' } },
+          { link: null }
+        ];
+      }
+    }
+
+    const unreadCount = await prisma.notification.count({ where });
+
+    res.json({
+      success: true,
+      data: { unreadCount }
+    });
+  } catch (error) {
+    console.error('Get unread count error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch unread count'
+    });
+  }
+};
+
 // Mark notification as read
 exports.markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Verify ownership
     const notification = await prisma.notification.findUnique({
@@ -111,7 +165,7 @@ exports.markAsRead = async (req, res) => {
 // Mark all notifications as read
 exports.markAllAsRead = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     await prisma.notification.updateMany({
       where: {
@@ -144,7 +198,7 @@ exports.markAllAsRead = async (req, res) => {
 exports.deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Verify ownership
     const notification = await prisma.notification.findUnique({

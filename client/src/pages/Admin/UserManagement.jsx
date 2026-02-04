@@ -246,7 +246,6 @@ const UserManagement = () => {
                 <option value="STUDENT">{t('common:role.student')}</option>
                 <option value="TUTOR">{t('common:role.tutor')}</option>
                 <option value="ADMIN">{t('common:role.admin')}</option>
-                <option value="MANAGEMENT">{t('common:role.management')}</option>
               </select>
             </div>
             <div>
@@ -447,9 +446,19 @@ const UserManagement = () => {
               {modalType === 'delete' && 'Delete User'}
             </h3>
             {selectedUser && (
-              <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                <strong>{selectedUser.firstName} {selectedUser.lastName}</strong>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>{selectedUser.email}</div>
+              <div style={{
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                backgroundColor: 'var(--color-surface)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)'
+              }}>
+                <strong style={{ color: 'var(--color-text)', display: 'block' }}>
+                  {selectedUser.firstName} {selectedUser.lastName}
+                </strong>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+                  {selectedUser.email}
+                </div>
               </div>
             )}
 
@@ -461,7 +470,6 @@ const UserManagement = () => {
                     <option value="STUDENT">Student</option>
                     <option value="TUTOR">Tutor</option>
                     <option value="ADMIN">Admin</option>
-                    <option value="MANAGEMENT">Management</option>
                   </select>
                 </div>
                 <div style={{ marginBottom: '1rem' }}>

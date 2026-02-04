@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import './CourseApproval.css';
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -121,11 +122,10 @@ const CourseManagement = () => {
       <h1>Course Management</h1>
       <p>Manage, review, and edit all platform courses</p>
 
-      {/* Filters */}
       <div className="card mt-lg" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="admin-course-filters">
           <button
-            className={` btn ${filter === '' ? 'btn-primary' : 'btn-outline'}`}
+            className={`btn ${filter === '' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setFilter('')}
           >
             All Courses
@@ -176,7 +176,7 @@ const CourseManagement = () => {
                 {course.description?.substring(0, 200)}...
               </p>
 
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+              <div className="course-action-buttons">
                 {/* Approval Actions (Only for Pending) */}
                 {course.status === 'PENDING_APPROVAL' && (
                   <>
@@ -209,8 +209,7 @@ const CourseManagement = () => {
                   👁️ Preview
                 </button>
                 <button
-                  className="btn btn-outline"
-                  style={{ color: '#ef4444', borderColor: '#ef4444' }}
+                  className="btn btn-outline btn-delete-outline"
                   onClick={() => handleDeleteCourse(course.id)}
                 >
                   🗑️ Delete

@@ -29,7 +29,11 @@ exports.getUsers = async (req, res) => {
       maxPoints,
     } = req.query;
 
-    const where = {};
+    const where = {
+      NOT: {
+        email: { startsWith: 'deleted_' }
+      }
+    };
 
     // Search filter - handle both single words and full names
     if (search) {
@@ -66,7 +70,7 @@ exports.getUsers = async (req, res) => {
     }
 
     // Role filter
-    if (role && ['STUDENT', 'TUTOR', 'ADMIN', 'MANAGEMENT'].includes(role)) {
+    if (role && ['STUDENT', 'TUTOR', 'ADMIN'].includes(role)) {
       where.role = role;
     }
 
@@ -76,7 +80,7 @@ exports.getUsers = async (req, res) => {
     }
 
     // Email verification filter
-    if (emailVerified !== undefined) {
+    if (emailVerified !== undefined && emailVerified !== '') {
       where.emailVerified = emailVerified === 'true';
     }
 
@@ -154,25 +158,36 @@ exports.getUsers = async (req, res) => {
       prisma.user.count({ where }),
       // Get aggregated statistics
       Promise.all([
-        prisma.user.count(),
+        prisma.user.count({
+          where: { NOT: { email: { startsWith: 'deleted_' } } }
+        }),
         prisma.user.groupBy({
           by: ['role'],
+          where: { NOT: { email: { startsWith: 'deleted_' } } },
           _count: true,
         }),
         prisma.user.groupBy({
           by: ['status'],
+          where: { NOT: { email: { startsWith: 'deleted_' } } },
           _count: true,
         }),
         prisma.user.groupBy({
           by: ['preferredLanguage'],
+          where: { NOT: { email: { startsWith: 'deleted_' } } },
           _count: true,
         }),
-        prisma.user.count({ where: { emailVerified: true } }),
+        prisma.user.count({
+          where: {
+            emailVerified: true,
+            NOT: { email: { startsWith: 'deleted_' } }
+          }
+        }),
         prisma.user.count({
           where: {
             warningsReceived: {
               some: {},
             },
+            NOT: { email: { startsWith: 'deleted_' } }
           },
         }),
       ]),
@@ -505,7 +520,7 @@ exports.changeUserRole = async (req, res) => {
     const adminId = req.user.id;
 
     // Validate input
-    if (!['STUDENT', 'TUTOR', 'ADMIN', 'MANAGEMENT'].includes(newRole)) {
+    if (!['STUDENT', 'TUTOR', 'ADMIN'].includes(newRole)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });
     }
 
@@ -1375,7 +1390,7 @@ exports.resolveReport = async (req, res) => {
 
     await logAction({
       adminId,
-      actionType: actionTypeMap[action],
+      actionType: actionTypeMap[action] || ACTION_TYPES.REPORT_RESOLVED,
       targetResourceType: RESOURCE_TYPES.REPORT,
       targetResourceId: id,
       previousState: { status: report.status },
@@ -1384,9 +1399,37 @@ exports.resolveReport = async (req, res) => {
       ipAddress: req.ip || req.connection.remoteAddress,
     });
 
+    // --- NOTIFY REPORTER ---
+    try {
+      // 1. Send In-App Notification
+      await prisma.notification.create({
+        data: {
+          userId: report.reporterId,
+          type: 'REPORT_RESOLUTION',
+          title: 'Admin Replied to Your Report',
+          message: `Your report (ID: ${id.substring(0, 8)}) has been ${updatedReport.status.toLowerCase()}. Check your inbox for details.`,
+          link: '/inbox', // Link to inbox so they can see the full resolution
+        },
+      });
+
+      // 2. Create Inbox Message from Admin
+      await prisma.inboxMessage.create({
+        data: {
+          senderId: adminId,
+          receiverId: report.reporterId,
+          subject: `Feedback regarding your report (ID: ${id.substring(0, 8)})`,
+          content: `Hello, \n\nWe have reviewed your report regarding ${report.reportedItemType.toLowerCase()} (ID: ${report.reportedItemId}). \n\n**Admin Resolution:** \n${resolution}\n\nThank you for helping us improve EduBridge.`,
+          type: 'ADMIN_TICKET',
+        },
+      });
+    } catch (notifyError) {
+      console.error('Failed to send notification/message to reporter:', notifyError);
+      // Don't fail the whole request if notification fails
+    }
+
     res.json({
       success: true,
-      message: 'Report resolved successfully',
+      message: 'Report resolved successfully. User notified.',
       report: updatedReport,
     });
   } catch (error) {
@@ -2615,6 +2658,7 @@ exports.getPlatformStats = async (req, res) => {
       totalSessions,
       completedSessions,
       totalFiles,
+      totalEnrollments,
       totalRevenue
     ] = await Promise.all([
       prisma.user.count(),
@@ -2626,6 +2670,7 @@ exports.getPlatformStats = async (req, res) => {
       prisma.tutoringSession.count(),
       prisma.tutoringSession.count({ where: { status: 'COMPLETED' } }),
       prisma.componentFile.count(),
+      prisma.enrollment.count(),
       // Check if Transaction model exists and has records
       prisma.transaction ? prisma.transaction.aggregate({
         _sum: { amount: true },
@@ -2644,7 +2689,8 @@ exports.getPlatformStats = async (req, res) => {
         },
         courses: {
           total: totalCourses,
-          published: publishedCourses
+          published: publishedCourses,
+          totalEnrollments
         },
         sessions: {
           total: totalSessions,
@@ -2663,4 +2709,69 @@ exports.getPlatformStats = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch platform statistics' });
   }
 };
+/**
+ * Get detailed platform analytics
+ * GET /api/admin/detailed-analytics
+ */
+exports.getDetailedAnalytics = async (req, res) => {
+  try {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    const [
+      newRegistrationsThisMonth,
+      totalStudents,
+      totalTutors,
+      topCourses
+    ] = await Promise.all([
+      prisma.user.count({
+        where: {
+          createdAt: {
+            gte: firstDayOfMonth
+          }
+        }
+      }),
+      prisma.user.count({ where: { role: 'STUDENT' } }),
+      prisma.user.count({ where: { role: 'TUTOR' } }),
+      prisma.course.findMany({
+        where: { status: 'PUBLISHED' },
+        select: {
+          id: true,
+          title: true,
+          enrollmentCount: true,
+          tutor: {
+            select: {
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: {
+          enrollmentCount: 'desc'
+        },
+        take: 5
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        userGrowth: {
+          newRegistrationsThisMonth,
+          totalStudents,
+          totalTutors,
+          studentTutorRatio: totalTutors > 0 ? (totalStudents / totalTutors).toFixed(1) : totalStudents
+        },
+        topCourses: topCourses.map(c => ({
+          id: c.id,
+          title: c.title,
+          enrollments: c.enrollmentCount,
+          tutorName: `${c.tutor.firstName} ${c.tutor.lastName}`
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching detailed analytics:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch detailed analytics' });
+  }
+};

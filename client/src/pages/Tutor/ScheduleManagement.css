@@ -73,6 +73,49 @@
     color: var(--color-text);
 }
 
+/* Make date and time input icons theme-aware */
+.form-group input[type="date"],
+.form-group input[type="time"] {
+    /* Use color-scheme to adapt calendar/clock icons to theme */
+    color-scheme: light dark;
+}
+
+/* For light mode - black icons */
+[data-theme="light"] .form-group input[type="date"],
+[data-theme="light"] .form-group input[type="time"] {
+    color-scheme: light;
+}
+
+/* For dark mode - white icons */
+[data-theme="dark"] .form-group input[type="date"],
+[data-theme="dark"] .form-group input[type="time"] {
+    color-scheme: dark;
+}
+
+/* Additional styling for better visibility */
+.form-group input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.form-group input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.form-group input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* Dark theme specific icon styling */
+[data-theme="dark"] .form-group input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] .form-group input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+/* Light theme specific icon styling */
+[data-theme="light"] .form-group input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="light"] .form-group input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0);
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

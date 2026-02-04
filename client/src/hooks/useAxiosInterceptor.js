@@ -18,9 +18,9 @@ const useAxiosInterceptor = () => {
                     return Promise.reject(error);
                 }
 
-                if (error.response && [401, 403].includes(error.response.status)) {
-                    // If 401/403, clear auth and redirect
-                    // Only trigger if we aren't already logging out to avoid race conditions
+                if (error.response && error.response.status === 401) {
+                    // If 401 (Unauthorized), clear auth and redirect
+                    // This typically means the token has expired
                     await logout();
                     navigate('/login');
                 }

@@ -1,0 +1,42 @@
+/* Tutor Verification Styles */
+.verification-filters {
+    display: flex !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start;
+}
+
+.verification-filters .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.application-actions {
+    display: flex !important;
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+    margin-top: 1rem !important;
+}
+
+.application-actions .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 100px;
+    justify-content: center;
+}
+
+.modal-actions {
+    display: flex !important;
+    gap: 0.75rem !important;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.modal-actions .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 100px;
+    justify-content: center;
+}

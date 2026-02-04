@@ -7,22 +7,22 @@ const { sendEmail } = require('../utils/emailService');
  */
 exports.searchTutors = async (req, res) => {
     try {
-        const { name, subject, level, maxPrice } = req.query;
+        const { name, subject, level, maxPrice, available } = req.query;
 
         const where = {
             role: 'TUTOR',
-            status: 'ACTIVE',
-            tutorProfile: {
-                isNot: null
-            }
+            status: 'ACTIVE'
         };
 
-        // Build filter conditions
-        const tutorProfileWhere = {};
-
-        if (maxPrice) {
-            tutorProfileWhere.hourlyRate = {
-                lte: parseFloat(maxPrice)
+        // Filter by availability if requested
+        if (available === 'true') {
+            where.availabilitySlots = {
+                some: {
+                    isBooked: false,
+                    startTime: {
+                        gt: new Date()
+                    }
+                }
             };
         }
 
@@ -31,7 +31,6 @@ exports.searchTutors = async (req, res) => {
             const terms = name.trim().split(/\s+/);
             if (terms.length > 1) {
                 // If multiple terms, try to match first name AND last name
-                // or just standard contains for single fields
                 where.OR = [
                     {
                         AND: [
@@ -40,20 +39,31 @@ exports.searchTutors = async (req, res) => {
                         ]
                     },
                     { firstName: { contains: name, mode: 'insensitive' } },
-                    { lastName: { contains: name, mode: 'insensitive' } }
+                    { lastName: { contains: name, mode: 'insensitive' } },
+                    { bio: { contains: name, mode: 'insensitive' } }, // Search User Bio
+                    {
+                        tutorProfile: {
+                            bio: { contains: name, mode: 'insensitive' } // Search Tutor Profile Bio
+                        }
+                    }
                 ];
             } else {
                 where.OR = [
                     { firstName: { contains: name, mode: 'insensitive' } },
-                    { lastName: { contains: name, mode: 'insensitive' } }
+                    { lastName: { contains: name, mode: 'insensitive' } },
+                    { bio: { contains: name, mode: 'insensitive' } },
+                    {
+                        tutorProfile: {
+                            bio: { contains: name, mode: 'insensitive' }
+                        }
+                    }
                 ];
             }
         }
 
-        // Search by subject
-        let tutorSubjectsWhere = {};
+        // Search by subject - add to main where clause
         if (subject) {
-            tutorSubjectsWhere = {
+            where.tutorSubjects = {
                 some: {
                     subject: {
                         name: { contains: subject, mode: 'insensitive' }
@@ -62,14 +72,21 @@ exports.searchTutors = async (req, res) => {
             };
         }
 
+        // Search by max price - add to tutorProfile where
+        if (maxPrice) {
+            where.tutorProfile = {
+                ...where.tutorProfile,
+                hourlyRate: {
+                    lte: parseFloat(maxPrice)
+                }
+            };
+        }
+
         const tutors = await prisma.user.findMany({
             where,
             include: {
-                tutorProfile: {
-                    where: Object.keys(tutorProfileWhere).length > 0 ? tutorProfileWhere : undefined
-                },
+                tutorProfile: true,
                 tutorSubjects: {
-                    where: Object.keys(tutorSubjectsWhere).length > 0 ? tutorSubjectsWhere : undefined,
                     include: {
                         subject: true
                     }
@@ -77,33 +94,35 @@ exports.searchTutors = async (req, res) => {
             }
         });
 
-        // Filter out tutors that don't match profile criteria
-        const filteredTutors = tutors.filter(tutor => tutor.tutorProfile !== null);
+        // Transform results
+        const results = tutors.map(tutor => ({
+            id: tutor.id,
+            user: {
+                firstName: tutor.firstName,
+                lastName: tutor.lastName,
+                profilePictureUrl: tutor.profilePictureUrl,
+                email: tutor.email,
+                phoneNumber: tutor.phoneNumber
+            },
+            bio: tutor.tutorProfile?.bio || tutor.bio,
+            hourlyRate: tutor.tutorProfile?.hourlyRate,
+            averageRating: tutor.tutorProfile?.averageRating,
+            reviewCount: tutor.tutorProfile?.reviewCount || 0,
+            totalSessions: tutor.tutorProfile?.totalSessions || 0,
+            tutorSubjects: tutor.tutorSubjects || []
+        }));
 
         res.json({
             success: true,
-            data: filteredTutors.map(tutor => ({
-                id: tutor.id,
-                user: {
-                    firstName: tutor.firstName,
-                    lastName: tutor.lastName,
-                    profilePictureUrl: tutor.profilePictureUrl,
-                    id: tutor.id,
-                    email: tutor.email,
-                    phoneNumber: tutor.phoneNumber
-                },
-                bio: tutor.tutorProfile?.bio,
-                hourlyRate: tutor.tutorProfile?.hourlyRate,
-                averageRating: tutor.tutorProfile?.averageRating,
-                reviewCount: 0, // TODO: Calculate from reviews
-                tutorSubjects: tutor.tutorSubjects
-            }))
+            data: results
         });
+
     } catch (error) {
         console.error('Search tutors error:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to search tutors'
+            message: 'Failed to search tutors',
+            error: error.message
         });
     }
 };
@@ -353,12 +372,53 @@ exports.acceptBooking = async (req, res) => {
             });
         }
 
-        // Update booking request
-        const updatedBooking = await prisma.bookingRequest.update({
-            where: { id },
+        // Update booking request and create session in transaction
+        const { updatedBooking, newSession } = await prisma.$transaction(async (tx) => {
+            const updated = await tx.bookingRequest.update({
+                where: { id },
+                data: {
+                    status: 'ACCEPTED',
+                    respondedAt: new Date()
+                }
+            });
+
+            // Parse date and time
+            const startStr = `${booking.preferredDate.toISOString().split('T')[0]}T${booking.preferredTime}:00`;
+            const scheduledStart = new Date(startStr);
+            const scheduledEnd = new Date(scheduledStart.getTime() + booking.duration * 60000);
+
+            // Create TutoringSession
+            const session = await tx.tutoringSession.create({
+                data: {
+                    tutorId: booking.tutorId,
+                    subject: booking.subject,
+                    scheduledStart,
+                    scheduledEnd,
+                    status: 'SCHEDULED',
+                    sessionType: 'ONE_ON_ONE'
+                }
+            });
+
+            // Create SessionBooking for the student
+            await tx.sessionBooking.create({
+                data: {
+                    sessionId: session.id,
+                    studentId: booking.studentId,
+                    status: 'PENDING'
+                }
+            });
+
+            return { updatedBooking: updated, newSession: session };
+        });
+
+        // Create notification for student
+        await prisma.notification.create({
             data: {
-                status: 'ACCEPTED',
-                respondedAt: new Date()
+                userId: booking.studentId,
+                type: 'SESSION_CONFIRMED',
+                title: 'Booking Accepted',
+                message: `${booking.tutor.firstName} ${booking.tutor.lastName} has accepted your booking request for ${booking.subject}.`,
+                link: '/student/sessions'
             }
         });
 

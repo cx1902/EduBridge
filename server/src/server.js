@@ -64,6 +64,7 @@ app.use('/api', require('./routes/component.routes'))
 app.use('/api/tutoring', require('./routes/tutoring.routes'))
 app.use('/api/bookings', require('./routes/booking.routes'))
 app.use('/api/availability', require('./routes/availability.routes')) // New route registration
+app.use('/api/comprehension', require('./routes/comprehension.routes'))
 
 // Error handling middleware
 app.use((err, req, res, next) => {

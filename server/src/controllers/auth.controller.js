@@ -75,9 +75,12 @@ exports.register = async (req, res) => {
       },
     });
 
-    // If registering as TUTOR, create verification application
+    // If registering as TUTOR, create profile and verification application
     if (role === 'TUTOR') {
       try {
+        const { bio, primarySubject } = req.body;
+
+        // Create Tutor Verification Application
         if (prisma.tutorVerificationApplication) {
           await prisma.tutorVerificationApplication.create({
             data: {
@@ -88,11 +91,44 @@ exports.register = async (req, res) => {
             },
           });
           console.log(`✅ Tutor verification application created for: ${email}`);
-        } else {
-          console.warn('⚠️ TutorVerificationApplication model missing - Application record skipped');
         }
+
+        // Create Tutor Profile (Bio)
+        if (bio) {
+          await prisma.tutorProfile.create({
+            data: {
+              userId: user.id,
+              bio: bio,
+              hourlyRate: 0, // Default to 0
+              languages: ['English'], // Default
+              levelsSupported: ['SECONDARY'], // Default
+            }
+          });
+          console.log(`✅ Tutor profile created for: ${email}`);
+        }
+
+        // Create Tutor Subject (Primary Subject)
+        if (primarySubject) {
+          // Find or create subject
+          const subject = await prisma.subject.upsert({
+            where: { name: primarySubject },
+            update: {},
+            create: { name: primarySubject }
+          });
+
+          // Link subject to tutor
+          await prisma.tutorSubject.create({
+            data: {
+              tutorId: user.id,
+              subjectId: subject.id,
+              skillLevel: 'ADVANCED' // Default to Advanced for primary subject
+            }
+          });
+          console.log(`✅ Primary subject '${primarySubject}' assigned to: ${email}`);
+        }
+
       } catch (appError) {
-        console.error('❌ Failed to create tutor verification application:', appError);
+        console.error('❌ Failed to create tutor profile data:', appError);
         // Do not fail the registration; just log the error
       }
     }

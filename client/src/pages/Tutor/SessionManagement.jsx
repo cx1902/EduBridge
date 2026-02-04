@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTutorSessions, updateSessionStatus } from '../../api/sessions';
+import api from '../../api/axios'; // Import direct api instance
+import { getTutorSessions, updateSessionStatus, declineBookingRequest, deleteSession } from '../../api/sessions';
 import { format } from 'date-fns';
 import './SessionManagement.css';
 
 const SessionManagement = () => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('ALL'); // ALL, UPCOMING, COMPLETED, CANCELLED
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [inviteData, setInviteData] = useState({
+    subject: '',
+    scheduledStart: '',
+    scheduledEnd: '',
+    notes: '',
+    link: ''
+  });
 
   const { data: sessionsResponse, isLoading, error } = useQuery({
     queryKey: ['tutorSessions'],
@@ -25,25 +35,144 @@ const SessionManagement = () => {
     }
   });
 
-  const handleStatusUpdate = (sessionId, status) => {
+  const declineMutation = useMutation({
+    mutationFn: ({ sessionId, reason }) => declineBookingRequest(sessionId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tutorSessions']);
+      alert('Booking declined successfully');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to decline booking');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (sessionId) => deleteSession(sessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tutorSessions']);
+      alert('Session deleted successfully');
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to delete session');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ sessionId, data }) => api.patch(`/sessions/${sessionId}`, data), // Assuming this endpoint will exist
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tutorSessions']);
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to update session');
+    }
+  });
+
+  const handleUpdateSession = (sessionId, data) => {
+    updateMutation.mutate({ sessionId, data });
+  };
+
+  const handleDeleteSession = (sessionId) => {
+    if (window.confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+      deleteMutation.mutate(sessionId);
+    }
+  };
+
+  const handleStatusUpdate = (sessionId, status, reason) => {
+    if (status === 'DECLINE') {
+      declineMutation.mutate({ sessionId, reason });
+      return;
+    }
+
     if (status === 'CANCELLED' && !window.confirm('Are you sure you want to cancel this session?')) {
       return;
     }
     statusMutation.mutate({ sessionId, status });
   };
 
-  const getStudentName = (session) => {
-    if (session.request?.student) {
-      return `${session.request.student.firstName} ${session.request.student.lastName}`;
-    }
-    if (session.bookings && session.bookings.length > 0) {
-      if (session.bookings.length === 1) {
-        const s = session.bookings[0].student;
-        return `${s.firstName} ${s.lastName}`;
+  const openInviteModal = (session) => {
+    setSelectedSession(session);
+    let notes = '';
+    try {
+      if (session.sessionNotes && session.sessionNotes.startsWith('{')) {
+        const parsed = JSON.parse(session.sessionNotes);
+        notes = parsed.notes || '';
       }
-      return `${session.bookings.length} Students`;
+    } catch (e) {
+      notes = session.sessionNotes || '';
     }
-    return 'No students yet';
+
+    setInviteData({
+      subject: session.subject,
+      scheduledStart: format(new Date(session.scheduledStart), "yyyy-MM-dd'T'HH:mm"),
+      scheduledEnd: format(new Date(session.scheduledEnd), "yyyy-MM-dd'T'HH:mm"),
+      notes,
+      link: session.videoRoomId || ''
+    });
+    setIsInviteModalOpen(true);
+  };
+
+  const handleSendInvitation = async (e) => {
+    e.preventDefault();
+    if (!inviteData.link) {
+      alert('Please provide a meeting link.');
+      return;
+    }
+
+    try {
+      // 1. Update session details
+      await updateMutation.mutateAsync({
+        sessionId: selectedSession.id,
+        data: {
+          subject: inviteData.subject,
+          scheduledStart: inviteData.scheduledStart,
+          scheduledEnd: inviteData.scheduledEnd,
+          sessionNotes: JSON.stringify({
+            notes: inviteData.notes
+          }),
+          videoRoomId: inviteData.link
+        }
+      });
+
+      // 2. Confirm session (triggers backend invitations)
+      await statusMutation.mutateAsync({
+        sessionId: selectedSession.id,
+        status: 'CONFIRMED'
+      });
+
+      setIsInviteModalOpen(false);
+      alert('Invitation sent successfully!');
+    } catch (err) {
+      console.error('Invitation flow error:', err);
+    }
+  };
+
+  const renderStudentInfo = (session) => {
+    if (session.request?.student) {
+      return (
+        <div>
+          <div>{session.request.student.firstName} {session.request.student.lastName}</div>
+          <span className="badge badge-info">Request</span>
+        </div>
+      );
+    }
+
+    if (session.bookings && session.bookings.length > 0) {
+      return (
+        <div className="student-list">
+          {session.bookings.map(booking => (
+            <div key={booking.id} className="student-item">
+              <span className="student-name">
+                {booking.student.firstName} {booking.student.lastName}
+              </span>
+              <span className={`booking-status ${booking.status.toLowerCase()}`}>
+                {booking.status === 'CONFIRMED' ? 'Accepted' : booking.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return <span className="text-muted">No students yet</span>;
   };
 
   if (isLoading) return <div className="loading-spinner">Loading...</div>;
@@ -83,6 +212,7 @@ const SessionManagement = () => {
               <th>Date & Time</th>
               <th>Subject</th>
               <th>Student(s)</th>
+              <th>Note</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -107,7 +237,16 @@ const SessionManagement = () => {
                   </td>
                   <td>
                     <div className="student-cell">
-                      <span>{getStudentName(session)}</span>
+                      {renderStudentInfo(session)}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="note-cell" title={session.sessionNotes || 'No note provided'}>
+                      {session.sessionNotes ? (
+                        <span className="note-text">{session.sessionNotes}</span>
+                      ) : (
+                        <span className="note-empty">No note</span>
+                      )}
                     </div>
                   </td>
                   <td>
@@ -117,17 +256,41 @@ const SessionManagement = () => {
                   </td>
                   <td>
                     <div className="actions-cell">
-                      {(session.status === 'SCHEDULED' || session.status === 'CONFIRMED') && (
-                        <>
-                          {session.status === 'SCHEDULED' && (
+                      {session.status === 'SCHEDULED' && (
+                        <div className="status-actions">
+                          <button
+                            className="btn-action invite"
+                            onClick={() => openInviteModal(session)}
+                            disabled={statusMutation.isPending || updateMutation.isPending}
+                          >
+                            Send Invitation
+                          </button>
+                          <button
+                            className="btn-action decline"
+                            onClick={() => {
+                              const reason = window.prompt('Reason for declining (optional):', '');
+                              if (reason !== null) {
+                                handleStatusUpdate(session.id, 'DECLINE', reason);
+                              }
+                            }}
+                            disabled={statusMutation.isPending}
+                          >
+                            Decline
+                          </button>
+                          {(!session.bookings || session.bookings.length === 0) && (
                             <button
-                              className="btn-action confirm"
-                              onClick={() => handleStatusUpdate(session.id, 'CONFIRMED')}
-                              disabled={statusMutation.isPending}
+                              className="btn-action delete"
+                              onClick={() => handleDeleteSession(session.id)}
+                              disabled={deleteMutation.isPending}
+                              title="Delete Session"
                             >
-                              Confirm
+                              <i className="fas fa-trash"></i>
                             </button>
                           )}
+                        </div>
+                      )}
+                      {session.status === 'CONFIRMED' && (
+                        <div className="status-actions">
                           <button
                             className="btn-action complete"
                             onClick={() => handleStatusUpdate(session.id, 'COMPLETED')}
@@ -142,13 +305,33 @@ const SessionManagement = () => {
                           >
                             Cancel
                           </button>
-                        </>
+                        </div>
                       )}
                       {session.status === 'COMPLETED' && (
-                        <span className="text-muted">Completed</span>
+                        <div className="status-actions">
+                          <span className="text-success" style={{ marginRight: '8px' }}>Completed</span>
+                          <button
+                            className="btn-action delete"
+                            onClick={() => handleDeleteSession(session.id)}
+                            disabled={deleteMutation.isPending}
+                            title="Delete Record"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
                       )}
                       {session.status === 'CANCELLED' && (
-                        <span className="text-muted">Cancelled</span>
+                        <div className="status-actions">
+                          <span className="text-muted" style={{ marginRight: '8px' }}>Cancelled</span>
+                          <button
+                            className="btn-action delete"
+                            onClick={() => handleDeleteSession(session.id)}
+                            disabled={deleteMutation.isPending}
+                            title="Delete Record"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </td>
@@ -164,6 +347,86 @@ const SessionManagement = () => {
           </tbody>
         </table>
       </div>
+
+      {isInviteModalOpen && (
+        <div className="modal-overlay">
+          <div className="invite-modal">
+            <div className="modal-header">
+              <h2>Send Session Invitation</h2>
+              <button className="btn-close" onClick={() => setIsInviteModalOpen(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleSendInvitation} className="invite-form">
+              <div className="form-group">
+                <label>Course / Subject</label>
+                <input
+                  type="text"
+                  value={inviteData.subject}
+                  onChange={(e) => setInviteData({ ...inviteData, subject: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Start Time</label>
+                  <input
+                    type="datetime-local"
+                    value={inviteData.scheduledStart}
+                    onChange={(e) => setInviteData({ ...inviteData, scheduledStart: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>End Time</label>
+                  <input
+                    type="datetime-local"
+                    value={inviteData.scheduledEnd}
+                    onChange={(e) => setInviteData({ ...inviteData, scheduledEnd: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Meeting Link URL</label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://meet.google.com/abc-defg-hij"
+                  value={inviteData.link}
+                  onChange={(e) => setInviteData({ ...inviteData, link: e.target.value })}
+                  required
+                />
+                <small className="form-helper">This link will be visible to the student only after they accept the invitation.</small>
+              </div>
+              <div className="form-group">
+                <label>Tutor Notes / Requirements</label>
+                <textarea
+                  placeholder="e.g. Please bring your textbook and prepare questions regarding Chapter 2..."
+                  value={inviteData.notes}
+                  onChange={(e) => setInviteData({ ...inviteData, notes: e.target.value })}
+                  rows={3}
+                  className="form-textarea"
+                />
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setIsInviteModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={statusMutation.isPending || updateMutation.isPending}
+                >
+                  {statusMutation.isPending || updateMutation.isPending ? 'Sending...' : 'Send Invitation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

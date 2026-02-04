@@ -318,15 +318,34 @@
   padding: 3rem;
 }
 
+/* Footer Navigation */
+.lesson-footer {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  /* Sidebar removed */
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--lesson-sidebar-border);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
 /* Typography for Content */
 .rich-text-content {
   font-size: 1.125rem;
   line-height: 1.8;
   color: #cbd5e1;
-  /* Slightly softer white */
-  max-width: 65ch;
-  /* Optimal reading width */
-  margin: 0 auto;
+  /* Ensure text wraps */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .rich-text-content h1,
@@ -401,27 +420,7 @@
 }
 
 /* Footer Navigation */
-.lesson-footer {
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  /* width: calc(100% - 350px); Adjust dynamically with JS or simpler layout trick */
-  left: 350px;
-  /* Assuming sidebar open */
-  background: rgba(17, 24, 39, 0.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--lesson-sidebar-border);
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 10;
-}
-
-.course-lesson-layout:has(.lesson-sidebar.closed) .lesson-footer {
-  left: 0;
-}
+/* Old footer styles removed */
 
 .btn-nav-prev,
 .btn-nav-next {
@@ -491,24 +490,9 @@
     overflow-y: auto;
   }
 
-  .lesson-sidebar {
-    width: 100%;
-    height: auto;
-    border-right: none;
-    position: relative;
-  }
+  /* Sidebar responsive styles removed */
 
-  .lesson-sidebar.closed {
-    display: none;
-    width: 100%;
-  }
-
-  .lesson-footer {
-    position: sticky;
-    left: 0;
-    width: 100%;
-    padding: 1rem;
-  }
+  /* Footer responsive styles removed */
 
   .lesson-hero-header {
     margin-top: 1rem;
@@ -518,4 +502,139 @@
     padding: 1rem;
     padding-bottom: 2rem;
   }
+}
+
+/* Session Timer Highlight */
+.meta-pill.session-timer {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: var(--lesson-accent);
+  font-weight: 600;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+  }
+}
+
+/* Confirmation Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.confirm-modal {
+  background: var(--lesson-card-bg);
+  border: 1px solid var(--lesson-sidebar-border);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.confirm-modal h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--lesson-text-primary);
+  margin: 0 0 1rem 0;
+}
+
+.confirm-modal p {
+  color: var(--lesson-text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.confirm-modal .timer-info {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.confirm-modal .timer-info strong {
+  color: var(--lesson-accent);
+  font-weight: 700;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--lesson-text-secondary);
+  border: 1px solid var(--lesson-sidebar-border);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--lesson-text-primary);
+  border-color: var(--lesson-text-secondary);
+}
+
+.btn-primary {
+  background: var(--lesson-accent);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:hover {
+  background: var(--lesson-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
 }

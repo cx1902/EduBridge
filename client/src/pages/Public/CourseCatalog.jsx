@@ -116,9 +116,13 @@ const CourseCatalog = () => {
             className="filter-select"
           >
             <option value="">All Levels</option>
-            <option value="PRIMARY">Primary</option>
-            <option value="SECONDARY">Secondary</option>
-            <option value="UNIVERSITY">University</option>
+            <option value="PRIMARY">Primary School</option>
+            <option value="SECONDARY">Secondary School</option>
+            <option value="PRE_UNIVERSITY">Pre-University / A-Level</option>
+            <option value="DIPLOMA">Diploma</option>
+            <option value="UNDERGRADUATE">Undergraduate</option>
+            <option value="POSTGRADUATE">Postgraduate</option>
+            <option value="PROFESSIONAL">Professional / Continuing Education</option>
           </select>
 
           <select

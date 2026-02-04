@@ -1,0 +1,242 @@
+/* Dark Theme for Review Modal */
+
+.review-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    /* Darker overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+    backdrop-filter: blur(4px);
+    /* Modern blur effect */
+}
+
+.review-modal {
+    background-color: #1a1a2e;
+    /* Dark theme background */
+    padding: 2.5rem;
+    border-radius: 16px;
+    /* Larger radius */
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    /* Stronger shadow */
+    animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Bouncy animation */
+    color: #e0e0e0;
+    /* Light text */
+    border: 1px solid #2a2a3d;
+}
+
+.review-modal h2 {
+    margin-top: 0;
+    color: #ffffff;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #a0a0a0;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: #ffffff;
+}
+
+.rating-select {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.rating-select p {
+    margin-bottom: 0.5rem;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stars-input {
+    font-size: 2.2rem;
+    color: #33334d;
+    /* Dark empty stars */
+    margin-bottom: 1rem;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.stars-input i {
+    margin: 0 6px;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.stars-input i:hover {
+    transform: scale(1.1);
+}
+
+.stars-input i.filled {
+    color: #ffc107;
+    text-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+    /* Glow effect */
+}
+
+.rating-text {
+    font-weight: 600;
+    color: #4a90e2;
+    min-height: 1.2em;
+    font-size: 1.1rem;
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 1rem;
+    background-color: #0f0f1a;
+    /* Darker input background */
+    border: 1px solid #2a2a3d;
+    border-radius: 8px;
+    font-family: inherit;
+    color: #fff;
+    resize: vertical;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.form-group textarea::placeholder {
+    color: #555570;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+    background-color: #151521;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    /* Spread buttons */
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #a0a0a0;
+    border: 1px solid #33334d;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: white;
+    border-color: #444466;
+}
+
+.btn-primary {
+    background-color: #4a90e2;
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    flex: 2;
+    /* Main button larger */
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(74, 144, 226, 0.4);
+    filter: brightness(1.1);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    background: #33334d;
+    color: #666;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.error-message {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.error-message::before {
+    content: '\f071';
+    /* FontAwesome warning icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleUp {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import QuizBuilder from '../../components/Tutor/QuizBuilder';
 import { FaTrash, FaEdit, FaQuestionCircle, FaGripVertical, FaVideo, FaTimes, FaPlus, FaArrowLeft, FaInfoCircle, FaBook, FaCog, FaBookOpen } from 'react-icons/fa';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css'; // Import standard styles
 import './LessonBuilder.css';
 
 const LessonBuilder = ({ embedded = false }) => {
@@ -24,6 +26,17 @@ const LessonBuilder = ({ embedded = false }) => {
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
   const [currentLessonForQuiz, setCurrentLessonForQuiz] = useState(null);
   const [existingQuiz, setExistingQuiz] = useState(null);
+
+  // Comprehension Questions State
+  const [comprehensionQuestions, setComprehensionQuestions] = useState([]);
+  const [showQuestionForm, setShowQuestionForm] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [questionFormData, setQuestionFormData] = useState({
+    question: '',
+    options: ['', '', '', ''],
+    correctAnswer: '',
+    order: 0
+  });
 
   const [formData, setFormData] = useState({
     type: 'TEXT',
@@ -107,6 +120,7 @@ const LessonBuilder = ({ embedded = false }) => {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      let lessonId;
 
       if (editingLesson) {
         // Update existing lesson
@@ -115,15 +129,28 @@ const LessonBuilder = ({ embedded = false }) => {
           formData,
           config
         );
-        alert('Lesson updated successfully');
+        lessonId = editingLesson.id;
+
+        // Sync comprehension questions for existing lesson
+        await syncComprehensionQuestions(lessonId, config, API_URL);
+
+        alert('Lesson and comprehension questions updated successfully');
       } else {
         // Create new lesson
-        await axios.post(
+        const response = await axios.post(
           `${API_URL}/tutor/courses/${courseId}/lessons`,
           formData,
           config
         );
-        alert('Lesson created successfully');
+        lessonId = response.data.id;
+
+        // Sync comprehension questions for new lesson (if any were added)
+        if (comprehensionQuestions.length > 0) {
+          await syncComprehensionQuestions(lessonId, config, API_URL);
+          alert('Lesson and comprehension questions created successfully');
+        } else {
+          alert('Lesson created successfully');
+        }
       }
 
       resetForm();
@@ -136,7 +163,67 @@ const LessonBuilder = ({ embedded = false }) => {
     }
   };
 
-  const handleEdit = (lesson) => {
+  // Helper function to sync comprehension questions
+  const syncComprehensionQuestions = async (lessonId, config, API_URL) => {
+    // Safety check - don't sync if no lessonId
+    if (!lessonId) {
+      console.warn('Cannot sync questions: lessonId is undefined');
+      return;
+    }
+
+    try {
+      // Fetch existing questions from database
+      const existingResponse = await axios.get(
+        `${API_URL}/comprehension/lesson/${lessonId}`,
+        config
+      );
+      const existingQuestions = existingResponse.data.success ? existingResponse.data.data : [];
+      const existingIds = existingQuestions.map(q => q.id);
+      const currentIds = comprehensionQuestions.filter(q => q.id).map(q => q.id);
+
+      // Delete removed questions
+      for (const existingQ of existingQuestions) {
+        if (!currentIds.includes(existingQ.id)) {
+          await axios.delete(
+            `${API_URL}/comprehension/${existingQ.id}`,
+            config
+          );
+        }
+      }
+
+      // Update or create questions
+      for (let i = 0; i < comprehensionQuestions.length; i++) {
+        const question = comprehensionQuestions[i];
+        const questionData = {
+          question: question.question,
+          options: question.options,
+          correctAnswer: question.correctAnswer,
+          order: i
+        };
+
+        if (question.id && existingIds.includes(question.id)) {
+          // Update existing question
+          await axios.put(
+            `${API_URL}/comprehension/${question.id}`,
+            questionData,
+            config
+          );
+        } else {
+          // Create new question
+          await axios.post(
+            `${API_URL}/comprehension/lesson/${lessonId}`,
+            questionData,
+            config
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error syncing comprehension questions:', error);
+      throw new Error('Failed to sync comprehension questions');
+    }
+  };
+
+  const handleEdit = async (lesson) => {
     setEditingLesson(lesson);
     setFormData({
       type: lesson.type || 'TEXT',
@@ -155,6 +242,29 @@ const LessonBuilder = ({ embedded = false }) => {
       estimatedDuration: lesson.estimatedDuration,
       published: lesson.published,
     });
+
+    // Fetch existing comprehension questions
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const response = await axios.get(
+        `${API_URL}/comprehension/lesson/${lesson.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success && response.data.data) {
+        setComprehensionQuestions(response.data.data.map(q => ({
+          id: q.id,
+          question: q.question,
+          options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
+          correctAnswer: q.correctAnswer,
+          order: q.order
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      setComprehensionQuestions([]);
+    }
+
     setShowForm(true);
   };
 
@@ -272,6 +382,9 @@ const LessonBuilder = ({ embedded = false }) => {
     });
     setEditingLesson(null);
     setShowForm(false);
+    setComprehensionQuestions([]);
+    setShowQuestionForm(false);
+    setEditingQuestion(null);
   };
 
   return (
@@ -402,16 +515,23 @@ const LessonBuilder = ({ embedded = false }) => {
               {formData.type === 'TEXT' && (
                 <div className="form-group">
                   <label htmlFor="content">Main Content</label>
-                  <textarea
-                    id="content"
-                    name="content"
-                    value={formData.content}
-                    onChange={handleInputChange}
-                    rows={12}
-                    placeholder="Enter the main lesson content here..."
-                    className="content-editor"
-                  />
-                  <small>Tip: You can use Markdown formatting for rich text.</small>
+                  <div className="quill-wrapper">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.content}
+                      onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'color': [] }, { 'background': [] }],
+                          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                          ['link', 'image', 'clean']
+                        ]
+                      }}
+                    />
+                  </div>
+                  <small>Tip: Select text to apply formatting options from the toolbar.</small>
                 </div>
               )}
 
@@ -497,6 +617,185 @@ const LessonBuilder = ({ embedded = false }) => {
               </div>
             </div>
 
+            {/* Comprehension Questions Section */}
+            <div className="form-section">
+              <h3 className="section-title">
+                <FaQuestionCircle />
+                Comprehension Questions
+                <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+                  ({comprehensionQuestions.length})
+                </span>
+              </h3>
+              <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                {editingLesson
+                  ? 'Add quiz questions that students must answer when completing this lesson.'
+                  : 'Add quiz questions (optional). Questions will be saved after you create the lesson.'}
+              </p>
+
+              {comprehensionQuestions.map((q, index) => (
+                <div key={index} style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  marginBottom: '0.75rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ color: '#6366f1', fontWeight: 600, marginRight: '0.5rem' }}>Q{index + 1}</span>
+                      <span>{q.question}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={() => {
+                          setEditingQuestion({ ...q, index });
+                          setQuestionFormData(q);
+                          setShowQuestionForm(true);
+                        }}
+                        title="Edit"
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon btn-delete"
+                        onClick={() => {
+                          if (confirm('Delete this question?')) {
+                            setComprehensionQuestions(comprehensionQuestions.filter((_, i) => i !== index));
+                          }
+                        }}
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: '2rem', fontSize: '0.9rem' }}>
+                    {q.options.map((opt, i) => (
+                      <div key={i} style={{
+                        padding: '0.25rem 0',
+                        color: opt === q.correctAnswer ? '#10b981' : '#9ca3af'
+                      }}>
+                        {opt === q.correctAnswer && '✓ '}{opt}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {!showQuestionForm && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setQuestionFormData({
+                      question: '',
+                      options: ['', '', '', ''],
+                      correctAnswer: '',
+                      order: comprehensionQuestions.length
+                    });
+                    setEditingQuestion(null);
+                    setShowQuestionForm(true);
+                  }}
+                >
+                  <FaPlus /> Add Question
+                </button>
+              )}
+
+              {showQuestionForm && (
+                <div style={{
+                  background: 'rgba(99,102,241,0.05)',
+                  border: '1px solid rgba(99,102,241,0.2)',
+                  borderRadius: '8px',
+                  padding: '1.5rem',
+                  marginTop: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '1rem' }}>
+                    {editingQuestion ? 'Edit Question' : 'New Question'}
+                  </h4>
+
+                  <div className="form-group">
+                    <label>Question *</label>
+                    <input
+                      type="text"
+                      value={questionFormData.question}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, question: e.target.value })}
+                      placeholder="Enter your question..."
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Answer Options *</label>
+                    {questionFormData.options.map((opt, index) => (
+                      <input
+                        key={index}
+                        type="text"
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...questionFormData.options];
+                          newOpts[index] = e.target.value;
+                          setQuestionFormData({ ...questionFormData, options: newOpts });
+                        }}
+                        placeholder={`Option ${index + 1}`}
+                        style={{ marginBottom: '0.5rem' }}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Correct Answer *</label>
+                    <select
+                      value={questionFormData.correctAnswer}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, correctAnswer: e.target.value })}
+                    >
+                      <option value="">Select correct answer...</option>
+                      {questionFormData.options.filter(o => o.trim()).map((opt, i) => (
+                        <option key={i} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => {
+                        setShowQuestionForm(false);
+                        setEditingQuestion(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={() => {
+                        if (!questionFormData.question || !questionFormData.correctAnswer ||
+                          questionFormData.options.some(o => !o.trim())) {
+                          alert('Please fill in all fields');
+                          return;
+                        }
+
+                        if (editingQuestion !== null) {
+                          const updated = [...comprehensionQuestions];
+                          updated[editingQuestion.index] = questionFormData;
+                          setComprehensionQuestions(updated);
+                        } else {
+                          setComprehensionQuestions([...comprehensionQuestions, questionFormData]);
+                        }
+
+                        setShowQuestionForm(false);
+                        setEditingQuestion(null);
+                      }}
+                    >
+                      {editingQuestion ? 'Update' : 'Add'} Question
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
 
             <div className="form-actions">
@@ -547,7 +846,7 @@ const LessonBuilder = ({ embedded = false }) => {
                     {lesson.videoUrl && <FaVideo className="video-icon" />}
                   </span>
                   <span className="col-duration">{lesson.estimatedDuration} min</span>
-                  <span className="col-quizzes">{lesson._count?.quizzes || 0}</span>
+                  <span className="col-quizzes">{(lesson._count?.quizzes || 0) + (lesson._count?.comprehensionQuestions || 0)}</span>
                   <span className="col-status">
                     <span className={`status-badge ${lesson.published ? 'published' : 'draft'}`}>
                       {lesson.published ? 'Published' : 'Draft'}

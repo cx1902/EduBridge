@@ -1,338 +1,231 @@
-.today-schedule-panel {
+/* My Schedule Panel Styles */
+.my-schedule-panel {
   background: var(--color-surface);
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-}
-
-.today-schedule-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.25rem;
-  color: var(--color-text);
-}
-
-.sessions-list {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.session-card {
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s;
-  background: var(--color-surface);
-}
-
-.session-card:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.session-card.scheduled {
-  border-left: 4px solid var(--color-primary);
-}
-
-.session-card.in_progress {
-  border-left: 4px solid var(--color-success);
-}
-
-.session-card.completed {
-  border-left: 4px solid var(--color-text-muted);
-  opacity: 0.7;
-}
-
-.session-card.cancelled {
-  border-left: 4px solid var(--color-danger);
-}
-
-.session-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.session-header:hover {
-  background-color: var(--color-background);
-}
-
-.session-time {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 80px;
-}
-
-.time-badge {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.duration {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin-top: 4px;
-}
-
-.session-info {
-  flex: 1;
-}
-
-.session-info h4 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-  color: var(--color-text);
-}
-
-.session-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 0.875rem;
-}
-
-.session-type {
-  color: var(--color-text-secondary);
-  text-transform: capitalize;
-}
-
-.participant-count {
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.session-status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.status-badge {
-  padding: 4px 12px;
+  /* Dark background matching image */
   border-radius: 12px;
-  font-size: 0.75rem;
+  padding: 20px;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  min-height: 400px;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.panel-header {
+  margin-bottom: 20px;
+}
+
+.panel-header h3 {
+  font-size: 1.25rem;
+  color: var(--color-primary);
+  /* Blue title */
+  margin: 0 0 20px 0;
   font-weight: 500;
+}
+
+.schedule-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 20px;
+}
+
+.schedule-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 10px 0;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  /* Ensure no rounded corners background */
+  outline: none;
+}
+
+.schedule-tab-btn:hover {
+  color: var(--color-text);
+}
+
+.schedule-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  background: transparent !important;
+  /* Force remove any background */
+  box-shadow: none !important;
+}
+
+/* Sub Filters */
+.sub-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.filter-chip {
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover,
+.filter-chip.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* Schedule List */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule-item {
+  background: var(--color-background);
+  /* Slightly lighter than bg */
+  border: 1px solid var(--color-border);
+  border-radius: 0 8px 8px 0;
+  padding: 16px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.3s ease;
+}
+
+.schedule-item:hover {
+  transform: translateX(4px);
+  background: var(--color-surface);
+  /* Subtle shift on hover relative to background */
+  border-color: var(--color-primary);
+}
+
+/* Left Borders */
+.schedule-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+}
+
+.schedule-item.border-red::before {
+  background-color: var(--color-danger);
+}
+
+.schedule-item.border-yellow::before {
+  background-color: var(--color-warning);
+}
+
+.schedule-item.border-primary::before {
+  background-color: var(--color-primary);
+}
+
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.item-type {
+  color: var(--color-text);
+  font-weight: 700;
   text-transform: uppercase;
 }
 
-.status-badge.scheduled {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: var(--color-primary);
+.date-display {
+  color: var(--color-danger);
+  /* Red date for emphasis */
+  font-weight: 700;
 }
 
-.status-badge.in_progress {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: var(--color-success);
-}
-
-.status-badge.completed {
-  background-color: rgba(107, 114, 128, 0.15);
-  color: var(--color-text-secondary);
-}
-
-.status-badge.cancelled {
-  background-color: rgba(239, 68, 68, 0.15);
+.date-display.highlight {
   color: var(--color-danger);
 }
 
-.expand-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  padding: 4px 8px;
-  transition: color 0.2s;
-}
-
-.expand-btn:hover {
-  color: var(--color-text);
-}
-
-.session-details {
-  padding: 16px;
-  border-top: 1px solid var(--color-border);
-  background-color: var(--color-background);
-}
-
-.session-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 0.8125rem;
-}
-
-.btn-primary {
-  background-color: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
-}
-
-.btn-primary:disabled {
-  background-color: var(--color-text-muted);
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: var(--color-text-secondary);
-  color: white;
-}
-
-.btn-secondary:hover {
-  background-color: var(--color-text-muted);
-}
-
-.participants-section {
-  margin-top: 16px;
-}
-
-.participants-section h5 {
+.item-title {
   margin: 0 0 12px 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.participants-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.participant-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-}
-
-.participant-info {
-  flex: 1;
-}
-
-.participant-name {
-  font-weight: 500;
-  color: var(--color-text);
-  font-size: 0.875rem;
-}
-
-.participant-email {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  margin-top: 2px;
-}
-
-.tracking-indicators {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.status-indicator {
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: help;
-}
-
-.participant-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
   font-size: 1rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-.btn-icon:hover {
-  background-color: var(--color-border);
-}
-
-.email-stats {
+.item-details {
   display: flex;
-  gap: 16px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border);
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }
 
-.stat-item {
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-row i {
+  width: 16px;
+  text-align: center;
+  color: var(--color-warning);
+  /* Yellow icons */
+}
+
+/* Mini Participant List Reused Styles */
+.mini-participant-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  font-weight: 500;
+.mini-participant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.stat-value {
-  font-size: 1.25rem;
-  font-weight: 600;
+.mini-participant-item .name {
   color: var(--color-text);
 }
 
-.loading-state,
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--color-text-secondary);
+.status-pill {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
 }
 
-.empty-state p {
+/* Loading/Empty States */
+.schedule-loading-state,
+.schedule-empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+  background: transparent !important;
+  border-radius: 8px;
+}
+
+.schedule-empty-state p {
   margin: 0;
   font-size: 0.875rem;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .session-header {
-    flex-wrap: wrap;
-  }
-
-  .session-time {
-    min-width: 60px;
-  }
-
-  .session-actions {
-    flex-direction: column;
-  }
-
-  .email-stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
+.item-expanded-actions {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #374151;
+  display: flex;
+  justify-content: flex-end;
 }

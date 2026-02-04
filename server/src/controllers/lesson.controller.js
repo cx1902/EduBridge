@@ -34,7 +34,7 @@ exports.getFirstLesson = async (req, res) => {
 exports.getLessonById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const lesson = await prisma.lesson.findUnique({
       where: { id },
@@ -151,7 +151,7 @@ exports.getLessonById = async (req, res) => {
 exports.getCourseLessons = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     // Check if user is enrolled
     const enrollment = await prisma.enrollment.findFirst({
@@ -255,7 +255,7 @@ exports.createLesson = async (req, res) => {
       published
     } = req.body;
 
-    const tutorId = req.user.userId;
+    const tutorId = req.user.id;
 
     // Verify course ownership
     const course = await prisma.course.findUnique({
@@ -310,6 +310,27 @@ exports.createLesson = async (req, res) => {
       });
     }
 
+    // Notify all enrolled students about the new lesson
+    try {
+      const enrolledStudents = await prisma.enrollment.findMany({
+        where: { courseId },
+        select: { userId: true }
+      });
+
+      if (enrolledStudents.length > 0) {
+        await prisma.notification.createMany({
+          data: enrolledStudents.map(enrollment => ({
+            userId: enrollment.userId,
+            message: `New lesson "${title}" has been added to "${course.title}"`,
+            read: false
+          }))
+        });
+      }
+    } catch (notifError) {
+      console.error('Failed to send notifications:', notifError);
+      // Don't fail the lesson creation if notifications fail
+    }
+
     res.status(201).json({
       success: true,
       data: lesson,
@@ -332,7 +353,7 @@ exports.createLesson = async (req, res) => {
 exports.updateLesson = async (req, res) => {
   try {
     const { id } = req.params;
-    const tutorId = req.user.userId;
+    const tutorId = req.user.id;
 
     // Verify ownership
     const lesson = await prisma.lesson.findUnique({
@@ -389,7 +410,7 @@ exports.updateLesson = async (req, res) => {
 exports.deleteLesson = async (req, res) => {
   try {
     const { id } = req.params;
-    const tutorId = req.user.userId;
+    const tutorId = req.user.id;
 
     // Verify ownership
     const lesson = await prisma.lesson.findUnique({
@@ -444,7 +465,8 @@ exports.deleteLesson = async (req, res) => {
 exports.completeLesson = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
+    const { timeSpent } = req.body; // Get time spent from request
 
     // 1. Verify existence
     const lesson = await prisma.lesson.findUnique({
@@ -512,6 +534,28 @@ exports.completeLesson = async (req, res) => {
         };
       }
 
+      // Update session with completion time if provided
+      if (timeSpent) {
+        const activeSession = await tx.lessonSession.findFirst({
+          where: {
+            lessonId: id,
+            studentId: userId,
+            completedAt: null
+          },
+          orderBy: { startedAt: 'desc' }
+        });
+
+        if (activeSession) {
+          await tx.lessonSession.update({
+            where: { id: activeSession.id },
+            data: {
+              completedAt: new Date(),
+              timeSpent
+            }
+          });
+        }
+      }
+
       // B. Award XP
       const XP_AMOUNT = 10;
       await tx.user.update({
@@ -532,61 +576,61 @@ exports.completeLesson = async (req, res) => {
       // C. Check Badges
       const newBadges = [];
 
-      // 1. FIRST_STEP (1 Lesson)
-      const completedCount = await tx.progress.count({
-        where: { userId, completed: true }
+      // Get user's existing badges
+      const userBadges = await tx.userBadge.findMany({
+        where: { userId },
+        select: { badgeId: true }
       });
+      const ownedBadgeIds = new Set(userBadges.map(b => b.badgeId));
 
-      if (completedCount === 1) {
-        const badge = await tx.badge.findUnique({ where: { name: 'FIRST_STEP' } });
-        if (badge) {
-          // Check if already has
-          const hasBadge = await tx.userBadge.findUnique({
-            where: { userId_badgeId: { userId, badgeId: badge.id } }
-          });
-          if (!hasBadge) {
-            await tx.userBadge.create({ data: { userId, badgeId: badge.id } });
-            newBadges.push(badge);
-          }
+      // Fetch all system badges
+      const allBadges = await tx.badge.findMany();
+
+      // Calculate necessary metrics
+      const completedCount = await tx.progress.count({ where: { userId, completed: true } });
+      const totalLessons = await tx.lesson.count({ where: { courseId: lesson.courseId, published: true } });
+      const courseCompletedCount = await tx.progress.count({ where: { enrollmentId: enrollment.id, completed: true } });
+      const isCourseFinished = courseCompletedCount >= totalLessons && totalLessons > 0;
+
+      // Check each badge
+      for (const badge of allBadges) {
+        if (ownedBadgeIds.has(badge.id)) continue;
+
+        let shouldAward = false;
+        let details = {};
+        try { details = JSON.parse(badge.criteriaDetails || '{}'); } catch (e) { }
+
+        switch (badge.criteriaType) {
+          case 'lesson_completion':
+            if (details.count && completedCount >= details.count) shouldAward = true;
+            break;
+
+          case 'course_completion':
+            // Award if current course is finished and we meet the count requirement
+            // Ideally we count total finished courses, but for MVP checking "1" if this one is done works
+            if (isCourseFinished) {
+              if (details.count === 1) shouldAward = true;
+              // For > 1, we would need to count all finished enrollments (more complex)
+            }
+            break;
+
+          case 'points':
+            // Fetch current points (including the 10 just added)
+            const currentUser = await tx.user.findUnique({ where: { id: userId }, select: { totalPoints: true } });
+            if (details.points && currentUser.totalPoints >= details.points) shouldAward = true;
+            break;
         }
-      }
 
-      // 2. CONSISTENT_LEARNER (5 Lessons)
-      if (completedCount === 5) {
-        const badge = await tx.badge.findUnique({ where: { name: 'CONSISTENT_LEARNER' } });
-        if (badge) {
-          const hasBadge = await tx.userBadge.findUnique({
-            where: { userId_badgeId: { userId, badgeId: badge.id } }
+        if (shouldAward) {
+          await tx.userBadge.create({
+            data: {
+              userId,
+              badgeId: badge.id,
+              courseId: lesson.courseId // Track which course earned the badge
+            }
           });
-          if (!hasBadge) {
-            await tx.userBadge.create({ data: { userId, badgeId: badge.id } });
-            newBadges.push(badge);
-          }
-        }
-      }
-
-      // 3. COURSE_FINISHER (All lessons in this course)
-      // Count total published lessons in course
-      const totalLessons = await tx.lesson.count({
-        where: { courseId: lesson.courseId, published: true }
-      });
-
-      // Count completed lessons for this course (via progress -> enrollment)
-      // enrollment.id is for this course
-      const courseCompletedCount = await tx.progress.count({
-        where: { enrollmentId: enrollment.id, completed: true }
-      });
-
-      if (courseCompletedCount >= totalLessons && totalLessons > 0) {
-        const badge = await tx.badge.findUnique({ where: { name: 'COURSE_FINISHER' } });
-        if (badge) {
-          const hasBadge = await tx.userBadge.findUnique({
-            where: { userId_badgeId: { userId, badgeId: badge.id } }
-          });
-          if (!hasBadge) {
-            await tx.userBadge.create({ data: { userId, badgeId: badge.id } });
-            newBadges.push(badge);
-          }
+          newBadges.push(badge);
+          ownedBadgeIds.add(badge.id); // Prevent duplicate adds in same transaction logic
         }
       }
 
@@ -612,5 +656,55 @@ exports.completeLesson = async (req, res) => {
         details: error.message
       }
     });
+  }
+};
+
+// Start lesson session tracking
+exports.startLessonSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    let session = await prisma.lessonSession.findFirst({
+      where: { lessonId: id, studentId: userId, completedAt: null }
+    });
+
+    if (!session) {
+      session = await prisma.lessonSession.create({
+        data: { lessonId: id, studentId: userId }
+      });
+    }
+
+    res.json({ success: true, data: { sessionId: session.id, startedAt: session.startedAt } });
+  } catch (error) {
+    console.error('Start session error:', error);
+    res.status(500).json({ success: false, message: 'Failed to start session' });
+  }
+};
+
+// End lesson session tracking
+exports.endLessonSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sessionId, timeSpent } = req.body;
+    const userId = req.user.id;
+
+    const session = await prisma.lessonSession.findFirst({
+      where: { id: sessionId, studentId: userId, lessonId: id }
+    });
+
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+
+    await prisma.lessonSession.update({
+      where: { id: sessionId },
+      data: { completedAt: new Date(), timeSpent: timeSpent || null }
+    });
+
+    res.json({ success: true, message: 'Session ended successfully' });
+  } catch (error) {
+    console.error('End session error:', error);
+    res.status(500).json({ success: false, message: 'Failed to end session' });
   }
 };

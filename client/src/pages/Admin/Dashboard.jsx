@@ -23,27 +23,33 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      // Use configured api client to ensure Authorization headers are sent
-      const [usersRes, coursesRes, applicationsRes, reportsRes, auditRes] = await Promise.all([
-        api.get('/admin/users', { params: { limit: 1 } }),
-        api.get('/admin/courses', { params: { limit: 1 } }),
-        api.get('/admin/tutor-applications', { params: { status: 'PENDING', limit: 1 } }),
-        api.get('/admin/reports', { params: { status: 'NEW', limit: 1 } }),
-        api.get('/admin/audit-logs', { params: { limit: 10 } }),
-      ]);
+      const response = await api.get('/admin/stats');
+      if (response.data.success) {
+        const { users, courses, sessions } = response.data.data;
+        setStats({
+          totalUsers: users.total || 0,
+          activeUsers: users.active || 0,
+          totalCourses: courses.total || 0,
+          pendingApplications: 0, // Will fetch separately if needed, or keep previous logic
+          activeReports: 0,
+          recentActions: 0,
+          totalEnrollments: courses.totalEnrollments || 0
+        });
 
-      const activeUsersRes = await api.get('/admin/users', {
-        params: { status: 'ACTIVE', limit: 1 },
-      });
+        // Still need pending applications, active reports, and recent actions count if not in main stats
+        const [applicationsRes, reportsRes, auditRes] = await Promise.all([
+          api.get('/admin/tutor-applications', { params: { status: 'PENDING', limit: 1 } }),
+          api.get('/admin/reports', { params: { status: 'NEW', limit: 1 } }),
+          api.get('/admin/audit-logs', { params: { limit: 10 } }),
+        ]);
 
-      setStats({
-        totalUsers: usersRes.data.pagination?.total || 0,
-        activeUsers: activeUsersRes.data.pagination?.total || 0,
-        totalCourses: coursesRes.data.pagination?.total || 0,
-        pendingApplications: applicationsRes.data.pagination?.total || 0,
-        activeReports: reportsRes.data.pagination?.total || 0,
-        recentActions: auditRes.data.pagination?.total || 0,
-      });
+        setStats(prev => ({
+          ...prev,
+          pendingApplications: applicationsRes.data.pagination?.total || 0,
+          activeReports: reportsRes.data.pagination?.total || 0,
+          recentActions: auditRes.data.pagination?.total || 0,
+        }));
+      }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
     } finally {
@@ -57,7 +63,6 @@ const AdminDashboard = () => {
 
     { title: t('admin.actions.tutorVerification'), path: '/admin/tutor-applications', icon: '✅', description: t('admin.actions.tutorVerificationDesc') },
     { title: t('admin.actions.contentReports'), path: '/admin/reports', icon: '⚠️', description: t('admin.actions.contentReportsDesc') },
-    { title: t('admin.actions.systemSettings'), path: '/admin/settings', icon: '⚙️', description: t('admin.actions.systemSettingsDesc') },
     { title: t('admin.actions.auditLogs'), path: '/admin/audit-logs', icon: '📝', description: t('admin.actions.auditLogsDesc') },
     { title: t('admin.actions.analytics'), path: '/admin/analytics', icon: '📈', description: t('admin.actions.analyticsDesc') },
   ];
@@ -111,7 +116,7 @@ const AdminDashboard = () => {
         </div>
         <div className="card" style={{ textAlign: 'center' }}>
           <h3 style={{ fontSize: '2rem', margin: '0.5rem 0', color: '#14b8a6' }}>
-            {loading ? '...' : '0'}
+            {loading ? '...' : stats.totalEnrollments}
           </h3>
           <p className="text-secondary" style={{ margin: 0 }}>Total Enrollments</p>
         </div>
@@ -119,19 +124,19 @@ const AdminDashboard = () => {
 
       {/* Alerts */}
       {(stats.pendingApplications > 0 || stats.activeReports > 0) && (
-        <div className="card mt-lg" style={{ backgroundColor: '#fef3c7', borderLeft: '4px solid #f59e0b' }}>
+        <div className="card mt-lg" style={{ backgroundColor: '#fef3c7', borderLeft: '4px solid #f59e0b', color: '#78350f' }}>
           <h3 style={{ margin: '0 0 0.5rem 0' }}>{t('admin.attentionRequired')}</h3>
           <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
             {stats.pendingApplications > 0 && (
               <li>
                 <strong>{stats.pendingApplications}</strong> {t('admin.pendingApplications')}
-                {' '}<Link to="/admin/tutor-applications">{t('admin.reviewNow')}</Link>
+                {' '}<Link to="/admin/tutor-applications" style={{ color: '#0066cc', fontWeight: '600' }}>{t('admin.reviewNow')}</Link>
               </li>
             )}
             {stats.activeReports > 0 && (
               <li>
                 <strong>{stats.activeReports}</strong> {t('admin.newReports')}
-                {' '}<Link to="/admin/reports">{t('admin.viewReports')}</Link>
+                {' '}<Link to="/admin/reports" style={{ color: '#0066cc', fontWeight: '600' }}>{t('admin.viewReports')}</Link>
               </li>
             )}
           </ul>
@@ -198,7 +203,7 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

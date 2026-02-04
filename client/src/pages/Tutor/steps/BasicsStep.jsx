@@ -81,9 +81,13 @@ const BasicsStep = ({ formData, onChange, errors }) => {
             value={formData.educationLevel}
             onChange={(e) => onChange('educationLevel', e.target.value)}
           >
-            <option value="PRIMARY">{t('createCourse.basics.level.primary', 'Primary')}</option>
-            <option value="SECONDARY">{t('createCourse.basics.level.secondary', 'Secondary')}</option>
-            <option value="UNIVERSITY">{t('createCourse.basics.level.university', 'University')}</option>
+            <option value="PRIMARY">{t('createCourse.basics.level.primary', 'Primary School')}</option>
+            <option value="SECONDARY">{t('createCourse.basics.level.secondary', 'Secondary School')}</option>
+            <option value="PRE_UNIVERSITY">{t('createCourse.basics.level.preUniversity', 'Pre-University / A-Level')}</option>
+            <option value="DIPLOMA">{t('createCourse.basics.level.diploma', 'Diploma')}</option>
+            <option value="UNDERGRADUATE">{t('createCourse.basics.level.undergraduate', 'Undergraduate')}</option>
+            <option value="POSTGRADUATE">{t('createCourse.basics.level.postgraduate', 'Postgraduate')}</option>
+            <option value="PROFESSIONAL">{t('createCourse.basics.level.professional', 'Professional / Continuing Education')}</option>
           </select>
           <small className="form-help">{t('createCourse.basics.help.whoFor', 'Who is this course for?')}</small>
           {errors.educationLevel && <div className="form-error"><i className="fas fa-exclamation-circle"></i> {t('createCourse.errors.educationLevel', 'Education level is required.')}</div>}

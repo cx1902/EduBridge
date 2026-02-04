@@ -134,6 +134,46 @@ const Register = () => {
             </select>
           </div>
 
+          {formData.role === 'TUTOR' && (
+            <>
+              <div className="form-group">
+                <label htmlFor="primarySubject">Primary Subject Expertise</label>
+                <select
+                  id="primarySubject"
+                  name="primarySubject"
+                  value={formData.primarySubject || ''}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select a subject</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Biology">Biology</option>
+                  <option value="English">English</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="Economics">Economics</option>
+                  <option value="Accounting">Accounting</option>
+                  <option value="History">History</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="bio">Professional Bio</label>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  value={formData.bio || ''}
+                  onChange={handleChange}
+                  required
+                  rows="3"
+                  placeholder="Tell students about your teaching experience and expertise..."
+                  className="form-textarea"
+                />
+              </div>
+            </>
+          )}
+
           <div className="form-group">
             <label htmlFor="password">{t('register.password')}</label>
             <div className="password-input-wrapper">

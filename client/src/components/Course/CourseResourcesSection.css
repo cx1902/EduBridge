@@ -140,6 +140,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -246,6 +247,7 @@
   border-radius: 8px;
   border: 1px solid var(--color-border);
 }
+
 .rs-card-item.file {
   display: flex;
   align-items: center;
@@ -456,7 +458,7 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .rs-grading-content h4 {
@@ -497,6 +499,7 @@
   color: #3b82f6;
   font-weight: 600;
 }
+
 .status-pending {
   color: #f59e0b;
   font-weight: 600;
@@ -547,19 +550,22 @@
   vertical-align: middle;
 }
 
-.grade-A-plus, .grade-A {
+.grade-A-plus,
+.grade-A {
   background-color: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.grade-B-plus, .grade-B {
+.grade-B-plus,
+.grade-B {
   background-color: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
   border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.grade-C-plus, .grade-C {
+.grade-C-plus,
+.grade-C {
   background-color: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
   border: 1px solid rgba(245, 158, 11, 0.3);
@@ -587,4 +593,68 @@
 [data-theme='dark'] .rs-btn-icon:hover {
   color: #60a5fa;
   border-color: #60a5fa;
+}
+
+/* File Attachment Section */
+.rs-file-attach-section {
+  margin-bottom: 15px;
+}
+
+.rs-file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rs-file-label:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-background-hover);
+}
+
+.rs-attached-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.rs-attached-file svg {
+  color: var(--color-primary);
+  font-size: 1.2rem;
+}
+
+.rs-filename {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.rs-btn-remove {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 8px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.rs-btn-remove:hover {
+  color: var(--color-danger);
+  transform: scale(1.2);
 }

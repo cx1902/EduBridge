@@ -76,15 +76,6 @@ const SessionReports = () => {
           </div>
         </div>
 
-        <div className="report-card">
-          <div className="report-icon rating">
-            <FaStar />
-          </div>
-          <div className="report-info">
-            <h3>{stats?.overview?.averageRating || '0.0'}</h3>
-            <p>Average Rating</p>
-          </div>
-        </div>
       </div>
 
       <div className="reports-content">

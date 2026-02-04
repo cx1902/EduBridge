@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
 import './CourseDetail.css'
 import CourseResourcesSection from '../../components/Course/CourseResourcesSection'
 import CourseStudents from '../../components/Course/CourseStudents'
 import { DEFAULT_COURSE_IMAGE, getCourseImageUrl } from '../../utils/images'
+import ReviewModal from '../../components/ReviewModal'
 
 const CourseDetail = () => {
   const { id } = useParams()
@@ -20,12 +21,16 @@ const CourseDetail = () => {
   const [expandedComponents, setExpandedComponents] = useState({})
   const [activeTab, setActiveTab] = useState('overview')
   const [canEdit, setCanEdit] = useState(false)
+
   const [isEnrolled, setIsEnrolled] = useState(false)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [userReview, setUserReview] = useState(null) // New state for user's review
+  const [showContactInfo, setShowContactInfo] = useState(false)
 
   useEffect(() => {
     fetchCourseDetails()
     fetchCourseComponents()
-  }, [id])
+  }, [id, user]) // Added user to dependency array to re-fetch if user changes
 
   // Move canManage calculation here, before it is used in useEffect
   const isTutor = user && course && user.id === course.tutor.id
@@ -44,14 +49,22 @@ const CourseDetail = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-        }/courses/${id}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${id}`,
         { headers }
       )
 
       if (response.data.success) {
         setCourse(response.data.data)
+        // data.isEnrolled is returned from backend if user is logged in
         setIsEnrolled(response.data.data.isEnrolled || false)
+
+        // Find user review if logged in
+        if (user && response.data.data.reviews) {
+          const myReview = response.data.data.reviews.find(r => r.userId === user.id)
+          setUserReview(myReview)
+        } else {
+          setUserReview(null) // Clear user review if not logged in or no reviews
+        }
       }
     } catch (err) {
       console.error('Failed to fetch course details:', err)
@@ -74,8 +87,7 @@ const CourseDetail = () => {
       }
 
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-        }/courses/${id}/components`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/courses/${id}/components`,
         { headers }
       )
 
@@ -359,12 +371,14 @@ const CourseDetail = () => {
           >
             <i className='fas fa-info-circle'></i> Overview
           </button>
-          <button
-            className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
-            onClick={() => setActiveTab('resources')}
-          >
-            <i className='fas fa-folder-open'></i> Course Resources
-          </button>
+          {isAuthenticated && (
+            <button
+              className={`tab ${activeTab === 'resources' ? 'active' : ''}`}
+              onClick={() => setActiveTab('resources')}
+            >
+              <i className='fas fa-folder-open'></i> Course Resources
+            </button>
+          )}
           {canManage && (
             <button
               className={`tab ${activeTab === 'participants' ? 'active' : ''}`}
@@ -430,9 +444,28 @@ const CourseDetail = () => {
               </section>
 
               {/* Reviews Section */}
-              {course.reviews && course.reviews.length > 0 && (
-                <section className='course-section reviews-section'>
-                  <h2>Student Reviews</h2>
+              <section className='course-section reviews-section'>
+                <div className="reviews-header">
+                  <div className="reviews-title-group">
+                    <h2>Student Reviews</h2>
+                    {course.reviews && course.reviews.length > 0 && (
+                      <span className="review-count-badge">{course.reviews.length} reviews</span>
+                    )}
+                  </div>
+
+                  {/* Only show top button if there are reviews */}
+                  {/* Only show top button if there are reviews */}
+                  {isEnrolled && course.reviews && course.reviews.length > 0 && (
+                    <button
+                      className="btn-outline btn-small"
+                      onClick={() => setIsReviewModalOpen(true)}
+                    >
+                      <i className={`fas ${userReview ? 'fa-edit' : 'fa-pen'}`}></i> {userReview ? 'Edit Review' : 'Write a Review'}
+                    </button>
+                  )}
+                </div>
+
+                {course.reviews && course.reviews.length > 0 ? (
                   <div className='reviews-list'>
                     {course.reviews.map((review, index) => (
                       <div key={index} className='review-card'>
@@ -453,6 +486,15 @@ const CourseDetail = () => {
                           </div>
                           <div className='review-rating'>
                             {renderStars(review.rating)}
+                            {user && user.id === review.userId && (
+                              <button
+                                className="edit-review-btn-icon"
+                                onClick={() => setIsReviewModalOpen(true)}
+                                title="Edit your review"
+                              >
+                                <i className="fas fa-pencil-alt"></i>
+                              </button>
+                            )}
                           </div>
                         </div>
                         <p className='review-text'>
@@ -461,8 +503,26 @@ const CourseDetail = () => {
                       </div>
                     ))}
                   </div>
-                </section>
-              )}
+                ) : (
+                  <div className="no-reviews-container">
+                    <div className="no-reviews-icon">
+                      <i className="far fa-comment-dots"></i>
+                    </div>
+                    <h3>No reviews yet</h3>
+                    <p>Be the first student to share your experience with this course.</p>
+                    {isEnrolled ? (
+                      <button
+                        className="btn-primary mt-4"
+                        onClick={() => setIsReviewModalOpen(true)}
+                      >
+                        <i className={`fas ${userReview ? 'fa-edit' : 'fa-star'}`}></i> {userReview ? 'Edit Your Review' : 'Write the First Review'}
+                      </button>
+                    ) : (
+                      <p className="text-secondary text-sm mt-2">Enroll to leave a review</p>
+                    )}
+                  </div>
+                )}
+              </section>
             </>
           ) : activeTab === 'resources' ? (
             /* Resources Tab Content */
@@ -555,10 +615,48 @@ const CourseDetail = () => {
               {course.tutor.bio && (
                 <p className='instructor-bio'>{course.tutor.bio}</p>
               )}
+
+              <div className="instructor-contact-actions">
+                {!showContactInfo ? (
+                  <button
+                    className="btn-contact-action"
+                    onClick={() => setShowContactInfo(true)}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    <i className="fas fa-info-circle"></i> Show Details
+                  </button>
+                ) : (
+                  <>
+                    {course.tutor.email && (
+                      <a href={`mailto:${course.tutor.email}`} className="btn-contact-action" title="Send Email">
+                        <i className="fas fa-envelope"></i> {course.tutor.email}
+                      </a>
+                    )}
+                    {course.tutor.phoneNumber && (
+                      <a
+                        href={`https://wa.me/${course.tutor.phoneNumber.replace(/[^0-9]/g, '')}`}
+                        className="btn-contact-action"
+                        title="Contact via WhatsApp"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <i className="fab fa-whatsapp"></i> {course.tutor.phoneNumber}
+                      </a>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </aside>
       </div>
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        courseId={id}
+        onSuccess={fetchCourseDetails}
+        initialData={userReview}
+      />
     </div>
   )
 }

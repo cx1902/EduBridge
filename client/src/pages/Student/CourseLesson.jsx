@@ -4,32 +4,15 @@ import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import QuizPlayer from '../../components/Student/QuizPlayer';
 import GamificationToast from '../../components/Student/GamificationToast';
-import {
-  FaBars,
-  FaTimes,
-  FaChevronRight,
-  FaChevronDown,
-  FaPlayCircle,
-  FaQuestionCircle,
-  FaFileAlt,
-  FaCheckCircle,
-  FaArrowLeft,
-  FaArrowRight,
-  FaBookOpen,
-  FaLayerGroup,
-  FaClock,
-  FaTag,
-  FaVideo,
-  FaExternalLinkAlt,
-  FaFileDownload,
-  FaSignal
-} from 'react-icons/fa';
+import ComprehensionQuiz from '../../components/Student/ComprehensionQuiz';
+import { FaArrowLeft, FaArrowRight, FaCheckCircle, FaPlayCircle, FaBookOpen, FaClock, FaSignal, FaTag, FaQuestionCircle, FaFileAlt, FaBars, FaTimes, FaChevronDown, FaChevronRight, FaVideo, FaFileDownload, FaExternalLinkAlt } from 'react-icons/fa';
 import './CourseLesson.css';
+
 
 const CourseLesson = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  const { token } = useAuthStore();
+  const { token, checkAuth } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [lesson, setLesson] = useState(null);
   const [activeTab, setActiveTab] = useState('content');
@@ -37,6 +20,16 @@ const CourseLesson = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastData, setToastData] = useState({ xpGained: 0, newBadges: [] });
   const [completing, setCompleting] = useState(false);
+
+  // Session tracking
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Comprehension quiz
+  const [comprehensionQuestions, setComprehensionQuestions] = useState([]);
+  const [showComprehensionQuiz, setShowComprehensionQuiz] = useState(false);
 
   // New state for sidebar
   const [courseComponents, setCourseComponents] = useState([]);
@@ -72,6 +65,29 @@ const CourseLesson = () => {
       }
     }
   }, [lesson, flatLessons]);
+
+  // Session timer effect
+  useEffect(() => {
+    if (!lessonId || lessonId === 'first') return;
+
+    // Start timer
+    const startTime = Date.now();
+    setSessionStartTime(startTime);
+    startLessonSession();
+
+    // Update elapsed time every second
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    // Cleanup: end session on unmount
+    return () => {
+      clearInterval(interval);
+      if (sessionId) {
+        endLessonSession(Math.floor((Date.now() - startTime) / 1000));
+      }
+    };
+  }, [lessonId]);
 
   const fetchCourseComponents = async () => {
     try {
@@ -168,31 +184,138 @@ const CourseLesson = () => {
   };
 
   const handleQuizComplete = (result) => {
-    // Optionally refresh progress or show celebration
-    console.log('Quiz completed:', result);
+    // Show celebration toast if passed
+    if (result.passed) {
+      // Check for XP gained/badges in result (Quiz Controller response structure)
+      // Quiz controller returns 'earnedPoints' and 'badgesEarned'
+      const earnedPoints = result.earnedPoints || result.xpGained || 0;
+      const badges = result.badgesEarned || result.newBadges || [];
+
+      if (earnedPoints > 0 || badges.length > 0) {
+        setToastData({ xpGained: earnedPoints, newBadges: badges });
+        setShowToast(true);
+        // Also refresh user data to show new XP in navbar
+        checkAuth();
+      }
+    }
+  };
+
+  const startLessonSession = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const res = await axios.post(
+        `${API_URL}/lessons/${lessonId}/session/start`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        setSessionId(res.data.data.sessionId);
+      }
+    } catch (error) {
+      console.error('Error starting session:', error);
+    }
+  };
+
+  const endLessonSession = async (timeSpent) => {
+    if (!sessionId) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      await axios.post(
+        `${API_URL}/lessons/${lessonId}/session/end`,
+        { sessionId, timeSpent },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error('Error ending session:', error);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) {
+      return `${hrs}h ${mins}m ${secs}s`;
+    }
+    return `${mins}m ${secs}s`;
+  };
+
+  const initiateCompletion = async () => {
+    // Check if lesson has comprehension questions
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const res = await axios.get(
+        `${API_URL}/comprehension/lesson/${lessonId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success && res.data.data.length > 0) {
+        // Has questions - show quiz
+        setComprehensionQuestions(res.data.data);
+        setShowComprehensionQuiz(true);
+      } else {
+        // No questions - show confirmation dialog
+        setShowConfirmDialog(true);
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      // No questions or error - proceed with confirmation
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleQuizSubmit = async (answers) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+      const res = await axios.post(
+        `${API_URL}/comprehension/lesson/${lessonId}/submit`,
+        { answers },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success) {
+        // Return results to quiz component
+        return res.data.data;
+      }
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      alert('Failed to submit quiz answers');
+      return null;
+    }
+  };
+
+  const handleComprehensionQuizComplete = () => {
+    // Close quiz and show confirmation dialog
+    setShowComprehensionQuiz(false);
+    setShowConfirmDialog(true);
   };
 
   const handleLessonComplete = async () => {
-    if (lesson.progress?.completed) return; // Already completed locally check (optional)
+    if (lesson.progress?.completed) return;
+
+    setShowConfirmDialog(false);
 
     try {
       setCompleting(true);
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const res = await axios.post(
         `${API_URL}/lessons/${lesson.id}/complete`,
-        {},
+        { timeSpent: elapsedTime },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (res.data.success) {
+        // Refresh user profile in store to update XP/points
+        checkAuth();
+
         const { xpGained, newBadges, alreadyCompleted } = res.data.data;
         if (!alreadyCompleted) {
           setToastData({ xpGained, newBadges });
           setShowToast(true);
-          // Update local lesson state to show completed
           setLesson(prev => ({ ...prev, progress: { ...prev.progress, completed: true } }));
         } else {
           alert('Lesson already completed!');
+          navigate(`/courses/${courseId}`);
         }
       }
     } catch (error) {
@@ -234,75 +357,12 @@ const CourseLesson = () => {
     <div className="course-lesson-page">
       <div className="course-lesson-layout">
         {/* Sidebar */}
-        <aside className={`lesson-sidebar ${!sidebarOpen ? 'closed' : ''}`}>
-          <div className="sidebar-header">
-            <h2>Course Content</h2>
-            <button className="btn-icon-ghost" onClick={() => setSidebarOpen(false)}>
-              <FaTimes />
-            </button>
-          </div>
-
-          <div className="sidebar-content">
-            {courseComponents.map(component => {
-              if (component.componentType === 'MODULE') {
-                return (
-                  <div key={component.id} className="module-item">
-                    <button
-                      className="module-header"
-                      onClick={() => handleModuleToggle(component.id)}
-                    >
-                      <span>{component.title}</span>
-                      {expandedModules[component.id] ? <FaChevronDown /> : <FaChevronRight />}
-                    </button>
-
-                    {expandedModules[component.id] && component.lessons && (
-                      <div className="module-lessons">
-                        {component.lessons.map(l => (
-                          <div
-                            key={l.id}
-                            className={`lesson-item ${l.id === lesson.id ? 'active' : ''} ${l.progress?.completed ? 'completed' : ''}`}
-                            onClick={() => navigate(`/student/courses/${courseId}/lesson/${l.id}`)}
-                          >
-                            <span className="lesson-icon">
-                              {l.progress?.completed ? <FaCheckCircle /> :
-                                l.type === 'VIDEO_LINK' ? <FaPlayCircle /> :
-                                  l.type === 'QUIZ' ? <FaQuestionCircle /> :
-                                    <FaFileAlt />}
-                            </span>
-                            <span>{l.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              } else if (component.componentType === 'LESSON') {
-                return (
-                  <div
-                    key={component.id}
-                    className={`lesson-item ${component.id === lesson.id ? 'active' : ''} ${component.progress?.completed ? 'completed' : ''}`}
-                    onClick={() => navigate(`/student/courses/${courseId}/lesson/${component.id}`)}
-                  >
-                    <span className="lesson-icon"><FaPlayCircle /></span>
-                    <span>{component.title}</span>
-                  </div>
-                );
-              }
-              return null;
-            })}
-          </div>
-        </aside>
+        {/* Sidebar removed for focused view */}
 
         {/* Main Content */}
         <main className="lesson-main-content">
           {/* Header Bar within content area if sidebar closed, or just floating toggle */}
-          {!sidebarOpen && (
-            <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10 }}>
-              <button className="btn-icon-ghost" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setSidebarOpen(true)}>
-                <FaBars />
-              </button>
-            </div>
-          )}
+          {/* Toggle button removed */}
 
           {/* Tabs Bar - Sticky */}
           {hasQuiz && (
@@ -351,6 +411,9 @@ const CourseLesson = () => {
                 )}
                 <div className="meta-pill">
                   <FaTag /> {lesson.type.replace('_', ' ')}
+                </div>
+                <div className="meta-pill session-timer">
+                  <FaClock /> Time: {formatTime(elapsedTime)}
                 </div>
               </div>
             </div>
@@ -411,7 +474,7 @@ const CourseLesson = () => {
           </div>
 
           {/* Fixed Footer Nav */}
-          <div className="lesson-footer" style={{ left: sidebarOpen ? '350px' : '0' }}>
+          <div className="lesson-footer">
             <button
               className="btn-nav-prev"
               onClick={() => prevLessonId && navigate(`/student/courses/${courseId}/lesson/${prevLessonId}`)}
@@ -423,7 +486,7 @@ const CourseLesson = () => {
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button
                 className={`btn-complete ${lesson.progress?.completed ? 'completed' : ''}`}
-                onClick={handleLessonComplete}
+                onClick={lesson.progress?.completed ? null : initiateCompletion}
                 disabled={lesson.progress?.completed || completing}
               >
                 {lesson.progress?.completed ? (
@@ -445,11 +508,51 @@ const CourseLesson = () => {
         </main>
       </div>
 
+      {/* Completion Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="modal-overlay" onClick={() => setShowConfirmDialog(false)}>
+          <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Complete Lesson?</h3>
+            <p>Are you sure you've learned through the lesson?</p>
+            <p className="timer-info">
+              You've spent <strong>{formatTime(elapsedTime)}</strong> on this lesson.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setShowConfirmDialog(false)}
+              >
+                Not Yet
+              </button>
+              <button
+                className="btn-primary"
+                onClick={handleLessonComplete}
+              >
+                Yes, Complete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comprehension Quiz Modal */}
+      {showComprehensionQuiz && comprehensionQuestions.length > 0 && (
+        <ComprehensionQuiz
+          lessonId={lessonId}
+          questions={comprehensionQuestions}
+          onSubmit={handleQuizSubmit}
+          onCancel={handleComprehensionQuizComplete}
+        />
+      )}
+
       {showToast && (
         <GamificationToast
           xpGained={toastData.xpGained}
           newBadges={toastData.newBadges}
-          onClose={() => setShowToast(false)}
+          onClose={() => {
+            setShowToast(false);
+            navigate(`/courses/${courseId}`);
+          }}
         />
       )}
     </div>

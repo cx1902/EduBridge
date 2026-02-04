@@ -21,6 +21,7 @@ const createSession = async (req, res) => {
       maxParticipants,
       sessionType,
       videoRoomId,
+      sessionNotes,
     } = req.body;
 
     // Verify user is a tutor
@@ -42,6 +43,7 @@ const createSession = async (req, res) => {
         maxParticipants,
         sessionType,
         videoRoomId,
+        sessionNotes,
         status: 'SCHEDULED',
       },
     });
@@ -69,7 +71,7 @@ const sendInvitations = async (req, res) => {
   try {
     const { user } = req;
     const { sessionId } = req.params;
-    const { studentIds } = req.body;
+    const { studentIds, sendEmail = true } = req.body;
 
     // Verify session exists and belongs to tutor
     const session = await prisma.tutoringSession.findUnique({
@@ -115,24 +117,63 @@ const sendInvitations = async (req, res) => {
       });
     }
 
-    // Send invitations
-    const result = await emailService.sendSessionInvitations(sessionId, studentIds);
+    // Send emails only if requested (default true)
+    let emailResult = { sent: 0 };
+    if (sendEmail !== false) {
+      emailResult = await emailService.sendSessionInvitations(sessionId, studentIds);
+    } else {
+      // Mock result if skipped
+      emailResult = { sent: 0, message: 'Email sending skipped by user' };
+    }
 
-    // Create notification for each student
-    await prisma.notification.createMany({
-      data: studentIds.map(studentId => ({
-        userId: studentId,
-        type: 'SESSION_INVITATION',
-        title: 'New Class Session Scheduled',
-        message: `${user.firstName} ${user.lastName} has scheduled a new session: ${session.subject}`,
-        link: `/student/sessions/${sessionId}`,
-      })),
+    // Create session bookings for each student (status PENDING)
+    // and notifications
+    await prisma.$transaction(async (tx) => {
+      for (const studentId of studentIds) {
+        // Check for existing booking to avoid duplicates
+        const existingBooking = await tx.sessionBooking.findFirst({
+          where: {
+            sessionId,
+            studentId
+          }
+        });
+
+        if (existingBooking) {
+          // If it exists but is not confirmed, we can "refresh" it to PENDING for action
+          if (existingBooking.status !== 'CONFIRMED' && existingBooking.status !== 'COMPLETED') {
+            await tx.sessionBooking.update({
+              where: { id: existingBooking.id },
+              data: { status: 'PENDING' }
+            });
+          }
+        } else {
+          // Create new pending booking
+          await tx.sessionBooking.create({
+            data: {
+              studentId,
+              sessionId,
+              status: 'PENDING',
+            }
+          });
+        }
+      }
+
+      // Create notifications in bulk
+      await tx.notification.createMany({
+        data: studentIds.map(studentId => ({
+          userId: studentId,
+          type: 'SESSION_INVITATION',
+          title: 'New Class Session Scheduled',
+          message: `${user.firstName} ${user.lastName} has scheduled a new session: ${session.subject}`,
+          link: `/student/sessions`,
+        })),
+      });
     });
 
     res.status(200).json({
       success: true,
-      message: `Invitations sent to ${result.sent} students`,
-      data: result,
+      message: sendEmail !== false ? `Invitations sent to ${emailResult.sent} students` : 'Session booked, emails skipped.',
+      data: emailResult,
     });
   } catch (error) {
     console.error('Error sending invitations:', error);
@@ -328,6 +369,17 @@ const confirmAttendance = async (req, res) => {
         },
       });
 
+      // Update session booking status to CONFIRMED
+      await prisma.sessionBooking.updateMany({
+        where: {
+          sessionId,
+          studentId: user.id,
+        },
+        data: {
+          status: 'CONFIRMED',
+        },
+      });
+
       // Update email tracking status
       await prisma.sessionEmailTracking.updateMany({
         where: {
@@ -350,7 +402,7 @@ const confirmAttendance = async (req, res) => {
           type: 'SESSION_CONFIRMED',
           title: 'Student Confirmed Attendance',
           message: `${user.firstName} ${user.lastName} confirmed attendance for ${session.subject}`,
-          link: `/tutor/sessions/${sessionId}`,
+          link: `/tutor/sessions`,
         },
       });
 
@@ -367,6 +419,17 @@ const confirmAttendance = async (req, res) => {
         sessionId,
         studentId: user.id,
         responseType: 'CONFIRMED',
+      },
+    });
+
+    // Update session booking status to CONFIRMED
+    await prisma.sessionBooking.updateMany({
+      where: {
+        sessionId,
+        studentId: user.id,
+      },
+      data: {
+        status: 'CONFIRMED',
       },
     });
 
@@ -392,7 +455,7 @@ const confirmAttendance = async (req, res) => {
         type: 'SESSION_CONFIRMED',
         title: 'Student Confirmed Attendance',
         message: `${user.firstName} ${user.lastName} confirmed attendance for ${session.subject}`,
-        link: `/tutor/sessions/${sessionId}`,
+        link: `/tutor/sessions`,
       },
     });
 
@@ -430,6 +493,17 @@ const declineInvitation = async (req, res) => {
       },
     });
 
+    // Update session booking status to DECLINED
+    await prisma.sessionBooking.updateMany({
+      where: {
+        sessionId,
+        studentId: user.id,
+      },
+      data: {
+        status: 'DECLINED',
+      },
+    });
+
     // Update email tracking
     await prisma.sessionEmailTracking.updateMany({
       where: {
@@ -452,7 +526,7 @@ const declineInvitation = async (req, res) => {
         type: 'SESSION_DECLINED',
         title: 'Student Declined Session',
         message: `${user.firstName} ${user.lastName} declined the session: ${session.subject}${reason ? `. Reason: ${reason}` : ''}`,
-        link: `/tutor/sessions/${sessionId}`,
+        link: `/tutor/sessions`,
       },
     });
 
@@ -502,7 +576,7 @@ const requestReschedule = async (req, res) => {
         type: 'SESSION_DECLINED',
         title: 'Reschedule Request',
         message: `${user.firstName} ${user.lastName} requested to reschedule ${session.subject}`,
-        link: `/tutor/sessions/${sessionId}/reschedule-requests`,
+        link: `/tutor/sessions`, // Simplified link as specific sub-route doesn't exist
       },
     });
 
@@ -708,6 +782,61 @@ const bookSession = async (req, res) => {
       });
     }
 
+    // Validate session is exactly 1 hour
+    const sessionStart = new Date(session.scheduledStart);
+    const sessionEnd = new Date(session.scheduledEnd);
+    const durationMinutes = (sessionEnd - sessionStart) / (1000 * 60);
+
+    if (durationMinutes !== 60) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_DURATION',
+          message: 'Session must be exactly 1 hour. Please select a 1-hour time slot.'
+        }
+      });
+    }
+
+
+    // Check for conflicting sessions in this time slot
+    const conflictingSession = await prisma.tutoringSession.findFirst({
+      where: {
+        tutorId: session.tutorId,
+        id: { not: sessionId },
+        status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+        OR: [
+          {
+            AND: [
+              { scheduledStart: { lte: sessionStart } },
+              { scheduledEnd: { gt: sessionStart } }
+            ]
+          },
+          {
+            AND: [
+              { scheduledStart: { lt: sessionEnd } },
+              { scheduledEnd: { gte: sessionEnd } }
+            ]
+          },
+          {
+            AND: [
+              { scheduledStart: { gte: sessionStart } },
+              { scheduledEnd: { lte: sessionEnd } }
+            ]
+          }
+        ]
+      }
+    });
+
+    if (conflictingSession) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'TIME_SLOT_BOOKED',
+          message: 'This time slot has already been booked. Please select another time.'
+        }
+      });
+    }
+
     // Check if session is full
     if (session._count.bookings >= session.maxParticipants) {
       return res.status(400).json({
@@ -757,14 +886,14 @@ const bookSession = async (req, res) => {
             type: 'SESSION_BOOKED',
             title: 'Session Booked Successfully',
             message: `You have booked a session: ${session.subject} on ${new Date(session.scheduledStart).toLocaleDateString()}`,
-            link: `/sessions/${sessionId}`
+            link: `/student/sessions`
           },
           {
             userId: session.tutorId,
             type: 'SESSION_BOOKED',
             title: 'New Session Booking',
             message: `A student has booked your session: ${session.subject}`,
-            link: `/tutor/sessions/${sessionId}`
+            link: `/tutor/sessions`
           }
         ]
       });
@@ -1124,7 +1253,7 @@ const getTutorSessions = async (req, res) => {
 const updateSessionStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, reason } = req.body;
     const { user } = req;
 
     if (!['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(status)) {
@@ -1168,8 +1297,8 @@ const updateSessionStatus = async (req, res) => {
           userId: b.studentId,
           type: 'SESSION_CANCELLED',
           title: 'Session Cancelled',
-          message: `The session ${session.subject} has been cancelled by the tutor.`,
-          link: `/student/sessions`
+          message: `The session ${session.subject} has been cancelled by the tutor${reason ? `. Reason: ${reason}` : ''}.`,
+          link: `/student/find-tutor`
         }))
       });
     }
@@ -1188,8 +1317,545 @@ const updateSessionStatus = async (req, res) => {
   }
 };
 
+/**
+ * Get available 1-hour slots for a tutor
+ * GET /api/sessions/tutors/:tutorId/available-slots?date=2026-02-03
+ */
+const getTutorAvailableSlots = async (req, res) => {
+  try {
+    const { tutorId } = req.params;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date parameter is required'
+      });
+    }
+
+    const selectedDate = new Date(date);
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(selectedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Get tutor's availability slots for the date
+    const availabilitySlots = await prisma.availabilitySlot.findMany({
+      where: {
+        tutorId,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay
+        },
+        isBooked: false
+      },
+      orderBy: {
+        startTime: 'asc'
+      }
+    });
+
+    // Get existing booked sessions for the date
+    const bookedSessions = await prisma.tutoringSession.findMany({
+      where: {
+        tutorId,
+        scheduledStart: {
+          gte: startOfDay,
+          lte: endOfDay
+        },
+        status: {
+          in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
+        }
+      }
+    });
+
+    // Generate 1-hour slots from availability
+    const oneHourSlots = [];
+
+    for (const slot of availabilitySlots) {
+      const slotStart = new Date(slot.startTime);
+      const slotEnd = new Date(slot.endTime);
+      const durationMinutes = (slotEnd - slotStart) / (1000 * 60);
+
+      // Generate overlapping 1-hour slots
+      // Example: 10:30-12:30 → [10:30-11:30, 11:00-12:00, 11:30-12:30]
+      const slotsToGenerate = Math.ceil(durationMinutes / 60);
+
+      for (let i = 0; i < slotsToGenerate; i++) {
+        const oneHourStart = new Date(slotStart.getTime() + (i * 30 * 60 * 1000)); // 30-minute intervals
+        const oneHourEnd = new Date(oneHourStart.getTime() + (60 * 60 * 1000)); // 1 hour later
+
+        // Don't create slot if it exceeds the availability window
+        if (oneHourEnd > slotEnd) continue;
+
+        // Check if this slot conflicts with any booked session
+        const hasConflict = bookedSessions.some(session => {
+          const sessionStart = new Date(session.scheduledStart);
+          const sessionEnd = new Date(session.scheduledEnd);
+
+          // Check for overlap
+          return (oneHourStart < sessionEnd && oneHourEnd > sessionStart);
+        });
+
+        oneHourSlots.push({
+          startTime: oneHourStart.toISOString(),
+          endTime: oneHourEnd.toISOString(),
+          available: !hasConflict,
+          tutorId
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        date,
+        slots: oneHourSlots
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching tutor available slots:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch available slots',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Confirm a booking request (Tutor)
+ * POST /api/sessions/:id/confirm-booking
+ */
+const confirmBookingRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user } = req;
+
+    const session = await prisma.tutoringSession.findUnique({
+      where: { id },
+      include: {
+        bookings: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    if (session.tutorId !== user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // Update session status to CONFIRMED
+    const updatedSession = await prisma.tutoringSession.update({
+      where: { id },
+      data: { status: 'CONFIRMED' }
+    });
+
+    // Notify all students who booked this session
+    if (session.bookings && session.bookings.length > 0) {
+      await prisma.notification.createMany({
+        data: session.bookings.map(booking => ({
+          userId: booking.studentId,
+          type: 'SESSION_CONFIRMED',
+          title: 'Session Confirmed',
+          message: `Your session request for ${session.subject} has been confirmed by the tutor.`,
+          link: `/student/sessions`
+        }))
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking confirmed successfully',
+      data: updatedSession
+    });
+  } catch (error) {
+    console.error('Error confirming booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to confirm booking',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Decline a booking request (Tutor)
+ * POST /api/sessions/:id/decline-booking
+ */
+const declineBookingRequest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user } = req;
+    const { reason } = req.body;
+
+    const session = await prisma.tutoringSession.findUnique({
+      where: { id },
+      include: {
+        bookings: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    if (session.tutorId !== user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // Update session status to CANCELLED
+    const updatedSession = await prisma.tutoringSession.update({
+      where: { id },
+      data: { status: 'CANCELLED' }
+    });
+
+    // Notify all students who booked this session
+    if (session.bookings && session.bookings.length > 0) {
+      await prisma.notification.createMany({
+        data: session.bookings.map(booking => ({
+          userId: booking.studentId,
+          type: 'SESSION_CANCELLED',
+          title: 'Session Request Declined',
+          message: `Your session request for ${session.subject} was declined by the tutor${reason ? `. Reason: ${reason}` : ''}.`,
+          link: `/student/find-tutor`
+        }))
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Booking declined successfully',
+      data: updatedSession
+    });
+  } catch (error) {
+    console.error('Error declining booking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to decline booking',
+      error: error.message
+    });
+  }
+};
+
+
+
+/**
+ * Get session details by ID
+ * GET /api/sessions/:id
+ */
+const getSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const session = await prisma.tutoringSession.findUnique({
+      where: { id },
+      include: {
+        tutor: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            bio: true,
+          },
+        },
+        _count: {
+          select: {
+            bookings: {
+              where: {
+                status: 'CONFIRMED'
+              }
+            }
+          }
+        },
+        bookings: {
+          where: {
+            status: 'CONFIRMED'
+          },
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                email: true
+              }
+            }
+          }
+        }
+      },
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: session,
+    });
+  } catch (error) {
+    console.error('Error fetching session:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch session',
+      error: error.message,
+    });
+  }
+};
+
+// Rate a session (Student only)
+const rateSession = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { id: sessionId } = req.params;
+    const { rating, review } = req.body;
+
+    // Validate input
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+
+    // Find the booking
+    const booking = await prisma.sessionBooking.findFirst({
+      where: {
+        sessionId,
+        studentId
+      },
+      include: {
+        session: true
+      }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Session booking not found' });
+    }
+
+    // Check if session is completed
+    if (booking.session.status !== 'COMPLETED') {
+      return res.status(400).json({ error: 'Cannot rate a session that is not completed' });
+    }
+
+    // Check if already rated
+    if (booking.rating) {
+      return res.status(400).json({ error: 'You have already rated this session' });
+    }
+
+    const tutorId = booking.session.tutorId;
+
+    // Transaction: Update booking rating and Recalculate Tutor Rating
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Update Booking
+      const updatedBooking = await tx.sessionBooking.update({
+        where: { id: booking.id },
+        data: {
+          rating,
+          review
+        }
+      });
+
+      // 2. Recalculate Tutor Average Rating
+      const tutorSessions = await tx.tutoringSession.findMany({
+        where: { tutorId },
+        select: { id: true }
+      });
+
+      const sessionIds = tutorSessions.map(s => s.id);
+
+      const aggregations = await tx.sessionBooking.aggregate({
+        where: {
+          sessionId: { in: sessionIds },
+          rating: { not: null }
+        },
+        _avg: { rating: true },
+        _count: { rating: true }
+      });
+
+      const averageRating = aggregations._avg.rating || 0;
+      const reviewCount = aggregations._count.rating || 0;
+
+      // 3. Update TutorProfile
+      await tx.tutorProfile.update({
+        where: { userId: tutorId },
+        data: {
+          averageRating,
+          reviewCount
+        }
+      });
+
+      return updatedBooking;
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Session rated successfully'
+    });
+
+  } catch (error) {
+    console.error('Rate session error:', error);
+    res.status(500).json({ error: 'Failed to rate session' });
+  }
+};
+
+
+/**
+ * Update session details
+ * PATCH /api/sessions/:id
+ */
+const updateSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { videoRoomId, sessionNotes, subject, scheduledStart, scheduledEnd } = req.body;
+    const { user } = req;
+
+    const session = await prisma.tutoringSession.findUnique({
+      where: { id }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found'
+      });
+    }
+
+    if (session.tutorId !== user.id && user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    const updatedSession = await prisma.tutoringSession.update({
+      where: { id },
+      data: {
+        videoRoomId,
+        sessionNotes,
+        subject,
+        scheduledStart: scheduledStart ? new Date(scheduledStart) : undefined,
+        scheduledEnd: scheduledEnd ? new Date(scheduledEnd) : undefined
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Session updated successfully',
+      data: updatedSession
+    });
+  } catch (error) {
+    console.error('Update session error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update session'
+    });
+  }
+};
+
+/**
+ * Delete a session
+ * DELETE /api/sessions/:id
+ */
+const deleteSession = async (req, res) => {
+  try {
+    const { user } = req;
+    const { id } = req.params;
+
+    // Verify session exists and belongs to tutor
+    const session = await prisma.tutoringSession.findUnique({
+      where: { id },
+      include: {
+        bookings: true
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found',
+      });
+    }
+
+    if (session.tutorId !== user.id && user.role !== 'ADMIN') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied',
+      });
+    }
+
+    // Check for active bookings
+    const hasActiveBookings = session.bookings.some(
+      b => b.status === 'CONFIRMED' || b.status === 'PENDING'
+    );
+
+    if (hasActiveBookings && session.status !== 'COMPLETED' && session.status !== 'CANCELLED') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete session with active bookings. Please cancel the session first.',
+      });
+    }
+
+    await prisma.tutoringSession.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Session deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting session:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete session',
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   createSession,
+  getSession,
   sendInvitations,
   getEmailStatus,
   resendInvitation,
@@ -1204,5 +1870,11 @@ module.exports = {
   cancelBooking,
   getTodaySessions,
   updateSessionStatus,
-  getTutorSessions
+  updateSession,
+  getTutorSessions,
+  getTutorAvailableSlots,
+  confirmBookingRequest,
+  declineBookingRequest,
+  rateSession,
+  deleteSession
 };

@@ -71,7 +71,7 @@ const EMAIL_TEMPLATES = {
             .content { background: #f9fafb; padding: 30px; }
             .session-details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
             .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-            .cta-button { display: inline-block; background: #4f46e5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
+            .cta-button { display: inline-block; background: #6366f1; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 5px; font-weight: bold; }
             .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 12px; }
           </style>
         </head>
@@ -110,11 +110,6 @@ const EMAIL_TEMPLATES = {
 
               ${data.objectives ? `<p><strong>Learning Objectives:</strong><br/>${data.objectives}</p>` : ''}
               
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${data.confirmLink}" class="cta-button">Confirm Attendance</a>
-                <a href="${data.viewDetailsLink}" class="cta-button" style="background: #6b7280;">View Details</a>
-              </div>
-
               <p><em>A calendar invite has been attached to help you remember this session.</em></p>
             </div>
             <div class="footer">
@@ -138,7 +133,7 @@ const EMAIL_TEMPLATES = {
             .header { background: #f59e0b; color: white; padding: 20px; text-align: center; }
             .content { background: #f9fafb; padding: 30px; }
             .reminder-box { background: #fef3c7; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b; }
-            .cta-button { display: inline-block; background: #f59e0b; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .cta-button { display: inline-block; background: #f59e0b; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: bold; }
           </style>
         </head>
         <body>
@@ -152,10 +147,6 @@ const EMAIL_TEMPLATES = {
                 <h3>Your session "${data.topic}" is starting in ${data.timeframe}!</h3>
                 <p><strong>Time:</strong> ${data.date} at ${data.time}</p>
                 <p><strong>Tutor:</strong> ${data.tutorName}</p>
-              </div>
-              
-              <div style="text-align: center;">
-                <a href="${data.meetingLink}" class="cta-button">Join Session Now</a>
               </div>
 
               ${data.preparation ? `<p><strong>Quick Preparation Checklist:</strong><br/>${data.preparation}</p>` : ''}
@@ -179,7 +170,7 @@ const EMAIL_TEMPLATES = {
             .update-box { background: #dbeafe; padding: 20px; margin: 20px 0; border-left: 4px solid #3b82f6; }
             .old-value { text-decoration: line-through; color: #6b7280; }
             .new-value { font-weight: bold; color: #3b82f6; }
-            .cta-button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .cta-button { display: inline-block; background: #3b82f6; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 10px 0; font-weight: bold; }
           </style>
         </head>
         <body>
@@ -201,10 +192,6 @@ const EMAIL_TEMPLATES = {
                   </p>
                 `).join('')}
                 ${data.reason ? `<p><em>Reason: ${data.reason}</em></p>` : ''}
-              </div>
-
-              <div style="text-align: center;">
-                <a href="${data.confirmLink}" class="cta-button">Reconfirm Attendance</a>
               </div>
             </div>
           </div>
@@ -276,7 +263,7 @@ const EMAIL_TEMPLATES = {
               
               <div class="reset-box">
                 <p>Click the button below to reset your password:</p>
-                <a href="${data.resetLink}" class="cta-button">Reset Password</a>
+                <a href="${data.resetLink}" class="cta-button" style="color: #ffffff !important;">Reset Password</a>
                 <p style="margin-top: 20px; font-size: 14px; color: #6b7280;">This link will expire in <strong>1 hour</strong></p>
               </div>
 
@@ -588,6 +575,8 @@ async function sendSessionInvitations(sessionId, studentIds) {
       throw new Error('Session not found');
     }
 
+    console.log(`[DEBUG] sendSessionInvitations: Input studentIds:`, studentIds);
+
     // Fetch student details and their preferences
     const students = await prisma.user.findMany({
       where: {
@@ -599,6 +588,15 @@ async function sendSessionInvitations(sessionId, studentIds) {
         emailPreferences: true,
       },
     });
+
+    console.log(`[DEBUG] sendSessionInvitations: Found ${students.length} verified/active students out of ${studentIds.length} inputs.`);
+    if (students.length === 0 && studentIds.length > 0) {
+      // Check if they exist but unverified
+      const unverified = await prisma.user.count({
+        where: { id: { in: studentIds }, emailVerified: false }
+      });
+      console.log(`[DEBUG] Found ${unverified} unverified students.`);
+    }
 
     const results = [];
 
@@ -617,8 +615,22 @@ async function sendSessionInvitations(sessionId, studentIds) {
         courseName: session.subject,
         topic: session.subject,
         date: new Date(session.scheduledStart).toLocaleDateString(),
-        time: new Date(session.scheduledStart).toLocaleTimeString(),
-        duration: `${Math.round((new Date(session.scheduledEnd) - new Date(session.scheduledStart)) / 60000)} minutes`,
+        time: new Date(session.scheduledStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        duration: (() => {
+          const diffMs = new Date(session.scheduledEnd) - new Date(session.scheduledStart);
+          let diffMins = Math.round(diffMs / 60000);
+          // Handle potential timestamp/timezone issues where end < start
+          if (diffMins < 0) {
+            console.warn(`[DEBUG] Session duration negative: ${diffMins} mins. Possible timezone mismatch.`);
+            diffMins = Math.abs(diffMins) % 1440; // Normalize to positive within a day
+          }
+          const hours = Math.floor(diffMins / 60);
+          const mins = diffMins % 60;
+          if (hours > 0) {
+            return `${hours} hour${hours > 1 ? 's' : ''}${mins > 0 ? ` ${mins} mins` : ''}`;
+          }
+          return `${mins} minutes`;
+        })(),
         sessionType: session.sessionType.replace('_', ' '),
         objectives: null, // TODO: Add learning objectives field to session
         confirmLink: `${process.env.CLIENT_URL}/student/sessions/${sessionId}/confirm`,

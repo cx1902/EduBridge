@@ -163,7 +163,7 @@ exports.markLessonComplete = async (req, res) => {
         }
       });
 
-      // Calculate new progress percentage
+      // Calculate new progress percentage based on actual course lesson count
       const allProgress = await tx.progress.findMany({
         where: {
           enrollmentId: enrollment.id
@@ -171,8 +171,21 @@ exports.markLessonComplete = async (req, res) => {
       });
 
       const completedCount = allProgress.filter(p => p.completed).length;
-      const totalLessons = allProgress.length;
-      const progressPercentage = (completedCount / totalLessons) * 100;
+
+      // Get actual total lessons from the course
+      const courseWithLessons = await tx.course.findUnique({
+        where: { id: lesson.courseId },
+        select: {
+          _count: {
+            select: {
+              lessons: true
+            }
+          }
+        }
+      });
+
+      const totalLessons = courseWithLessons._count.lessons;
+      const progressPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
       // Update enrollment
       const updatedEnrollment = await tx.enrollment.update({
@@ -215,7 +228,7 @@ exports.markLessonComplete = async (req, res) => {
 
         const today = new Date().toISOString().split('T')[0];
         const lastActivity = user.lastActivityDate ? user.lastActivityDate.toISOString().split('T')[0] : null;
-        
+
         let newStreak = user.currentStreak;
         let newLongestStreak = user.longestStreak;
 

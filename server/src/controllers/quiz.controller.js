@@ -48,19 +48,19 @@ exports.createQuiz = async (req, res) => {
         courseId: lesson.courseId,
         title,
         instructions,
-        timeLimitMinutes: parseInt(timeLimitMinutes),
-        passingPercentage: parseInt(passingPercentage),
-        maxAttempts: maxAttempts ? parseInt(maxAttempts) : null,
-        pointsOnPass: parseInt(pointsOnPass),
-        shuffleQuestions,
-        shuffleAnswers,
-        immediateFeedback,
+        timeLimitMinutes: parseInt(timeLimitMinutes) || 30,
+        passingPercentage: parseInt(passingPercentage) || 60,
+        maxAttempts: (maxAttempts !== undefined && maxAttempts !== '' && maxAttempts !== null) ? parseInt(maxAttempts) : null,
+        pointsOnPass: parseInt(pointsOnPass) || 0,
+        shuffleQuestions: !!shuffleQuestions,
+        shuffleAnswers: !!shuffleAnswers,
+        immediateFeedback: !!immediateFeedback,
         questions: {
           create: questions.map((q, index) => ({
             questionText: q.questionText,
             questionType: q.questionType,
             questionImageUrl: q.questionImageUrl,
-            points: parseInt(q.points),
+            points: parseInt(q.points) || 0,
             explanation: q.explanation,
             sequenceOrder: index + 1,
             answerOptions: {
@@ -89,6 +89,10 @@ exports.createQuiz = async (req, res) => {
     });
   } catch (error) {
     console.error('Create quiz error:', error);
+    try {
+      require('fs').appendFileSync('error.log', `${new Date().toISOString()} - Create Quiz Error: ${error.stack}\n`);
+    } catch (e) { console.error('Failed to write log', e); }
+
     res.status(500).json({
       success: false,
       error: { message: 'Failed to create quiz', details: error.message }
@@ -135,13 +139,13 @@ exports.updateQuiz = async (req, res) => {
         data: {
           title,
           instructions,
-          timeLimitMinutes: parseInt(timeLimitMinutes),
-          passingPercentage: parseInt(passingPercentage),
-          maxAttempts: maxAttempts ? parseInt(maxAttempts) : null,
-          pointsOnPass: parseInt(pointsOnPass),
-          shuffleQuestions,
-          shuffleAnswers,
-          immediateFeedback
+          timeLimitMinutes: parseInt(timeLimitMinutes) || 30,
+          passingPercentage: parseInt(passingPercentage) || 60,
+          maxAttempts: (maxAttempts !== undefined && maxAttempts !== '' && maxAttempts !== null) ? parseInt(maxAttempts) : null,
+          pointsOnPass: parseInt(pointsOnPass) || 0,
+          shuffleQuestions: !!shuffleQuestions,
+          shuffleAnswers: !!shuffleAnswers,
+          immediateFeedback: !!immediateFeedback
         }
       });
 
@@ -161,7 +165,7 @@ exports.updateQuiz = async (req, res) => {
             questionText: q.questionText,
             questionType: q.questionType,
             questionImageUrl: q.questionImageUrl,
-            points: parseInt(q.points),
+            points: parseInt(q.points) || 0,
             explanation: q.explanation,
             sequenceOrder: i + 1,
             answerOptions: {
@@ -263,25 +267,46 @@ exports.getQuizByLesson = async (req, res) => {
       });
     }
 
-    // Check enrollment
-    const enrollment = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId,
-          courseId: lesson.courseId
+    // Check if user is Tutor (owner) or Admin
+    if (req.user.role === 'ADMIN' || (req.user.role === 'TUTOR' && lesson.courseId)) {
+      // Verify ownership for Tutor
+      if (req.user.role === 'TUTOR') {
+        const course = await prisma.course.findUnique({
+          where: { id: lesson.courseId },
+          select: { tutorId: true }
+        });
+        if (course.tutorId !== userId) {
+          return res.status(403).json({
+            success: false,
+            error: { message: 'Not authorized to view this quiz' }
+          });
         }
       }
-    });
-
-    if (!enrollment) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'NOT_ENROLLED',
-          message: 'You must be enrolled to access quizzes'
+      // Proceed without enrollment check
+    } else {
+      // Check enrollment for Students
+      const enrollment = await prisma.enrollment.findUnique({
+        where: {
+          userId_courseId: {
+            userId,
+            courseId: lesson.courseId
+          }
         }
       });
+
+      if (!enrollment) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'NOT_ENROLLED',
+            message: 'You must be enrolled to access quizzes'
+          }
+        });
+      }
     }
+
+    // Determine if we should include correct answers
+    const includeCorrectAnswers = req.user.role === 'ADMIN' || req.user.role === 'TUTOR';
 
     // Get quiz with questions and options
     const quiz = await prisma.quiz.findFirst({
@@ -296,8 +321,8 @@ exports.getQuizByLesson = async (req, res) => {
               select: {
                 id: true,
                 optionText: true,
-                sequenceOrder: true
-                // Don't include isCorrect for students
+                sequenceOrder: true,
+                isCorrect: includeCorrectAnswers // Conditionally include isCorrect
               }
             }
           },
@@ -309,6 +334,10 @@ exports.getQuizByLesson = async (req, res) => {
     });
 
     if (!quiz) {
+      // If user is Tutor/Admin, return null data so frontend can show "Create Quiz" form
+      if (includeCorrectAnswers) {
+        return res.json({ success: true, data: { quiz: null } });
+      }
       return res.status(404).json({
         success: false,
         error: {
@@ -326,16 +355,10 @@ exports.getQuizByLesson = async (req, res) => {
       }
     });
 
-    // Check if max attempts reached
-    if (quiz.maxAttempts && attemptCount >= quiz.maxAttempts) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'MAX_ATTEMPTS_REACHED',
-          message: `Maximum attempts (${quiz.maxAttempts}) reached for this quiz`
-        }
-      });
-    }
+    // Check if max attempts reached - REMOVED HARD 403
+    // We want the user to still be able to see the quiz/results page even if they can't take it again.
+    // The attemptCount and attemptsRemaining will be used by the frontend to disable the "Start Quiz" button.
+    const maxAttemptsReached = quiz.maxAttempts && attemptCount >= quiz.maxAttempts;
 
     // Shuffle questions if configured
     if (quiz.shuffleQuestions) {
@@ -460,7 +483,8 @@ exports.submitQuizAttempt = async (req, res) => {
           completedAt: new Date(),
           scorePercentage,
           pointsEarned: passed ? gradingResult.earnedPoints : 0,
-          passed
+          passed,
+          responses: gradingResult.details || []
         }
       });
 
@@ -714,11 +738,26 @@ function gradeQuiz(questions, answers) {
       earnedPoints += question.points;
     }
 
+    // Capture text for selected options and correct options
+    const selectedOptionTexts = question.answerOptions
+      .filter(opt => userAnswer?.selectedOptionIds?.includes(opt.id))
+      .map(opt => opt.optionText);
+
+    const correctOptionTexts = question.answerOptions
+      .filter(opt => opt.isCorrect)
+      .map(opt => opt.optionText);
+
     details.push({
       questionId: question.id,
+      questionText: question.questionText,
+      questionType: question.questionType,
       isCorrect,
       pointsEarned: isCorrect ? question.points : 0,
-      maxPoints: question.points
+      maxPoints: question.points,
+      selectedOptionIds: userAnswer?.selectedOptionIds || [],
+      selectedOptionTexts,
+      correctOptionTexts,
+      answerText: userAnswer?.answerText || ''
     });
   });
 
@@ -749,8 +788,7 @@ async function checkAndAwardBadges(tx, userId) {
     tx.quizAttempt.count({
       where: {
         userId,
-        passed: true,
-        scorePercentage: { gte: 80 }
+        passed: true
       }
     }),
     tx.enrollment.count({
@@ -773,21 +811,46 @@ async function checkAndAwardBadges(tx, userId) {
 
     let shouldAward = false;
 
+    // Parse criteria details if needed for dynamic checking
+    let details = {};
+    try {
+      details = JSON.parse(badge.criteriaDetails || '{}');
+    } catch (e) {
+      details = {};
+    }
+
     switch (badge.criteriaType) {
-      case 'FIRST_LESSON':
-        shouldAward = completedLessons >= 1;
+      case 'lesson_completion':
+        // Handled in lesson controller usually, but safe to double check
+        if (details.count && completedLessons >= details.count) shouldAward = true;
         break;
-      case 'FIRST_COURSE':
-        shouldAward = enrollments >= 1;
+
+      case 'course_completion':
+        if (details.count && enrollments >= details.count) shouldAward = true;
         break;
-      case 'QUIZ_MASTER':
-        shouldAward = passedQuizzes >= 5;
+
+      case 'quiz_pass':
+        // Count passed quizzes
+        if (details.count && passedQuizzes >= details.count) shouldAward = true;
         break;
-      case 'SEVEN_DAY_STREAK':
-        shouldAward = user.currentStreak >= 7;
+
+      case 'streak':
+        if (details.days && user.currentStreak >= details.days) shouldAward = true;
         break;
-      case 'CENTURY_CLUB':
-        shouldAward = user.totalPoints >= 100;
+
+      case 'points':
+        if (details.points && user.totalPoints >= details.points) shouldAward = true;
+        break;
+
+      case 'quiz_perfect':
+        // Check if user has any quiz attempt with 100% score
+        const perfectCount = await tx.quizAttempt.count({
+          where: {
+            userId,
+            scorePercentage: 100
+          }
+        });
+        if (perfectCount >= 1) shouldAward = true;
         break;
     }
 
@@ -812,7 +875,7 @@ async function checkAndAwardBadges(tx, userId) {
         }
       });
 
-      badgesEarned.push(userBadge);
+      badgesEarned.push(userBadge.badge);
     }
   }
 

@@ -13,7 +13,7 @@ import {
 
 const api = path => `${import.meta.env.VITE_API_URL}${path}`
 
-export default function CourseResourcesSection ({
+export default function CourseResourcesSection({
   courseId,
   canManage,
   isStudent
@@ -34,6 +34,7 @@ export default function CourseResourcesSection ({
     scheduledAt: ''
   })
   const [scheduleDate, setScheduleDate] = useState('')
+  const [attachedFile, setAttachedFile] = useState(null)
   const [editingDescId, setEditingDescId] = useState(null)
   const [editDesc, setEditDesc] = useState('')
 
@@ -101,39 +102,72 @@ export default function CourseResourcesSection ({
   }
 
   const handleCreateMessage = async componentId => {
-    if (!newMessage.content.trim()) return
+    // Validate: need either content or file
+    if (!newMessage.content.trim() && !attachedFile) {
+      alert('Please enter a message or attach a file')
+      return
+    }
+
     try {
-      const res = await fetch(api(`/components/${componentId}/messages`), {
-        method: 'POST',
-        headers: { ...headers(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newMessage.title,
-          content: newMessage.content,
-          scheduledAt: scheduleDate || null
+      let messageId = null
+
+      // Create message if there's content
+      if (newMessage.content.trim()) {
+        const res = await fetch(api(`/components/${componentId}/messages`), {
+          method: 'POST',
+          headers: { ...headers(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: newMessage.title,
+            content: newMessage.content,
+            scheduledAt: scheduleDate || null
+          })
         })
-      })
 
-      if (res.status === 401) {
-        // If unauthorized, token might be stale or missing
-        alert(
-          'Your session may have expired. Please refresh the page or log in again.'
-        )
-        return
+        if (res.status === 401) {
+          alert(
+            'Your session may have expired. Please refresh the page or log in again.'
+          )
+          return
+        }
+
+        const json = await res.json()
+
+        if (!res.ok) {
+          alert(json.error?.message || 'Failed to post message')
+          return
+        }
+
+        messageId = json.data?.id
       }
 
-      const json = await res.json()
+      // Upload file if attached
+      if (attachedFile) {
+        const form = new FormData()
+        form.append('files', attachedFile)
+        if (scheduleDate) form.append('scheduledAt', scheduleDate)
 
-      if (res.ok) {
-        setNewMessage({ title: '', content: '', scheduledAt: '' })
-        setScheduleDate('')
-        setActiveTab(null)
-        await fetchAll()
-      } else {
-        alert(json.error?.message || 'Failed to post message')
+        const res = await fetch(api(`/components/${componentId}/files`), {
+          method: 'POST',
+          headers: headers(),
+          body: form
+        })
+
+        const json = await res.json()
+        if (!json.success) {
+          alert(json.message || 'File upload failed')
+          return
+        }
       }
+
+      // Reset form
+      setNewMessage({ title: '', content: '', scheduledAt: '' })
+      setScheduleDate('')
+      setAttachedFile(null)
+      setActiveTab(null)
+      await fetchAll()
     } catch (e) {
       console.error(e)
-      alert('Failed to post message')
+      alert('Failed to create post')
     }
   }
 
@@ -422,26 +456,13 @@ export default function CourseResourcesSection ({
         {canManage && (
           <div className='rs-toolbar'>
             <button
-              className={`rs-tool-btn ${
-                activeTab === `msg-${c.id}` ? 'active' : ''
-              }`}
+              className={`rs-tool-btn ${activeTab === `msg-${c.id}` ? 'active' : ''
+                }`}
               onClick={() =>
                 setActiveTab(activeTab === `msg-${c.id}` ? null : `msg-${c.id}`)
               }
             >
               <FaCommentAlt /> New Post
-            </button>
-            <button
-              className={`rs-tool-btn ${
-                activeTab === `file-${c.id}` ? 'active' : ''
-              }`}
-              onClick={() =>
-                setActiveTab(
-                  activeTab === `file-${c.id}` ? null : `file-${c.id}`
-                )
-              }
-            >
-              <FaFileUpload /> Upload File
             </button>
           </div>
         )}
@@ -466,6 +487,33 @@ export default function CourseResourcesSection ({
                 setNewMessage({ ...newMessage, content: e.target.value })
               }
             />
+
+            {/* File Attachment */}
+            <div className='rs-file-attach-section'>
+              <label htmlFor={`attach-file-${c.id}`} className='rs-file-label'>
+                <FaFileUpload /> {attachedFile ? 'Change File' : 'Attach File (Optional)'}
+              </label>
+              <input
+                id={`attach-file-${c.id}`}
+                type='file'
+                style={{ display: 'none' }}
+                onChange={e => setAttachedFile(e.target.files?.[0] || null)}
+              />
+              {attachedFile && (
+                <div className='rs-attached-file'>
+                  <FaFileAlt />
+                  <span className='rs-filename'>{attachedFile.name}</span>
+                  <button
+                    className='rs-btn-remove'
+                    onClick={() => setAttachedFile(null)}
+                    type='button'
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className='rs-schedule-row'>
               <label>Schedule (Optional):</label>
               <input
@@ -478,38 +526,13 @@ export default function CourseResourcesSection ({
                 className='rs-btn rs-btn-primary'
                 onClick={() => handleCreateMessage(c.id)}
               >
-                Post Message
+                Post
               </button>
             </div>
           </div>
         )}
 
-        {activeTab === `file-${c.id}` && (
-          <div className='rs-action-panel'>
-            <h4>Upload File</h4>
-            <div className='rs-schedule-row'>
-              <label>Schedule:</label>
-              <input
-                type='datetime-local'
-                className='rs-input'
-                value={scheduleDate}
-                onChange={e => setScheduleDate(e.target.value)}
-              />
-              <label
-                className='rs-btn rs-btn-primary'
-                htmlFor={`rs-upload-${c.id}`}
-              >
-                {uploading === c.id ? 'Uploading...' : 'Choose File'}
-              </label>
-              <input
-                id={`rs-upload-${c.id}`}
-                type='file'
-                style={{ display: 'none' }}
-                onChange={e => handleUploadMaterial(c.id, e)}
-              />
-            </div>
-          </div>
-        )}
+
 
         {/* Content Stream (Mixed Messages & Files) */}
         <div className='rs-stream'>
@@ -517,9 +540,8 @@ export default function CourseResourcesSection ({
           {c.messages?.map(m => (
             <div
               key={m.id}
-              className={`rs-card-item message ${
-                isScheduledFuture(m.scheduledAt) ? 'scheduled' : ''
-              }`}
+              className={`rs-card-item message ${isScheduledFuture(m.scheduledAt) ? 'scheduled' : ''
+                }`}
             >
               <div className='rs-item-header'>
                 <div className='rs-user-badge'>
@@ -548,8 +570,8 @@ export default function CourseResourcesSection ({
                             content: m.content || '',
                             scheduledAt: m.scheduledAt
                               ? new Date(m.scheduledAt)
-                                  .toISOString()
-                                  .slice(0, 16)
+                                .toISOString()
+                                .slice(0, 16)
                               : ''
                           })
                         }}
@@ -635,9 +657,8 @@ export default function CourseResourcesSection ({
           {c.files?.map(f => (
             <div
               key={f.id}
-              className={`rs-card-item file ${
-                isScheduledFuture(f.scheduledAt) ? 'scheduled' : ''
-              }`}
+              className={`rs-card-item file ${isScheduledFuture(f.scheduledAt) ? 'scheduled' : ''
+                }`}
             >
               <div className='rs-file-icon'>
                 {c.componentType === 'ASSIGNMENT' ? (
@@ -708,8 +729,8 @@ export default function CourseResourcesSection ({
                     {submitting === c.id
                       ? 'Submitting...'
                       : c.userSubmission
-                      ? 'Resubmit Assignment'
-                      : 'Submit Assignment'}
+                        ? 'Resubmit Assignment'
+                        : 'Submit Assignment'}
                   </label>
                   <input
                     id={`rs-submit-${c.id}`}
@@ -720,7 +741,7 @@ export default function CourseResourcesSection ({
                     }
                   />
                 </div>
-                
+
                 {/* Student Feedback Display */}
                 {c.userSubmission && (c.userSubmission.grade !== null || c.userSubmission.feedback) && (
                   <div className='rs-feedback-box'>
@@ -746,7 +767,7 @@ export default function CourseResourcesSection ({
               </div>
             ) : canManage ? (
               <div className='rs-tutor-submission-area'>
-                <button 
+                <button
                   className='rs-btn rs-btn-primary'
                   onClick={() => viewingSubmissions === c.id ? setViewingSubmissions(null) : handleFetchSubmissions(c.id)}
                 >
@@ -782,7 +803,7 @@ export default function CourseResourcesSection ({
                               <td>
                                 {sub.files?.map(file => (
                                   <div key={file.id} className='rs-sub-file'>
-                                    <button 
+                                    <button
                                       className='rs-link-btn'
                                       onClick={() => handleDownloadSubmissionFile(file.id, file.fileName)}
                                     >
@@ -794,7 +815,7 @@ export default function CourseResourcesSection ({
                               <td>
                                 {sub.grade !== null ? (
                                   <span>
-                                    {sub.grade}/100 
+                                    {sub.grade}/100
                                     <span className={`grade-badge grade-${getGradeLetter(sub.grade).replace('+', '-plus')}`}>
                                       ({getGradeLetter(sub.grade)})
                                     </span>
@@ -802,7 +823,7 @@ export default function CourseResourcesSection ({
                                 ) : '-'}
                               </td>
                               <td>
-                                <button 
+                                <button
                                   className='rs-btn rs-btn-sm rs-btn-primary'
                                   onClick={() => {
                                     setGradingSubmission(sub)
@@ -828,8 +849,8 @@ export default function CourseResourcesSection ({
                       <h4>Grade Submission: {gradingSubmission.student.firstName} {gradingSubmission.student.lastName}</h4>
                       <div className='rs-form-group'>
                         <label>Grade (0-100)</label>
-                        <input 
-                          type='number' 
+                        <input
+                          type='number'
                           className='rs-input'
                           min='0'
                           max='100'
@@ -839,7 +860,7 @@ export default function CourseResourcesSection ({
                       </div>
                       <div className='rs-form-group'>
                         <label>Feedback</label>
-                        <textarea 
+                        <textarea
                           className='rs-input rs-textarea'
                           value={feedbackInput}
                           onChange={e => setFeedbackInput(e.target.value)}
@@ -847,13 +868,13 @@ export default function CourseResourcesSection ({
                         />
                       </div>
                       <div className='rs-actions'>
-                        <button 
+                        <button
                           className='rs-btn'
                           onClick={() => setGradingSubmission(null)}
                         >
                           Cancel
                         </button>
-                        <button 
+                        <button
                           className='rs-btn rs-btn-primary'
                           onClick={handleGradeSubmission}
                         >
@@ -897,9 +918,8 @@ export default function CourseResourcesSection ({
             {components.map(c => (
               <button
                 key={c.id}
-                className={`rs-nav-item ${
-                  activeChannelId === c.id ? 'active' : ''
-                }`}
+                className={`rs-nav-item ${activeChannelId === c.id ? 'active' : ''
+                  }`}
                 onClick={() => setActiveChannelId(c.id)}
               >
                 {c.title}

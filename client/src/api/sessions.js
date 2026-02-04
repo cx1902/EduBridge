@@ -7,9 +7,20 @@ export const getMySessions = async (status) => {
   return response.data;
 };
 
+// Get single session details
+export const getSession = async (sessionId) => {
+  const response = await api.get(`/sessions/${sessionId}`);
+  return response.data;
+};
+
 // Student: Confirm session
 export const confirmSession = async (sessionId) => {
   const response = await api.post(`/sessions/${sessionId}/confirm`);
+  return response.data;
+};
+// Student: Decline invitation
+export const declineInvitation = async (sessionId, reason) => {
+  const response = await api.post(`/sessions/${sessionId}/decline`, { reason });
   return response.data;
 };
 
@@ -51,5 +62,31 @@ export const getTutorSessions = async (params) => {
 // Tutor: Update session status
 export const updateSessionStatus = async (sessionId, status) => {
   const response = await api.patch(`/sessions/${sessionId}/status`, { status });
+  return response.data;
+};
+
+// Get tutor's available 1-hour slots
+export const getTutorAvailableSlots = async (tutorId, date) => {
+  const response = await api.get(`/sessions/tutors/${tutorId}/available-slots`, {
+    params: { date }
+  });
+  return response.data;
+};
+
+// Confirm booking request (Tutor)
+export const confirmBookingRequest = async (sessionId) => {
+  const response = await api.post(`/sessions/${sessionId}/confirm-booking`);
+  return response.data;
+};
+
+// Decline booking request (Tutor)
+export const declineBookingRequest = async (sessionId, reason) => {
+  const response = await api.post(`/sessions/${sessionId}/decline-booking`, { reason });
+  return response.data;
+};
+
+// Delete session (Tutor)
+export const deleteSession = async (sessionId) => {
+  const response = await api.delete(`/sessions/${sessionId}`);
   return response.data;
 };

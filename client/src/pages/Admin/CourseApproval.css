@@ -1,0 +1,42 @@
+/* Admin Course Management Styles */
+.admin-course-filters {
+    display: flex !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 0.5rem;
+}
+
+.admin-course-filters .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.course-action-buttons {
+    display: flex !important;
+    gap: 0.75rem !important;
+    flex-wrap: wrap !important;
+    margin-top: 1.5rem !important;
+    align-items: center;
+}
+
+.course-action-buttons .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 100px;
+    justify-content: center;
+    padding: 0.6rem 1.25rem !important;
+    font-size: 0.9rem !important;
+}
+
+/* Specific styling for delete button to match user's custom style */
+.course-action-buttons .btn-delete-outline {
+    color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    background: transparent;
+}
+
+.course-action-buttons .btn-delete-outline:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+}

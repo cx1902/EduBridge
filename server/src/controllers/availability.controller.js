@@ -63,6 +63,103 @@ exports.getSlots = async (req, res) => {
     }
 };
 
+// Get 1-hour bookable slots for students (generates from availability windows)
+exports.getBookableSlots = async (req, res) => {
+    try {
+        const { tutorId, date } = req.query;
+
+        if (!tutorId) {
+            return res.status(400).json({ success: false, message: 'Tutor ID is required' });
+        }
+
+        // Parse the date or use today
+        const targetDate = date ? new Date(date) : new Date();
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // Get tutor's availability slots for the date range
+        const availabilitySlots = await prisma.availabilitySlot.findMany({
+            where: {
+                tutorId,
+                isBooked: false,
+                startTime: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            },
+            orderBy: { startTime: 'asc' }
+        });
+
+        // Get existing booked sessions to check conflicts
+        const bookedSessions = await prisma.tutoringSession.findMany({
+            where: {
+                tutorId,
+                scheduledStart: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                },
+                status: {
+                    in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS']
+                }
+            }
+        });
+
+        // Generate 1-hour slots from each availability window
+        const oneHourSlots = [];
+        const now = new Date(); // Current time for filtering past slots
+
+        for (const slot of availabilitySlots) {
+            const slotStart = new Date(slot.startTime);
+            const slotEnd = new Date(slot.endTime);
+            const durationMinutes = (slotEnd - slotStart) / (1000 * 60);
+
+            // Generate 1-hour slots at 1-hour intervals (not overlapping)
+            const numberOfSlots = Math.floor(durationMinutes / 60);
+
+            for (let i = 0; i < numberOfSlots; i++) {
+                const oneHourStart = new Date(slotStart.getTime() + (i * 60 * 60 * 1000));
+                const oneHourEnd = new Date(oneHourStart.getTime() + (60 * 60 * 1000));
+
+                // Check if end time exceeds availability window
+                if (oneHourEnd > slotEnd) continue;
+
+                // FILTER OUT PAST TIME SLOTS - Skip if slot has already started or ended
+                if (oneHourStart <= now) {
+                    continue; // Skip this slot as it's in the past
+                }
+
+                // Check if this slot conflicts with any booked session
+                const hasConflict = bookedSessions.some(session => {
+                    const sessionStart = new Date(session.scheduledStart);
+                    const sessionEnd = new Date(session.scheduledEnd);
+
+                    // Check for overlap
+                    return (oneHourStart < sessionEnd && oneHourEnd > sessionStart);
+                });
+
+                // Only include available (non-conflicting) slots
+                if (!hasConflict) {
+                    oneHourSlots.push({
+                        id: `${slot.id}-${i}`, // Unique ID for each 1-hour slot
+                        availabilitySlotId: slot.id, // Reference to parent availability
+                        tutorId,
+                        startTime: oneHourStart.toISOString(),
+                        endTime: oneHourEnd.toISOString(),
+                        isBooked: false
+                    });
+                }
+            }
+        }
+
+        res.json({ success: true, data: oneHourSlots });
+    } catch (error) {
+        console.error('Get Bookable Slots Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch bookable slots' });
+    }
+};
+
 // Delete a slot
 exports.deleteSlot = async (req, res) => {
     try {
@@ -88,36 +185,98 @@ exports.deleteSlot = async (req, res) => {
 exports.bookSlot = async (req, res) => {
     try {
         const { slotId } = req.params;
-        const { subject, note, duration } = req.body;
+        const { subject, note, startTime, endTime } = req.body;
         const studentId = req.user.id;
+
+        // Check if this is a generated slot ID (format: "slotId-index")
+        let availabilitySlotId = slotId;
+        let sessionStart, sessionEnd;
+        let isGeneratedSlot = false; // Track if this is a generated 1-hour slot
+
+        if (slotId.includes('-')) {
+            isGeneratedSlot = true;
+            // This is a generated 1-hour slot
+            availabilitySlotId = slotId.substring(0, slotId.lastIndexOf('-'));
+            // Use provided start and end times
+            if (!startTime || !endTime) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Start time and end time are required for bookable slots'
+                });
+            }
+            sessionStart = new Date(startTime);
+            sessionEnd = new Date(endTime);
+        }
 
         // Start transaction
         const result = await prisma.$transaction(async (prisma) => {
-            // 1. Get and lock slot
-            const slot = await prisma.availabilitySlot.findUnique({ where: { id: slotId } });
+            // 1. Get availability slot
+            const slot = await prisma.availabilitySlot.findUnique({
+                where: { id: availabilitySlotId }
+            });
 
             if (!slot) throw new Error('Slot not found');
-            if (slot.isBooked) throw new Error('Slot is already booked');
 
-            // 2. Mark slot as booked
-            await prisma.availabilitySlot.update({
-                where: { id: slotId },
-                data: { isBooked: true }
-            });
+            // For generated slots, verify the requested time is within availability
+            if (slotId.includes('-')) {
+                const slotStart = new Date(slot.startTime);
+                const slotEnd = new Date(slot.endTime);
+
+                if (sessionStart < slotStart || sessionEnd > slotEnd) {
+                    throw new Error('Requested time is outside availability window');
+                }
+
+                // Check for conflicts with existing sessions
+                const conflictingSession = await prisma.tutoringSession.findFirst({
+                    where: {
+                        tutorId: slot.tutorId,
+                        status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+                        OR: [
+                            {
+                                AND: [
+                                    { scheduledStart: { lte: sessionStart } },
+                                    { scheduledEnd: { gt: sessionStart } }
+                                ]
+                            },
+                            {
+                                AND: [
+                                    { scheduledStart: { lt: sessionEnd } },
+                                    { scheduledEnd: { gte: sessionEnd } }
+                                ]
+                            }
+                        ]
+                    }
+                });
+
+                if (conflictingSession) {
+                    throw new Error('This time slot is already booked');
+                }
+            } else {
+                // Original slot booking - mark as fully booked
+                if (slot.isBooked) throw new Error('Slot is already booked');
+
+                await prisma.availabilitySlot.update({
+                    where: { id: availabilitySlotId },
+                    data: { isBooked: true }
+                });
+
+                sessionStart = slot.startTime;
+                sessionEnd = slot.endTime;
+            }
 
             // 3. Create Tutoring Session
             const session = await prisma.tutoringSession.create({
                 data: {
                     tutorId: slot.tutorId,
                     subject: subject || 'General Tutoring',
-                    educationLevel: 'UNIVERSITY', // Default or from request
-                    scheduledStart: slot.startTime,
-                    scheduledEnd: slot.endTime,
+                    educationLevel: 'UNIVERSITY',
+                    scheduledStart: sessionStart,
+                    scheduledEnd: sessionEnd,
                     maxParticipants: 1,
                     sessionType: 'ONE_ON_ONE',
                     status: 'SCHEDULED',
-                    slotId: slot.id,
-                    sessionNotes: note
+                    slotId: isGeneratedSlot ? null : slot.id, // Only set slotId for full slot bookings
+                    sessionNotes: note ? JSON.stringify({ studentInquiry: note }) : null
                 }
             });
 
@@ -128,6 +287,26 @@ exports.bookSlot = async (req, res) => {
                     sessionId: session.id,
                     status: 'CONFIRMED'
                 }
+            });
+
+            // 5. Create notifications
+            await prisma.notification.createMany({
+                data: [
+                    {
+                        userId: studentId,
+                        type: 'SESSION_BOOKED',
+                        title: 'Session Booked Successfully',
+                        message: `You have booked a session on ${sessionStart.toLocaleDateString()}`,
+                        link: `/student/sessions/${session.id}`
+                    },
+                    {
+                        userId: slot.tutorId,
+                        type: 'SESSION_BOOKED',
+                        title: 'New Session Booking',
+                        message: `A student has booked a session with you`,
+                        link: `/tutor/sessions/${session.id}`
+                    }
+                ]
             });
 
             return { session, booking };

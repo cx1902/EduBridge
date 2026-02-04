@@ -11,24 +11,27 @@ const BookingModal = ({ tutor, onClose }) => {
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [loading, setLoading] = useState(true);
     const [bookingNote, setBookingNote] = useState('');
+    const [subject, setSubject] = useState(''); // User-entered subject/topic
     const [isBooking, setIsBooking] = useState(false);
-    const [dateFilter, setDateFilter] = useState('');
+    const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]); // Default to today
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
     useEffect(() => {
-        if (tutor) {
+        if (tutor && dateFilter) {
             fetchSlots();
         }
-    }, [tutor]);
+    }, [tutor, dateFilter]);
 
     const fetchSlots = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API_URL}/availability`, {
+            setSelectedSlot(null); // Reset selection when fetching new slots
+            // Use bookable-slots endpoint to get 1-hour slots
+            const response = await axios.get(`${API_URL}/availability/bookable-slots`, {
                 params: {
                     tutorId: tutor.id,
-                    start: new Date().toISOString() // Only future slots
+                    date: dateFilter // Pass the selected date
                 },
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -48,8 +51,10 @@ const BookingModal = ({ tutor, onClose }) => {
             const response = await axios.post(
                 `${API_URL}/availability/${selectedSlot.id}/book`,
                 {
-                    subject: tutor.tutorSubjects?.[0]?.subject?.name || 'General Session',
-                    note: bookingNote
+                    subject: subject.trim(), // Use user-entered subject
+                    note: bookingNote,
+                    startTime: selectedSlot.startTime,
+                    endTime: selectedSlot.endTime
                 },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -66,13 +71,8 @@ const BookingModal = ({ tutor, onClose }) => {
 
     if (!tutor) return null;
 
-    // Filter slots by date if selected
-    const filteredSlots = dateFilter
-        ? slots.filter(slot => new Date(slot.startTime).toLocaleDateString() === new Date(dateFilter).toLocaleDateString())
-        : slots;
-
     // Group slots by date for display
-    const slotsByDate = filteredSlots.reduce((acc, slot) => {
+    const slotsByDate = slots.reduce((acc, slot) => {
         const dateStr = new Date(slot.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
         if (!acc[dateStr]) acc[dateStr] = [];
         acc[dateStr].push(slot);
@@ -96,6 +96,7 @@ const BookingModal = ({ tutor, onClose }) => {
                                 <label>Filter by Date:</label>
                                 <input
                                     type="date"
+                                    value={dateFilter}
                                     min={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => setDateFilter(e.target.value)}
                                 />
@@ -159,29 +160,47 @@ const BookingModal = ({ tutor, onClose }) => {
                                     </span>
                                 </div>
                                 <div className="detail-row">
-                                    <span className="label">Time:</span>
-                                    <span className="value">
-                                        {new Date(selectedSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
-                                        {new Date(selectedSlot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+                                    <div className="confirm-detail">
+                                        <strong>Time:</strong>
+                                        <span>{new Date(selectedSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedSlot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
                                 </div>
 
-                                <div className="note-input">
-                                    <label>Add a note (optional):</label>
+                                <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                                    <label>Subject / Topic *</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={subject}
+                                        onChange={(e) => setSubject(e.target.value)}
+                                        placeholder="e.g., Blockchain, Mathematics, Python Programming"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Note (Optional)</label>
                                     <textarea
+                                        className="form-control"
+                                        rows="3"
                                         value={bookingNote}
                                         onChange={(e) => setBookingNote(e.target.value)}
-                                        placeholder="What would you like to focus on?"
-                                        rows={3}
+                                        placeholder="Any special requirements or topics you'd like to focus on..."
                                     />
                                 </div>
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setStep(1)} disabled={isBooking}>Back</button>
-                            <button className="btn-primary" onClick={handleBookSlot} disabled={isBooking}>
-                                {isBooking ? 'Booking...' : 'Confirm Booking'}
-                            </button>
+                            <div className="modal-actions">
+                                <button className="btn-secondary" onClick={() => setStep(1)} disabled={isBooking}>Back</button>
+                                <button
+                                    className="btn-primary"
+                                    onClick={handleBookSlot}
+                                    disabled={isBooking || !subject.trim()}
+                                >
+                                    {isBooking ? <><FaSpinner className="spinner" /> Processing...</> : 'Confirm Booking'}
+                                </button>
+                            </div>
                         </div>
                     </>
                 )}

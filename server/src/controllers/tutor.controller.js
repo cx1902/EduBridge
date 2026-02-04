@@ -68,18 +68,37 @@ const getDashboardStats = async (req, res) => {
 const getTodaysSessions = async (req, res) => {
   try {
     const tutorId = req.user.id;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const { startDate, endDate } = req.query;
+
+    let dateFilter = {};
+
+    if (startDate && endDate) {
+      dateFilter = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    } else {
+      // Fallback to legacy server-side today logic
+      const clientDate = req.query.date ? new Date(req.query.date) : new Date();
+      const today = new Date(clientDate);
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      dateFilter = {
+        gte: today,
+        lt: tomorrow
+      };
+    }
+
+    console.log(`[DEBUG] getTodaysSessions for Tutor: ${tutorId}`);
+    console.log(`[DEBUG] Date Query: start=${startDate}, end=${endDate}`);
+    console.log(`[DEBUG] Calculated Filter:`, JSON.stringify(dateFilter, null, 2));
 
     const sessions = await prisma.tutoringSession.findMany({
       where: {
         tutorId,
-        scheduledStart: {
-          gte: today,
-          lt: tomorrow,
-        },
+        scheduledStart: dateFilter,
       },
       include: {
         bookings: {
@@ -94,12 +113,25 @@ const getTodaysSessions = async (req, res) => {
             },
           },
         },
+        emailTracking: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          }
+        }
       },
       orderBy: {
         scheduledStart: 'asc',
       },
     });
 
+    console.log(`[DEBUG] Found ${sessions.length} sessions`);
     res.json(sessions);
   } catch (error) {
     console.error('Error fetching today\'s sessions:', error);
@@ -754,6 +786,7 @@ const getLessons = async (req, res) => {
         _count: {
           select: {
             quizzes: true,
+            comprehensionQuestions: true
           },
         },
       },

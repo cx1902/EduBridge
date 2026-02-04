@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth.middleware');
 
 // Public/Student routes
 router.get('/', authenticate, availabilityController.getSlots);
+router.get('/bookable-slots', authenticate, availabilityController.getBookableSlots); // Get 1-hour slots for booking
 router.post('/:slotId/book', authenticate, authorize('STUDENT'), availabilityController.bookSlot);
 
 // Tutor routes

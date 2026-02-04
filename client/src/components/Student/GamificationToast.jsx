@@ -21,11 +21,12 @@ const GamificationToast = ({ xpGained, newBadges, onClose }) => {
                         {newBadges.map((badge, idx) => (
                             <div key={idx} className="badge-item">
                                 <i className="fas fa-medal"></i>
-                                <span>Unlocked: {badge.name.replace('_', ' ')}</span>
+                                <span>Unlocked: {badge.name ? badge.name.replace('_', ' ') : 'New Badge'}</span>
                             </div>
                         ))}
                     </div>
                 )}
+                <button className="toast-ok-btn" onClick={onClose}>OK</button>
             </div>
         </div>
     );

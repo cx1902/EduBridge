@@ -3,12 +3,18 @@ const prisma = require('../utils/prisma');
 // Get user's earned badges
 exports.getUserBadges = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const userBadges = await prisma.userBadge.findMany({
       where: { userId },
       include: {
-        badge: true
+        badge: true,
+        course: {
+          select: {
+            title: true,
+            id: true
+          }
+        }
       },
       orderBy: {
         earnedAt: 'desc'
@@ -33,9 +39,11 @@ exports.getUserBadges = async (req, res) => {
 };
 
 // Get all available badges with unlock status
+// Get all available badges with unlock status
 exports.getAllBadges = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
+    console.log('Fetching badges for user:', userId);
 
     // Get all badges
     const allBadges = await prisma.badge.findMany({
@@ -43,6 +51,7 @@ exports.getAllBadges = async (req, res) => {
         rarity: 'asc'
       }
     });
+    console.log('Found badges:', allBadges.length);
 
     // Get user's earned badges
     const earnedBadges = await prisma.userBadge.findMany({
@@ -52,10 +61,12 @@ exports.getAllBadges = async (req, res) => {
         earnedAt: true
       }
     });
+    console.log('Earned badges:', earnedBadges.length);
 
     const earnedBadgeIds = earnedBadges.map(b => b.badgeId);
 
     // Get user stats for progress calculation
+    console.log('Fetching user stats...');
     const [user, completedLessons, passedQuizzes, completedCourses] = await Promise.all([
       prisma.user.findUnique({
         where: { id: userId },
@@ -70,8 +81,7 @@ exports.getAllBadges = async (req, res) => {
       prisma.quizAttempt.count({
         where: {
           userId,
-          passed: true,
-          scorePercentage: { gte: 80 }
+          passed: true
         }
       }),
       prisma.enrollment.count({
@@ -82,6 +92,24 @@ exports.getAllBadges = async (req, res) => {
       })
     ]);
 
+    console.log('Stats fetched:', {
+      userExists: !!user,
+      completedLessons,
+      passedQuizzes,
+      completedCourses
+    });
+
+    if (!user) {
+      console.error('User not found for ID:', userId);
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'USER_NOT_FOUND',
+          message: 'User profile not found'
+        }
+      });
+    }
+
     // Map badges with earned status and progress
     const badgesWithStatus = allBadges.map(badge => {
       const earnedInfo = earnedBadges.find(b => b.badgeId === badge.id);
@@ -90,29 +118,56 @@ exports.getAllBadges = async (req, res) => {
       // Calculate progress toward unlock
       let progress = 0;
       let target = 0;
-
-      switch (badge.criteriaType) {
-        case 'FIRST_LESSON':
-          progress = Math.min(completedLessons, 1);
-          target = 1;
-          break;
-        case 'FIRST_COURSE':
-          progress = Math.min(completedCourses, 1);
-          target = 1;
-          break;
-        case 'QUIZ_MASTER':
-          progress = Math.min(passedQuizzes, 5);
-          target = 5;
-          break;
-        case 'SEVEN_DAY_STREAK':
-          progress = Math.min(user.currentStreak, 7);
-          target = 7;
-          break;
-        case 'CENTURY_CLUB':
-          progress = Math.min(user.totalPoints, 100);
-          target = 100;
-          break;
+      let details = {};
+      try {
+        if (badge.criteriaDetails) {
+          details = typeof badge.criteriaDetails === 'string'
+            ? JSON.parse(badge.criteriaDetails)
+            : badge.criteriaDetails;
+        }
+      } catch (e) {
+        console.error(`Error parsing criteriaDetails for badge ${badge.name}:`, e);
       }
+
+      try {
+        switch (badge.criteriaType) {
+          case 'FIRST_LESSON':
+          case 'lesson_completion':
+            // Logic for a single lesson or multiple lessons
+            target = details.count || 1;
+            progress = Math.min(completedLessons, target);
+            break;
+          case 'FIRST_COURSE':
+          case 'course_completion':
+            target = details.count || 1;
+            progress = Math.min(completedCourses, target);
+            break;
+          case 'QUIZ_MASTER':
+          case 'quiz_completion':
+            target = details.count || 5;
+            progress = Math.min(passedQuizzes, target);
+            break;
+          case 'SEVEN_DAY_STREAK':
+          case 'streak':
+            target = details.days || 7;
+            progress = Math.min(user?.currentStreak || 0, target);
+            break;
+          case 'CENTURY_CLUB':
+          case 'points':
+            target = details.points || 100;
+            progress = Math.min(user?.totalPoints || 0, target);
+            break;
+          default:
+            progress = 0;
+            target = 0;
+        }
+      } catch (err) {
+        console.error(`Error calculating progress for badge ${badge.name}:`, err);
+        progress = 0;
+        target = 0;
+      }
+
+
 
       return {
         ...badge,
@@ -144,7 +199,7 @@ exports.getAllBadges = async (req, res) => {
 // Get points transaction history
 exports.getPointsHistory = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { limit = 20, offset = 0, activityType } = req.query;
 
     const where = { userId };
@@ -192,7 +247,7 @@ exports.getPointsHistory = async (req, res) => {
 exports.getLeaderboard = async (req, res) => {
   try {
     const { scope = 'global', courseId, period = 'all-time', limit = 10 } = req.query;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     let users;
     let whereClause = {
@@ -331,12 +386,12 @@ exports.getLeaderboard = async (req, res) => {
 
     // Find current user's rank if not in top list
     let currentUserRank = null;
-    if (!leaderboard.find(u => u.userId === userId)) {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { totalPoints: true }
-      });
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { totalPoints: true }
+    });
 
+    if (currentUser && !leaderboard.find(u => u.userId === userId)) {
       const usersAbove = await prisma.user.count({
         where: {
           ...whereClause,
@@ -375,7 +430,7 @@ exports.getLeaderboard = async (req, res) => {
 // Get user streak information
 exports.getStreakInfo = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -389,11 +444,16 @@ exports.getStreakInfo = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'USER_NOT_FOUND',
-          message: 'User not found'
+      // Return default/empty streak info instead of 404 to prevent UI crash
+      return res.json({
+        success: true,
+        data: {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActivityDate: null,
+          streakFreezesAvailable: 0,
+          streakFreezesUsed: 0,
+          streakStatus: 'inactive'
         }
       });
     }
@@ -401,13 +461,13 @@ exports.getStreakInfo = async (req, res) => {
     // Check if streak is at risk
     const today = new Date().toISOString().split('T')[0];
     const lastActivity = user.lastActivityDate ? user.lastActivityDate.toISOString().split('T')[0] : null;
-    
+
     let streakStatus = 'active';
     if (lastActivity !== today) {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
-      
+
       if (lastActivity !== yesterdayStr) {
         streakStatus = 'broken';
       } else {
@@ -442,7 +502,7 @@ exports.getStreakInfo = async (req, res) => {
 // Use streak freeze
 exports.useStreakFreeze = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -455,11 +515,16 @@ exports.useStreakFreeze = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'USER_NOT_FOUND',
-          message: 'User not found'
+      // Return default/empty streak info instead of 404 to prevent UI crash
+      return res.json({
+        success: true,
+        data: {
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActivityDate: null,
+          streakFreezesAvailable: 0,
+          streakFreezesUsed: 0,
+          streakStatus: 'inactive'
         }
       });
     }

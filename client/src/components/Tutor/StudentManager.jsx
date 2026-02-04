@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import { getProfilePictureUrl } from '../../utils/images';
+import StudentQuizDetailModal from './StudentQuizDetailModal';
 import './StudentManager.css';
 
 const StudentManager = () => {
@@ -10,6 +11,8 @@ const StudentManager = () => {
   const { token } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState([]);
+  const [selectedAttempt, setSelectedAttempt] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     if (courseId) {
@@ -76,7 +79,10 @@ const StudentManager = () => {
                 <th>Student</th>
                 <th>Enrolled Date</th>
                 <th>Progress</th>
+                <th>Quiz Score</th>
+                <th>Attempts</th>
                 <th>Status</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -124,15 +130,59 @@ const StudentManager = () => {
                     </div>
                   </td>
                   <td>
-                    <span className={`status-badge ${enrollment.status.toLowerCase()}`}>
-                      {enrollment.status}
-                    </span>
+                    {enrollment.user?.quizAttempts && enrollment.user.quizAttempts.length > 0 ? (
+                      <div className="quiz-score-cell">
+                        <span className={`score-value ${enrollment.user.quizAttempts[0].passed ? 'pass' : 'fail'}`}>
+                          {parseFloat(enrollment.user.quizAttempts[0].scorePercentage).toFixed(0)}%
+                        </span>
+                        <span className="quiz-title-hint">{enrollment.user.quizAttempts[0].quiz?.title}</span>
+                      </div>
+                    ) : (
+                      <span className="no-data">-</span>
+                    )}
+                  </td>
+                  <td>
+                    {enrollment.user?.quizAttempts && enrollment.user.quizAttempts.length > 0 ? (
+                      <span className="attempt-count">{enrollment.user.quizAttempts.length}</span>
+                    ) : (
+                      <span className="no-data">-</span>
+                    )}
+                  </td>
+                  <td>
+                    {enrollment.user?.quizAttempts && enrollment.user.quizAttempts.length > 0 ? (
+                      <span className={`status-badge ${enrollment.user.quizAttempts[0].passed ? 'active' : 'fail-badge'}`}>
+                        {enrollment.user.quizAttempts[0].passed ? 'PASSED' : 'FAILED'}
+                      </span>
+                    ) : (
+                      <span className="no-data">-</span>
+                    )}
+                  </td>
+                  <td>
+                    {enrollment.user?.quizAttempts && enrollment.user.quizAttempts.length > 0 && (
+                      <button
+                        className="btn-view-answers"
+                        onClick={() => {
+                          setSelectedStudent(enrollment.user);
+                        }}
+                      >
+                        View Answers
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedStudent && (
+        <StudentQuizDetailModal
+          student={selectedStudent}
+          onClose={() => {
+            setSelectedStudent(null);
+          }}
+        />
       )}
     </div>
   );

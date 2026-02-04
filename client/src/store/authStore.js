@@ -23,7 +23,7 @@ const getStoredAuth = () => {
     const local = localStorage.getItem(STORAGE_KEY);
     const session = sessionStorage.getItem(STORAGE_KEY);
     const stored = local || session;
-    
+
     if (stored) {
       const parsed = JSON.parse(stored);
       if (parsed && parsed.token) {
@@ -84,7 +84,7 @@ export const useAuthStore = create((set, get) => {
     login: async (email, password, rememberMe = false) => {
       try {
         set({ isLoading: true, error: null });
-        
+
         const response = await axios.post(`${API_URL}/auth/login`, {
           email,
           password,
@@ -130,7 +130,7 @@ export const useAuthStore = create((set, get) => {
     register: async (userData) => {
       try {
         set({ isLoading: true, error: null });
-        
+
         const response = await axios.post(`${API_URL}/auth/register`, userData);
 
         const { user, token } = response.data.data;
@@ -167,7 +167,7 @@ export const useAuthStore = create((set, get) => {
     // Logout
     logout: async () => {
       try {
-        await axios.post(`${API_URL}/auth/logout`);
+        await axios.post(`${API_URL}/auth/logout`, {}, { timeout: 5000 });
       } catch (error) {
         console.error('Logout error:', error);
       } finally {
@@ -184,16 +184,16 @@ export const useAuthStore = create((set, get) => {
     // Check authentication status
     checkAuth: async () => {
       const { token } = get();
-      
+
       if (!token) {
         // Double check storage in case state was lost but storage exists
         const stored = getStoredAuth();
         if (stored.token) {
-           set(stored);
-           // Continue to verify with backend
+          set(stored);
+          // Continue to verify with backend
         } else {
-           set({ isAuthenticated: false });
-           return;
+          set({ isAuthenticated: false });
+          return;
         }
       }
 
@@ -201,19 +201,19 @@ export const useAuthStore = create((set, get) => {
         // Ensure header is set
         const currentToken = get().token;
         if (currentToken) {
-           axios.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
+          axios.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`;
         }
-        
+
         const response = await axios.get(`${API_URL}/auth/me`);
-        
+
         // Normalize profile picture URL
         const normalizedUser = normalizeProfilePictureUrl(response.data.data.user);
-        
+
         // Set language from user preference
         if (normalizedUser.preferredLanguage && i18n.language !== normalizedUser.preferredLanguage) {
           i18n.changeLanguage(normalizedUser.preferredLanguage);
         }
-        
+
         const newData = {
           user: normalizedUser,
           isAuthenticated: true,
@@ -227,7 +227,7 @@ export const useAuthStore = create((set, get) => {
       } catch (error) {
         // If token is invalid (401), logout
         if (error.response?.status === 401 || error.response?.status === 403) {
-           get().logout();
+          get().logout();
         }
       }
     },

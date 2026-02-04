@@ -1,0 +1,41 @@
+/* Content Reports Styles */
+.report-filters {
+    display: flex !important;
+    gap: 1rem !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start;
+}
+
+.report-filters .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.report-item-actions {
+    display: flex !important;
+    gap: 0.75rem !important;
+    margin-top: 1rem !important;
+}
+
+.report-item-actions .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.modal-footer-actions {
+    display: flex !important;
+    gap: 0.75rem !important;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.modal-footer-actions .btn {
+    width: auto !important;
+    flex: none !important;
+    min-width: 100px;
+    justify-content: center;
+}

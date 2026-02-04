@@ -32,6 +32,7 @@ export const searchTutors = async (filters = {}) => {
     if (filters.subject) params.append('subject', filters.subject);
     if (filters.level) params.append('level', filters.level);
     if (filters.maxPrice) params.append('maxPrice', filters.maxPrice);
+    if (filters.available) params.append('available', filters.available);
 
     const response = await axios.get(`${API_URL}/bookings/tutors/search?${params.toString()}`, {
         headers: getAuthHeaders()
