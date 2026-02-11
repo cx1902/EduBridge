@@ -12,7 +12,6 @@ const UserManagement = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [languageFilter, setLanguageFilter] = useState('');
   const [emailVerifiedFilter, setEmailVerifiedFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
@@ -28,7 +27,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter, statusFilter, languageFilter, emailVerifiedFilter]);
+  }, [page, roleFilter, statusFilter, emailVerifiedFilter]);
 
   const fetchUsers = async () => {
     try {
@@ -51,7 +50,6 @@ const UserManagement = () => {
           search,
           role: roleFilter,
           status: statusFilter,
-          language: languageFilter,
           emailVerified: emailVerifiedFilter,
         },
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
@@ -61,7 +59,7 @@ const UserManagement = () => {
         console.log('✅ API Response:', response.data);
         console.log('📊 Users returned:', response.data.users.length);
         console.log('📊 Total in DB:', response.data.pagination.total);
-        console.log('🔍 Search params used:', { search, roleFilter, statusFilter, languageFilter, emailVerifiedFilter });
+        console.log('🔍 Search params used:', { search, roleFilter, statusFilter, emailVerifiedFilter });
         setUsers(response.data.users);
         setPagination(response.data.pagination);
         setStatistics(response.data.statistics);
@@ -228,7 +226,7 @@ const UserManagement = () => {
       {/* Search and Filters */}
       <div className="card mt-lg">
         <form onSubmit={handleSearch}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
             <div>
               <label>{t('common:action.search')}</label>
               <input
@@ -257,15 +255,7 @@ const UserManagement = () => {
                 <option value="BANNED">{t('common:status.banned')}</option>
               </select>
             </div>
-            <div>
-              <label>{t('admin:userManagement.filters.language')}</label>
-              <select value={languageFilter} onChange={(e) => setLanguageFilter(e.target.value)} className="input">
-                <option value="">All Languages</option>
-                <option value="en">{t('common:language.en')}</option>
-                <option value="zh-CN">{t('common:language.zh-CN')}</option>
-                <option value="zh-TW">{t('common:language.zh-TW')}</option>
-              </select>
-            </div>
+
             <div>
               <label>{t('admin:userManagement.filters.emailVerified')}</label>
               <select value={emailVerifiedFilter} onChange={(e) => setEmailVerifiedFilter(e.target.value)} className="input">
@@ -298,18 +288,7 @@ const UserManagement = () => {
               fontSize: '0.9rem',
               color: 'var(--color-text-secondary)'
             }}>
-              {statistics.byLanguage && Object.keys(statistics.byLanguage).length > 0 && (
-                <div>
-                  <strong style={{ color: 'var(--color-text)' }}>
-                    {t('admin:userManagement.statistics.byLanguage')}:
-                  </strong>
-                  {Object.entries(statistics.byLanguage).map(([lang, count]) => (
-                    <div key={lang} style={{ color: 'var(--color-text-secondary)' }}>
-                      {t(`common:language.${lang}`)}: {count}
-                    </div>
-                  ))}
-                </div>
-              )}
+
               {statistics.emailVerified !== undefined && (
                 <div style={{ color: 'var(--color-text-secondary)' }}>
                   {t('admin:userManagement.statistics.emailVerified')}: {statistics.emailVerified}

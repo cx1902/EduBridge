@@ -14,6 +14,7 @@ const AdminDashboard = () => {
     pendingApplications: 0,
     activeReports: 0,
     recentActions: 0,
+    pendingCourses: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +31,7 @@ const AdminDashboard = () => {
           totalUsers: users.total || 0,
           activeUsers: users.active || 0,
           totalCourses: courses.total || 0,
+          pendingCourses: courses.pending || 0,
           pendingApplications: 0, // Will fetch separately if needed, or keep previous logic
           activeReports: 0,
           recentActions: 0,
@@ -123,12 +125,18 @@ const AdminDashboard = () => {
       </div>
 
       {/* Alerts */}
-      {(stats.pendingApplications > 0 || stats.activeReports > 0) && (
+      {(stats.pendingApplications > 0 || stats.activeReports > 0 || stats.pendingCourses > 0) && (
         <div className="card mt-lg" style={{ backgroundColor: '#fef3c7', borderLeft: '4px solid #f59e0b', color: '#78350f' }}>
           <h3 style={{ margin: '0 0 0.5rem 0' }}>{t('admin.attentionRequired')}</h3>
           <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+            {stats.pendingCourses > 0 && (
+              <li style={{ marginBottom: '0.5rem' }}>
+                <strong>{stats.pendingCourses}</strong> {t('admin.pendingCourses', { defaultValue: 'pending course(s) awaiting review' })}
+                {' '}<Link to="/admin/courses?status=PENDING_APPROVAL" style={{ color: '#0066cc', fontWeight: '600' }}>{t('admin.reviewNow')}</Link>
+              </li>
+            )}
             {stats.pendingApplications > 0 && (
-              <li>
+              <li style={{ marginBottom: '0.5rem' }}>
                 <strong>{stats.pendingApplications}</strong> {t('admin.pendingApplications')}
                 {' '}<Link to="/admin/tutor-applications" style={{ color: '#0066cc', fontWeight: '600' }}>{t('admin.reviewNow')}</Link>
               </li>

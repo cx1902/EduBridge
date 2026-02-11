@@ -11,24 +11,7 @@ const crypto = require('crypto');
  */
 exports.getUsers = async (req, res) => {
   try {
-    const {
-      search,
-      role,
-      status,
-      page = 1,
-      limit = 50,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-      startDate,
-      endDate,
-      emailVerified,
-      language,
-      hasWarnings,
-      activityDays,
-      minPoints,
-      maxPoints,
-    } = req.query;
-
+    const { page = 1, limit = 50, search, role, status, emailVerified, hasWarnings, activityDays, minPoints, maxPoints, startDate, endDate, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
     const where = {
       NOT: {
         email: { startsWith: 'deleted_' }
@@ -84,10 +67,7 @@ exports.getUsers = async (req, res) => {
       where.emailVerified = emailVerified === 'true';
     }
 
-    // Language filter
-    if (language && ['en', 'zh-CN', 'zh-TW'].includes(language)) {
-      where.preferredLanguage = language;
-    }
+
 
     // Has warnings filter
     if (hasWarnings === 'true') {
@@ -171,11 +151,7 @@ exports.getUsers = async (req, res) => {
           where: { NOT: { email: { startsWith: 'deleted_' } } },
           _count: true,
         }),
-        prisma.user.groupBy({
-          by: ['preferredLanguage'],
-          where: { NOT: { email: { startsWith: 'deleted_' } } },
-          _count: true,
-        }),
+
         prisma.user.count({
           where: {
             emailVerified: true,
@@ -194,13 +170,13 @@ exports.getUsers = async (req, res) => {
     ]);
 
     // Format statistics
-    const [totalUsers, byRole, byStatus, byLanguage, emailVerifiedCount, withWarningsCount] = statistics;
+    const [totalUsers, byRole, byStatus, emailVerifiedCount, withWarningsCount] = statistics;
 
     const formattedStatistics = {
       totalUsers,
       byRole: byRole.reduce((acc, item) => ({ ...acc, [item.role]: item._count }), {}),
       byStatus: byStatus.reduce((acc, item) => ({ ...acc, [item.status]: item._count }), {}),
-      byLanguage: byLanguage.reduce((acc, item) => ({ ...acc, [item.preferredLanguage]: item._count }), {}),
+
       emailVerified: emailVerifiedCount,
       withWarnings: withWarningsCount,
     };
@@ -729,12 +705,17 @@ exports.sendPasswordReset = async (req, res) => {
 
     // Generate reset token (24-hour expiry)
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // In production, you'd save this token to the database
-    // For now, we'll just generate and send it
-
-    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    // Save token to database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: resetTokenExpiry,
+      },
+    });
 
     // Create audit log
     await logAction({
@@ -748,23 +729,11 @@ exports.sendPasswordReset = async (req, res) => {
 
     // Send reset email
     try {
-      await emailService.sendEmail({
-        to: user.email,
-        subject: 'Password Reset Request',
-        text: `Dear ${user.firstName},
+      const emailResult = await emailService.sendPasswordResetEmail(user.email, resetToken);
 
-A password reset has been requested for your account by an administrator.
-
-Please click the link below to reset your password:
-${resetLink}
-
-This link will expire in 24 hours.
-
-If you did not request this reset, please contact support immediately.
-
-Best regards,
-EduBridge Team`,
-      });
+      if (!emailResult.success) {
+        throw new Error(emailResult.error || 'Failed to send email');
+      }
 
       res.json({
         success: true,
@@ -843,8 +812,6 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to delete user' });
   }
 };
-
-// ==================== TUTOR VERIFICATION ====================
 
 /**
  * Get tutor verification applications
@@ -2659,7 +2626,8 @@ exports.getPlatformStats = async (req, res) => {
       completedSessions,
       totalFiles,
       totalEnrollments,
-      totalRevenue
+      totalRevenue,
+      pendingCourses
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({ where: { status: 'ACTIVE' } }),
@@ -2675,7 +2643,8 @@ exports.getPlatformStats = async (req, res) => {
       prisma.transaction ? prisma.transaction.aggregate({
         _sum: { amount: true },
         where: { status: 'COMPLETED' }
-      }).catch(() => ({ _sum: { amount: 0 } })) : { _sum: { amount: 0 } }
+      }).catch(() => ({ _sum: { amount: 0 } })) : { _sum: { amount: 0 } },
+      prisma.course.count({ where: { status: 'PENDING_APPROVAL' } })
     ]);
 
     res.json({
@@ -2690,6 +2659,7 @@ exports.getPlatformStats = async (req, res) => {
         courses: {
           total: totalCourses,
           published: publishedCourses,
+          pending: pendingCourses,
           totalEnrollments
         },
         sessions: {
